@@ -1,0 +1,15 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\env",
+    "\\FPL_site",
+    "\\FPL_site\\static",
+    "\\FPL_site\\static\\content",
+    "\\FPL_site\\static\\fonts",
+    "\\FPL_site\\static\\scripts",
+    "\\FPL_site\\templates",
+    "\\obj"
+  ],
+  "SelectedNode": "\\FPL_site\\sqlFunction.py",
+  "PreviewInSolutionExplorer": false
+}

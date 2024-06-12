@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - FPLExpert</title>
+    <link rel="stylesheet" href="/static/content/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" /> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/scripts/modernizr-2.6.2.js"></script>
+</head>
+<body>
+    <header class="App-header">
+        <a href="{{ url_for('home') }}"><img src="/static/content/logo.png" alt="Logo" class="logo"></a>
+        <nav class="desktop-menu">
+            <ul class="list">
+                <li><a href="{{ url_for('compare') }}" data-content="compare" class="listItem">Compare</a></li>
+                <li><a href="{{ url_for('players') }}" data-content="players" class="listItem">Player</a></li>
+                <li><a href="{{ url_for('team') }}" data-content="team" class="listItem">Team</a></li>
+            </ul>
+        </nav>
+        <div class="mobile-menu">
+            <div class="burger-icon" id="burgerIcon">
+                <div class="bar1"></div>
+                <div class="bar2"></div>
+                <div class="bar3"></div>
+            </div>
+            <div class="menu-items" id="mobileMenuItems">
+                <a href="{{ url_for('compare') }}" data-content="compare" class="listItem">Compare</a>
+                <a href="{{ url_for('players') }}" data-content="players" class="listItem">Player</a>
+                <a href="{{ url_for('team') }}" data-content="team" class="listItem">Team</a>
+            </div>
+        </div>
+    </header>
+    <div class="breadcrumb" id="breadcrumbs">
+        <!-- Breadcrumbs will be dynamically added here if necessary -->
+    </div>
+    <div class="container body-content">
+        {% block content %}
+        <main>
+            <!-- Main content that can be overridden in child templates -->
+        </main>
+        {% endblock %}
+        <hr />
+        <footer>
+            <p>&copy; {{ year }} - FPLExpert</p>
+        </footer>
+    </div>
+    <script src="/static/scripts/jquery-1.10.2.js"></script>
+    <script src="/static/scripts/bootstrap.js"></script>
+    <script src="/static/scripts/respond.js"></script>
+    <script src="/static/scripts/script.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

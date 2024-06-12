@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "task-FPL_site",
+      "appliesTo": "FPL_site.sln",
+      "type": "launch"
+    }
+  ]
+}

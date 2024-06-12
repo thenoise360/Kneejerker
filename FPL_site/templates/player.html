@@ -1,0 +1,84 @@
+{% if not request.is_xhr %}
+{% extends 'layout.html' %}
+{% endif %}
+{% block content %}
+<div class="container">
+    <h1>Player Points This Season</h1>
+    <div id="chartContainer" style="height: 600px; overflow-y: auto;">
+        <canvas id="pointsChart"></canvas>
+    </div>
+    <button id="loadMore">Load More</button>
+</div>
+
+<script>
+    let startIndex = 0;
+    const limit = 30;
+    let chart;  // Declare chart globally
+
+    function loadData() {
+        fetch(`/player_data?start=${startIndex}&limit=${limit}`)
+            .then(response => response.json())
+            .then(newData => {
+                console.log("New data loaded:", newData);
+                if (!chart) {
+                    // Initialize the chart only once
+                    const ctx = document.getElementById('pointsChart').getContext('2d');
+                    const labels = newData.map(item => item[0]);
+                    const points = newData.map(item => item[1]);
+                    chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Total Points',
+                                data: points,
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    barThickness: 20  // Set bar thickness to 20px
+                                }
+                            },
+                            indexAxis: 'y',  // Horizontal bar chart
+                            maintainAspectRatio: false
+                        }
+                    });
+                    adjustCanvasHeight(newData.length);  // Adjust canvas height based on initial data load
+                } else {
+                    // Update chart if already initialized
+                    updateChart(newData);
+                }
+                startIndex += limit;  // Prepare index for next batch
+            })
+            .catch(error => console.error('Error loading data:', error));
+    }
+
+    function updateChart(newData) {
+        const newLabels = newData.map(item => item[0]);
+        const newPoints = newData.map(item => item[1]);
+        chart.data.labels.push(...newLabels);
+        chart.data.datasets.forEach((dataset) => {
+            dataset.data.push(...newPoints);
+        });
+        chart.update();
+        adjustCanvasHeight(newData.length);  // Adjust canvas height each time new data is added
+    }
+
+    function adjustCanvasHeight(numberOfNewBars) {
+        const heightPerBar = 20;  // Adjust height per bar if needed
+        const additionalHeight = numberOfNewBars * heightPerBar;
+        const currentHeight = parseInt(document.getElementById('chartContainer').style.height, 10);
+        document.getElementById('chartContainer').style.height = `${currentHeight + additionalHeight}px`;
+    }
+
+    document.getElementById('loadMore').addEventListener('click', loadData);
+    window.onload = loadData;  // Load initial data
+</script>
+{% endblock %}
