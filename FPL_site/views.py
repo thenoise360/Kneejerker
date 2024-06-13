@@ -12,9 +12,8 @@ def home():
 def players():
     player_data = get_player_points()
     sorted_data = sorted(player_data.items(), key=lambda x: x[1], reverse=True)
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return render_template('player.html', players=sorted_data)
-    return render_template('player.html', players=sorted_data, title='Player Points', year=datetime.now().year)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    return render_template('player.html', is_ajax=is_ajax, players=sorted_data, title='Player Points', year=datetime.now().year)
 
 @app.route('/player_data')
 def player_points():
@@ -27,8 +26,8 @@ def player_points():
 
 @app.route('/team')
 def team():
-    return render_template('team.html', title='Team', year=datetime.now().year)
-
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    return render_template('team.html', is_ajax=is_ajax, title='Team')
 
 @app.route('/compare')
 def compare():

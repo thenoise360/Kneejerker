@@ -33,11 +33,45 @@ def get_player_points():
 def get_comparison_stats(id1, id2):
         dbConnect = connect_db()
         cursor = dbConnect.cursor(dictionary=True)
-        cursor.execute(f"SELECT  first_name, second_name, transfers_in_event, transfers_out_event, chance_of_playing_next_round, chance_of_playing_this_round, ep_this,  form, id, now_cost, points_per_game,  selected_by_percent, team,  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves, bonus, bps, ict_index, expected_goals, expected_assists, expected_goal_involvements FROM 2023_2024_bootstrapstatic.elements where id={id1};")
-        player1 = cursor.fetchone()
-    
-        cursor.execute(f"SELECT  first_name, second_name, transfers_in_event, transfers_out_event, chance_of_playing_next_round, chance_of_playing_this_round, ep_this,  form, id, now_cost, points_per_game,  selected_by_percent, team,  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves, bonus, bps, ict_index, expected_goals, expected_assists, expected_goal_involvements FROM 2023_2024_bootstrapstatic.elements where id={id2};")
-        player2 = cursor.fetchone()
+        cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+        season_player1 = cursor.fetchone()
+
+        cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+        form_player1 = cursor.fetchone()
+        
+        cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+        contribution_player1 = cursor.fetchone()
+
+        cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+        xG_player1 = cursor.fetchone()
+
+        player1 = {
+            'Season': season_player1,
+            'Form': form_player1,
+            'Contribution': contribution_player1,
+            'xG': xG_player1,
+            
+        }
+
+        cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+        season_player2 = cursor.fetchone()
+
+        cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+        form_player2 = cursor.fetchone()
+        
+        cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+        contribution_player2 = cursor.fetchone()
+
+        cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+        xG_player2 = cursor.fetchone()
+
+        player2 = {
+            'Season': season_player2,
+            'Form': form_player2,
+            'Contribution': contribution_player2,
+            'xG': xG_player2,
+            
+        }
 
         dbConnect.close()  # It's important to close the connection
         return [player1, player2]

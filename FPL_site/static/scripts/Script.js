@@ -136,23 +136,47 @@ function comparePlayers() {
     fetch(`/compare_players?id1=${id1}&id2=${id2}`)
         .then(response => response.json())
         .then(data => {
-            displayPlayerData(data[0], 'player1Details');
-            displayPlayerData(data[1], 'player2Details');
+            displayComparisonData(data);
         })
         .catch(error => console.error('Error comparing players:', error));
 }
 
-// Display player data in the comparison result
-function displayPlayerData(player, elementId) {
-    const container = document.getElementById(elementId);
-    if (player) {
-        container.innerHTML = `<h4>${player.first_name} ${player.second_name}</h4>
-            <p>Points per Game: ${player.points_per_game}</p>
-            <p>Goals Scored: ${player.goals_scored}</p>
-            <p>Assists: ${player.assists}</p>`;
-    } else {
-        container.innerHTML = "<p>No data available for this player.</p>";
-    }
+// Display comparison data in the comparison result
+function displayComparisonData(data) {
+    const player1 = data[0];
+    const player2 = data[1];
+
+    const comparisonResult = document.getElementById('comparisonResult');
+    comparisonResult.innerHTML = createComparisonCards(player1, player2);
+}
+
+// Function to create comparison cards
+function createComparisonCards(player1, player2) {
+    const categories = Object.keys(player1);
+
+    return categories.map(category => `
+        <div class="card">
+            <h2>${formatText(category)}</h2>
+            ${createMetricRows(player1[category], player2[category])}
+        </div>
+    `).join('');
+}
+
+// Function to create metric rows
+function createMetricRows(player1Metrics, player2Metrics) {
+    return Object.keys(player1Metrics).map(metric => `
+        <div class="metric-row">
+            <div class="value ${player1Metrics[metric] > player2Metrics[metric] ? 'highlight' : ''}">${player1Metrics[metric]}</div>
+            <div class="metric">${formatText(metric)}</div>
+            <div class="value ${player2Metrics[metric] > player1Metrics[metric] ? 'highlight' : ''}">${player2Metrics[metric]}</div>
+        </div>
+    `).join('');
+}
+
+// Function to format text to sentence case and replace underscores with spaces
+function formatText(text) {
+    const result = text.replace(/_/g, ' ');
+    return result.charAt(0).toUpperCase() + result.slice(1).toLowerCase();
 }
 
 // Initialize general data on initial site load

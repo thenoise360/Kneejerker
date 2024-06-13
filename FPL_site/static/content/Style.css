@@ -19,6 +19,11 @@ html, body {
     padding: 0;
     width: 100%;
     height: 100%;
+    font-family: 'Roboto Light', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif
+}
+
+.body-content{
+    margin: 10px
 }
 
 /* Nav CCS*/
@@ -281,44 +286,112 @@ a {
     font-family: Roboto;
     color: #00FF87;
 }
+
+/* ============================================================================================================= */
+
 /* COMPARE.HTML */
 
+/* Filter styles */
+
+.filters {
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    align-items: center;
+}
+
+/* Custom Dropdown Styles */
 .custom-dropdown {
     position: relative;
-    display: inline-block;
-    width: 200px;
+    display: flex;
+    width: fit-content;
     border: 1px solid #ccc;
     border-radius: 4px;
     cursor: pointer;
+    margin: 5px;
     user-select: none;
 }
 
-.custom-dropdown .selected {
-    padding: 10px;
-    background: #fff;
+    .custom-dropdown .selected {
+        padding: 10px;
+        background: #fff;
+    }
+
+    .custom-dropdown .options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 0 0 4px 4px;
+        display: none;
+        z-index: 1000;
+    }
+
+    .custom-dropdown .option {
+        padding: 10px;
+        cursor: pointer;
+    }
+
+        .custom-dropdown .option:hover {
+            background: #f1f1f1;
+        }
+
+    .custom-dropdown.open .options {
+        display: block;
+    }
+
+/* Comparison Cards */
+.comparison-cards {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.custom-dropdown .options {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: #fff;
+.card {
+    width: auto;
+    margin: 2% 1%;
     border: 1px solid #ccc;
-    border-radius: 0 0 4px 4px;
-    display: none;
-    z-index: 1000;
+    border-radius: 0px;
+    padding: 10px 20px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.custom-dropdown .option {
-    padding: 10px;
-    cursor: pointer;
+    .card h2 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+
+.metric-row {
+    display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
 }
 
-.custom-dropdown .option:hover {
-    background: #f1f1f1;
-}
+    .metric-row .metric {
+        flex: 1;
+        text-align: center;
+        font-size: 1em;
+        font-weight: bold;
+    }
 
-.custom-dropdown.open .options {
-    display: block;
+    .metric-row .value, .metric-row .rank {
+        width: auto;
+        text-align: center;
+    }
+
+.highlight {
+    color: #37003C;
+    font-family: Roboto;
+    font-weight: 500;
+    font-size: 24px
 }
