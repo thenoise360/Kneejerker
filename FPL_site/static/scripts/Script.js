@@ -166,9 +166,9 @@ function createComparisonCards(player1, player2) {
 function createMetricRows(player1Metrics, player2Metrics) {
     return Object.keys(player1Metrics).map(metric => `
         <div class="metric-row">
-            <div class="value ${player1Metrics[metric] > player2Metrics[metric] ? 'highlight' : ''}">${player1Metrics[metric]}</div>
+            <div class="value-left ${player1Metrics[metric] > player2Metrics[metric] ? 'highlight' : ''}">${player1Metrics[metric]}</div>
             <div class="metric">${formatText(metric)}</div>
-            <div class="value ${player2Metrics[metric] > player1Metrics[metric] ? 'highlight' : ''}">${player2Metrics[metric]}</div>
+            <div class="value-right ${player2Metrics[metric] > player1Metrics[metric] ? 'highlight' : ''}">${player2Metrics[metric]}</div>
         </div>
     `).join('');
 }
