@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Toggle mobile menu open/close
     burgerIcon.addEventListener('click', function () {
+        burgerIcon.classList.toggle('open');
         mobileMenuItems.classList.toggle('open');
     });
 
@@ -74,13 +75,12 @@ function initializeGeneralData() {
         .catch(error => console.error('Error loading general data:', error));
 
     fetch('/get_players_by_team')
-            .then(response => response.json())
-            .then(players => {
-                // Do something with the player list if needed globally
-                console.log(players);
-            })
-            .catch(error => console.error('Error loading general data:', error));
-
+        .then(response => response.json())
+        .then(players => {
+            // Do something with the player list if needed globally
+            console.log(players);
+        })
+        .catch(error => console.error('Error loading general data:', error));
 
     fetch('/get_players_by_position')
         .then(response => response.json())
@@ -91,7 +91,7 @@ function initializeGeneralData() {
         .catch(error => console.error('Error loading general data:', error));
 }
 
-/ Initialize the Compare page
+// Initialize the Compare page
 function initializeComparePage() {
     console.log('initializeComparePage function called');
 
@@ -100,34 +100,4 @@ function initializeComparePage() {
         fetch('/get_players').then(response => response.json()),
         fetch('/get_players_by_team').then(response => response.json()),
         fetch('/get_players_by_position').then(response => response.json())
-    ]).then(([allPlayers, playersByTeam, playersByPosition]) => {
-        const playerData = {
-            'All Players': allPlayers,
-            'By Team': playersByTeam,
-            'By Position': playersByPosition
-        };
-        initializePills(playerData);
-
-        // Initialize default dropdowns to "All Players"
-        populateDropdown('player1Dropdown', allPlayers);
-        populateDropdown('player2Dropdown', allPlayers);
-
-        // Make "All Players" pill active by default
-        const allPlayersPill = document.querySelector('.pill[data-structure="All Players"]');
-        if (allPlayersPill) {
-            allPlayersPill.classList.add('active');
-        }
-
-        // Attach event listener to the compare button
-        document.getElementById('compareButton').addEventListener('click', function () {
-            comparePlayers();
-        });
-
-        // Add event listeners for custom dropdowns
-        setupCustomDropdown('player1Dropdown');
-        setupCustomDropdown('player2Dropdown');
-    }).catch(error => console.error('Error loading player data:', error));
-}
-
-// Initialize general data on initial site load
-initializeGeneralData();
+    ]).then(([allPlayers, players

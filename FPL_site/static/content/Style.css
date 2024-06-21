@@ -324,6 +324,23 @@ a {
 }
 
 /* Custom Dropdown Styles */
+/* Add styles for mobile dropdown visibility */
+@media (max-width: 768px) {
+    .custom-dropdown {
+        width: 100%;
+    }
+
+        .custom-dropdown .options {
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+            background-color: white;
+            border: 1px solid #ccc;
+        }
+}
+
+
+
 .custom-dropdown {
     position: relative;
     display: flex;
@@ -370,8 +387,9 @@ a {
 
 .dropdown-content {
     overflow-y: scroll;
-    width: fit-content;
-    height: 460px;
+    width: -webkit-fill-available;
+    max-height: 400px;
+    height: min-content;
     overflow-x: hidden;
 }
 
@@ -395,12 +413,17 @@ a {
     font-size: 16px;
     font-family: 'Roboto';
     font-weight: 300;
-    color: lightgray;
+    color: #3f3f3f;
     appearance: none;
     -moz-appearance: none;
     -webkit-appearance: none;
     border: none
 }
+
+    search-input:focus, input:focus {
+        outline: none;
+    }
+
 /* Comparison Cards */
 .comparison-cards {
     display: flex;
@@ -489,7 +512,7 @@ a {
 .pill-container {
     display: flex;
     flex-direction: row;
-    margin: 10px;
+    margin: 10px 0px;
     width: fit-content;
     justify-content: space-between;
 }
@@ -511,4 +534,22 @@ a {
     .pill.active {
         color: #FFFFFF;
         background-color: #37003C;
+    }
+
+/* Compare Button Styles */
+#compareButton {
+    border: 1px solid #37003C;
+    border-radius: 5px;
+    padding: 10px 20px;
+    color: #FFF;
+    background-color: #37003C;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+}
+
+    #compareButton:hover {
+        background-color: rgba(55, 0, 60, 0.2);
+        color: #37003C;
     }

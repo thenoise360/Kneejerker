@@ -28,6 +28,7 @@ function initializeComparePage() {
         populateDropdown('player1Dropdown', allPlayers);
         populateDropdown('player2Dropdown', allPlayers);
         document.querySelector('.pill[data-structure="All Players"]').classList.add('active');
+        document.querySelector('.pill[data-structure="All Players"]').click();
 
         // Attach event listener to the compare button
         document.getElementById('compareButton').addEventListener('click', function () {
@@ -107,6 +108,7 @@ function setupCustomDropdown(dropdownId) {
     const dropdown = document.getElementById(dropdownId);
     const selected = dropdown.querySelector('.selected');
     const options = dropdown.querySelector('.options');
+    const searchInput = dropdown.querySelector('.search-input');
 
     if (!selected || !options) {
         console.error(`Dropdown elements not found for ${dropdownId}`);
@@ -125,6 +127,14 @@ function setupCustomDropdown(dropdownId) {
             selected.dataset.id = e.target.dataset.id;
             dropdown.classList.remove('open'); // Close the dropdown
         }
+    });
+    searchInput.addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase();
+        const items = dropdown.querySelectorAll('.option');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
     });
 
     document.addEventListener('click', function (e) {
@@ -175,6 +185,7 @@ function setupTwoLayerDropdown(dropdownId, players) {
     });
 }
 
+
 // Function to show the second layer of the dropdown
 function showSecondLayer(dropdownId, category, items) {
     console.log('showSecondLayer function called for', dropdownId, 'and category', category);
@@ -221,6 +232,7 @@ function showSecondLayer(dropdownId, category, items) {
         });
     });
 }
+
 
 // Function for user action - Compare Players
 function comparePlayers() {
