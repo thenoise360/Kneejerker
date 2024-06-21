@@ -19,12 +19,35 @@ html, body {
     padding: 0;
     width: 100%;
     height: 100%;
+    position: absolute;
     font-family: 'Roboto Light', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif
 }
 
 .body-content{
     margin: 10px
 }
+
+/* Scrollbar*/
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+/* Scrollbar track */
+::-webkit-scrollbar-track {
+    background-color: lightgray;
+    border-radius: 3px;
+}
+
+/* Scrollbar handle */
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+    /* Handle on hover */
+    ::-webkit-scrollbar-thumb:hover {
+        background: #37003C;
+    }
 
 /* Nav CCS*/
 
@@ -332,6 +355,7 @@ a {
     .custom-dropdown .option {
         padding: 10px;
         cursor: pointer;
+        width: -webkit-fill-available;
     }
 
         .custom-dropdown .option:hover {
@@ -340,8 +364,43 @@ a {
 
     .custom-dropdown.open .options {
         display: block;
+        width: max-content;
+        max-height: 500px
     }
 
+.dropdown-content {
+    overflow-y: scroll;
+    width: fit-content;
+    height: 460px;
+    overflow-x: hidden;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid lightgray;
+    margin-bottom: 8px;
+    padding: 2px;
+}
+
+.search {
+    margin: 8px;
+    height: fit-content;
+    color: darkgray;
+}
+
+.search-input {
+    width: -webkit-fill-available;
+    padding: 8px;
+    font-size: 16px;
+    font-family: 'Roboto';
+    font-weight: 300;
+    color: lightgray;
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    border: none
+}
 /* Comparison Cards */
 .comparison-cards {
     display: flex;
@@ -426,3 +485,30 @@ a {
     font-weight: 500;
     font-size: 24px
 }
+
+.pill-container {
+    display: flex;
+    flex-direction: row;
+    margin: 10px;
+    width: fit-content;
+    justify-content: space-between;
+}
+
+.pill {
+    border: 1px solid #37003C;
+    border-radius: 20px;
+    padding: 5px 15px;
+    margin: 0px 5px;
+    color: #37003C;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+    .pill:hover {
+        background-color: rgba(55, 0, 60, 0.2);
+    }
+
+    .pill.active {
+        color: #FFFFFF;
+        background-color: #37003C;
+    }

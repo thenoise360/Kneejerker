@@ -4,6 +4,8 @@ import requests
 import json
 
 season = "2023_2024"
+db = f'{season}_bootstrapstatic'
+
 
 # Get us the current gameweek number
 def generateCurrentGameweek():
@@ -13,24 +15,63 @@ def generateCurrentGameweek():
             return todaysData[keys]
 
 def connect_db():
-    return sqlFunction.connectToDB("jackbegley", "Athome19369*", season + "_bootstrapstatic")
+    return sqlFunction.connectToDB("jackbegley", "Athome19369*", db)
 
 def get_players():
     # Assuming you have a database connection utility called connect_db
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    query = "SELECT id, CONCAT(first_name, ' ', second_name) AS full_name FROM 2023_2024_bootstrapstatic.elements;"
+    query = f"SELECT id, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.elements;"
     cursor.execute(query)
     players = cursor.fetchall()
     dbConnect.close()  # Always close the database connection
     return players
 
+def get_players_by_team():
+    # Assuming you have a database connection utility called connect_db
+    dbConnect = connect_db()
+    cursor = dbConnect.cursor(dictionary=True)
+    cursor.execute(f'SELECT t.name AS "Team", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM `{db}`.`elements` p JOIN `{db}`.`teams` t on p.team = t.id;')
+    players = cursor.fetchall()
+    dbConnect.close()  # Always close the database connection
+
+    # Initialize the final dictionary
+    teams_dict = {}
+
+    # Process the data to create the desired structure
+    for entry in players:
+        team_name = entry['Team']
+        full_name = f"{entry['First_name']} {entry['Surname']}"
+        player_id = entry['ID']
+    
+        if team_name not in teams_dict:
+            teams_dict[team_name] = {}
+    
+        teams_dict[team_name][full_name] = player_id
+
+    # Sort the dictionary by player names within each team
+    for team in teams_dict:
+        teams_dict[team] = dict(sorted(teams_dict[team].items()))
+
+    return teams_dict
+
+def get_players_by_position():
+    # Assuming you have a database connection utility called connect_db
+    dbConnect = connect_db()
+    cursor = dbConnect.cursor(dictionary=True)
+    cursor.execute(f'SELECT t.name AS "Team", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM `{db}`.`elements` p JOIN `{db}`.`teams` t on p.team = t.id;')
+    players = cursor.fetchall()
+    dbConnect.close()  # Always close the database connection
+    return players
+
+
 
 def get_player_points():
     points = {}
+    db = f'{season}_bootstrapstatic'
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    cursor.execute(f"SELECT second_name, total_points FROM `{season}_bootstrapstatic`.`elements`")
+    cursor.execute(f"SELECT second_name, total_points FROM `{db}`.`elements`")
     
     for row in cursor:
         secondName = row['second_name']

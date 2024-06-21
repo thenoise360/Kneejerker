@@ -72,111 +72,61 @@ function initializeGeneralData() {
             console.log(players);
         })
         .catch(error => console.error('Error loading general data:', error));
-}
 
-// Initialize the Compare page
-function initializeComparePage() {
-    // Fetch player data
-    fetch('/get_players')
+    fetch('/get_players_by_team')
+            .then(response => response.json())
+            .then(players => {
+                // Do something with the player list if needed globally
+                console.log(players);
+            })
+            .catch(error => console.error('Error loading general data:', error));
+
+
+    fetch('/get_players_by_position')
         .then(response => response.json())
         .then(players => {
-            // Populate both dropdowns with player data
-            populateDropdown('player1Dropdown', players);
-            populateDropdown('player2Dropdown', players);
-
-            // Attach event listener to the compare button
-            document.getElementById('compareButton').addEventListener('click', function () {
-                comparePlayers();
-            });
-
-            // Add event listeners for custom dropdowns
-            setupCustomDropdown('player1Dropdown');
-            setupCustomDropdown('player2Dropdown');
+            // Do something with the player list if needed globally
+            console.log(players);
         })
-        .catch(error => console.error('Error loading player data:', error));
+        .catch(error => console.error('Error loading general data:', error));
 }
 
-// Function to populate custom dropdown
-function populateDropdown(dropdownId, players) {
-    const dropdown = document.getElementById(dropdownId).querySelector('.options');
-    dropdown.innerHTML = players.map(player => `
-        <div class="option" data-id="${player.id}">${player.full_name}</div>
-    `).join('');
-}
+/ Initialize the Compare page
+function initializeComparePage() {
+    console.log('initializeComparePage function called');
 
-// Function to set up custom dropdown behavior
-function setupCustomDropdown(dropdownId) {
-    const dropdown = document.getElementById(dropdownId);
-    const selected = dropdown.querySelector('.selected');
-    const options = dropdown.querySelector('.options');
+    // Fetch and initialize pills
+    Promise.all([
+        fetch('/get_players').then(response => response.json()),
+        fetch('/get_players_by_team').then(response => response.json()),
+        fetch('/get_players_by_position').then(response => response.json())
+    ]).then(([allPlayers, playersByTeam, playersByPosition]) => {
+        const playerData = {
+            'All Players': allPlayers,
+            'By Team': playersByTeam,
+            'By Position': playersByPosition
+        };
+        initializePills(playerData);
 
-    dropdown.addEventListener('click', function () {
-        dropdown.classList.toggle('open');
-    });
+        // Initialize default dropdowns to "All Players"
+        populateDropdown('player1Dropdown', allPlayers);
+        populateDropdown('player2Dropdown', allPlayers);
 
-    options.addEventListener('click', function (e) {
-        if (e.target.classList.contains('option')) {
-            selected.textContent = e.target.textContent;
-            selected.dataset.id = e.target.dataset.id;
-            dropdown.classList.remove('open');
+        // Make "All Players" pill active by default
+        const allPlayersPill = document.querySelector('.pill[data-structure="All Players"]');
+        if (allPlayersPill) {
+            allPlayersPill.classList.add('active');
         }
-    });
 
-    document.addEventListener('click', function (e) {
-        if (!dropdown.contains(e.target)) {
-            dropdown.classList.remove('open');
-        }
-    });
-}
+        // Attach event listener to the compare button
+        document.getElementById('compareButton').addEventListener('click', function () {
+            comparePlayers();
+        });
 
-// Function for user action - Compare Players
-function comparePlayers() {
-    const id1 = document.querySelector('#player1Dropdown .selected').dataset.id;
-    const id2 = document.querySelector('#player2Dropdown .selected').dataset.id;
-    fetch(`/compare_players?id1=${id1}&id2=${id2}`)
-        .then(response => response.json())
-        .then(data => {
-            displayComparisonData(data);
-        })
-        .catch(error => console.error('Error comparing players:', error));
-}
-
-// Display comparison data in the comparison result
-function displayComparisonData(data) {
-    const player1 = data[0];
-    const player2 = data[1];
-
-    const comparisonResult = document.getElementById('comparisonResult');
-    comparisonResult.innerHTML = createComparisonCards(player1, player2);
-}
-
-// Function to create comparison cards
-function createComparisonCards(player1, player2) {
-    const categories = Object.keys(player1);
-
-    return categories.map(category => `
-        <div class="card">
-            <h2>${formatText(category)}</h2>
-            ${createMetricRows(player1[category], player2[category])}
-        </div>
-    `).join('');
-}
-
-// Function to create metric rows
-function createMetricRows(player1Metrics, player2Metrics) {
-    return Object.keys(player1Metrics).map(metric => `
-        <div class="metric-row">
-            <div class="value-left ${player1Metrics[metric] > player2Metrics[metric] ? 'highlight' : ''}">${player1Metrics[metric]}</div>
-            <div class="metric">${formatText(metric)}</div>
-            <div class="value-right ${player2Metrics[metric] > player1Metrics[metric] ? 'highlight' : ''}">${player2Metrics[metric]}</div>
-        </div>
-    `).join('');
-}
-
-// Function to format text to sentence case and replace underscores with spaces
-function formatText(text) {
-    const result = text.replace(/_/g, ' ');
-    return result.charAt(0).toUpperCase() + result.slice(1).toLowerCase();
+        // Add event listeners for custom dropdowns
+        setupCustomDropdown('player1Dropdown');
+        setupCustomDropdown('player2Dropdown');
+    }).catch(error => console.error('Error loading player data:', error));
 }
 
 // Initialize general data on initial site load

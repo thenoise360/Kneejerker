@@ -3,7 +3,7 @@ from flask import render_template, request, jsonify
 from FPL_site import app
 from requests import models
 from . import gameweekSummary
-from models import get_player_points, get_players, get_comparison_stats
+from models import get_player_points, get_players, get_players_by_team, get_players_by_position, get_comparison_stats
 
 @app.route('/')
 def home():
@@ -38,6 +38,16 @@ def compare():
 @app.route('/get_players')
 def get_players_route():
     players = get_players()
+    return jsonify(players)
+
+@app.route('/get_players_by_team')
+def get_players_by_team_route():
+    players = get_players_by_team()
+    return jsonify(players)
+
+@app.route('/get_players_by_position')
+def get_players_by_position_route():
+    players = get_players_by_position()
     return jsonify(players)
 
 @app.route('/compare_players')
