@@ -7,6 +7,41 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+// Utility function to format numbers with commas as thousand separators
+function formatNumberWithCommas(number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+
+// Team to T-shirt image mapping
+const teamTshirts = {
+    1: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', // Arsenal
+    2: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Aston Villa
+    3: '/static/content/Tshirts/vertical-black-red-football-shirt-svgrepo-com.svg', // Bournemouth
+    4: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com', // Brentford
+    5: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', // Brighton
+    6: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Burnley
+    7: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', // Chelsea
+    8: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', // Crystal Palace
+    9: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', // Everton
+    10: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Fulham
+    99: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', // Ipswich Town
+    99: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Leeds
+    99: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', // Leicester
+    11: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Liverpool
+    12: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', // Luton
+    13: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', // Man City
+    14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Man Utd
+    15: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', // Newcastle
+    16: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Nottingham Forest
+    17: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', // Sheffield Utd
+    99: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', // Southampton
+    18: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Spurs
+    19: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // West Ham
+    20: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', // Wolves
+    'Unknown': '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', // Default for unknown teams
+};
+
 // Initialize the Compare page
 function initializeComparePage() {
     console.log('initializeComparePage function called');
@@ -15,8 +50,24 @@ function initializeComparePage() {
     Promise.all([
         fetch('/get_players').then(response => response.json()),
         fetch('/get_players_by_team').then(response => response.json()),
-        fetch('/get_players_by_position').then(response => response.json())
-    ]).then(([allPlayers, playersByTeam, playersByPosition]) => {
+        fetch('/get_players_by_position').then(response => response.json()),
+        fetch('/get_player_index_scores').then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+    ]).then(([allPlayers, playersByTeam, playersByPosition, playerIndexScores]) => {
+        // Merge index scores with player data
+        allPlayers.forEach(player => {
+            const indexScore = playerIndexScores.find(score => score.id === player.id);
+            if (indexScore) {
+                player.player_index_score = indexScore.index;
+            } else {
+                player.player_index_score = 'TBD';
+            }
+        });
+
         const playerData = {
             'All Players': allPlayers,
             'By Team': playersByTeam,
@@ -32,7 +83,7 @@ function initializeComparePage() {
 
         // Attach event listener to the compare button
         document.getElementById('compareButton').addEventListener('click', function () {
-            comparePlayers();
+            comparePlayers(allPlayers);
         });
 
         // Add event listeners for custom dropdowns
@@ -81,7 +132,7 @@ function populateDropdown(dropdownId, players) {
         return;
     }
     dropdown.innerHTML = players.map(player => `
-        <div class="option" data-id="${player.id}">${player.full_name}</div>
+        <div class="option" data-id="${player.id}" data-team="${player.team}">${player.full_name}</div>
     `).join('');
 
     setupCustomDropdown(dropdownId);
@@ -125,9 +176,11 @@ function setupCustomDropdown(dropdownId) {
         if (e.target.classList.contains('option')) {
             selected.textContent = e.target.textContent;
             selected.dataset.id = e.target.dataset.id;
+            selected.dataset.team = e.target.dataset.team;
             dropdown.classList.remove('open'); // Close the dropdown
         }
     });
+
     searchInput.addEventListener('input', function () {
         const searchTerm = this.value.toLowerCase();
         const items = dropdown.querySelectorAll('.option');
@@ -185,7 +238,6 @@ function setupTwoLayerDropdown(dropdownId, players) {
     });
 }
 
-
 // Function to show the second layer of the dropdown
 function showSecondLayer(dropdownId, category, items) {
     console.log('showSecondLayer function called for', dropdownId, 'and category', category);
@@ -203,8 +255,8 @@ function showSecondLayer(dropdownId, category, items) {
         </div>
         <div class="second-layer">
             <div class="category-title">${category}</div>
-            ${Object.entries(items).map(([name, id]) => `
-                <div class="option" data-id="${id}">${name}</div>
+            ${Object.entries(items).map(([name, player]) => `
+                <div class="option" data-id="${player.id}" data-team="${player.team}">${name}</div>
             `).join('')}
         </div>
     `;
@@ -218,6 +270,7 @@ function showSecondLayer(dropdownId, category, items) {
             const selected = dropdown.querySelector('.selected');
             selected.textContent = e.target.textContent;
             selected.dataset.id = e.target.dataset.id;
+            selected.dataset.team = e.target.dataset.team;
             dropdown.classList.remove('open'); // Close the dropdown after selection
         }
     });
@@ -233,57 +286,130 @@ function showSecondLayer(dropdownId, category, items) {
     });
 }
 
-
 // Function for user action - Compare Players
-function comparePlayers() {
-    const id1 = document.querySelector('#player1Dropdown .selected').dataset.id;
-    const id2 = document.querySelector('#player2Dropdown .selected').dataset.id;
+function comparePlayers(allPlayers) {
+    const player1Dropdown = document.querySelector('#player1Dropdown .selected');
+    const player2Dropdown = document.querySelector('#player2Dropdown .selected');
+
+    const id1 = player1Dropdown.dataset.id;
+    const id2 = player2Dropdown.dataset.id;
+
+    const player1 = allPlayers.find(player => player.id == id1);
+    const player2 = allPlayers.find(player => player.id == id2);
+
+    const team1 = player1.team;
+    const team2 = player2.team;
+
     console.log('Comparing players:', id1, id2);
     fetch(`/compare_players?id1=${id1}&id2=${id2}`)
         .then(response => response.json())
         .then(data => {
-            displayComparisonData(data);
+            displayComparisonData(data, player1, player2, team1, team2);
         })
         .catch(error => console.error('Error comparing players:', error));
 }
 
-// Display comparison data in the comparison result
-function displayComparisonData(data) {
-    const player1 = data[0];
-    const player2 = data[1];
-    console.log('Comparison data:', data);
-
+// Function to display comparison data in the comparison result
+function displayComparisonData(data, player1, player2, team1, team2) {
     const comparisonResult = document.getElementById('comparisonResult');
-    comparisonResult.innerHTML = createComparisonCards(player1, player2);
+
+    // Fetch net transfers and then create the player comparison card
+    Promise.all([
+        fetch(`/get_player_net_transfers?id=${player1.id}`).then(response => response.json()),
+        fetch(`/get_player_net_transfers?id=${player2.id}`).then(response => response.json())
+    ]).then(([netTransfers1, netTransfers2]) => {
+        player1.net_transfers = netTransfers1.net_transfers;
+        player2.net_transfers = netTransfers2.net_transfers;
+
+        // Create player comparison card
+        const playerComparisonCard = createPlayerComparisonCard(player1, player2, team1, team2);
+        const comparisonCards = createComparisonCards(data);
+
+        comparisonResult.innerHTML = playerComparisonCard + comparisonCards;
+    }).catch(error => console.error('Error loading net transfers:', error));
 }
 
+// Function to create player comparison card
+function createPlayerComparisonCard(player1, player2, team1, team2) {
+    const tshirt1 = teamTshirts[team1] || teamTshirts['Unknown'];
+    const tshirt2 = teamTshirts[team2] || teamTshirts['Unknown'];
+
+    const player1Score = formatNumberWithCommas(Math.round(player1.player_index_score));
+    const player2Score = formatNumberWithCommas(Math.round(player2.player_index_score));
+
+    const netTransfers1 = formatNumberWithCommas(player1.net_transfers || 0);
+    const netTransfers2 = formatNumberWithCommas(player2.net_transfers || 0);
+
+    return `
+        <div class="comparison-card">
+            <div class="player-info">
+                <div class="player">
+                    <img src="${tshirt1}" alt="${team1} Shirt">
+                    <div class="player-name">${player1.full_name}</div>
+                </div>
+                <span class="spacer"></span>
+                <div class="player">
+                    <img src="${tshirt2}" alt="${team2} Shirt">
+                    <div class="player-name">${player2.full_name}</div>
+                </div>
+            </div>
+            <div class="player-score">
+                <span class="player-score-value ${player1.player_index_score > player2.player_index_score ? 'highlight-player-score' : ''}">${player1Score}</span>
+                <span class="player-score-title">Player Score</span>
+                <span class="player-score-value ${player2.player_index_score > player1.player_index_score ? 'highlight-player-score' : ''}">${player2Score}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="net-transfers">
+                <div class="net-transfer">
+                    <div class="net-transfer-value">${netTransfers1}</div>
+                    <div class="net-transfer-label">Net Transfers</div>
+                </div>
+                <span class="spacer"></span>
+                <div class="net-transfer">
+                    <div class="net-transfer-value">${netTransfers2}</div>
+                    <div class="net-transfer-label">Net Transfers</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
 // Function to create comparison cards
-function createComparisonCards(player1, player2) {
-    const categories = Object.keys(player1);
+function createComparisonCards(data) {
+    const categories = Object.keys(data[0]);
 
     return categories.map(category => `
         <div class="card">
             <h2>${formatText(category)}</h2>
-            ${createMetricRows(player1[category], player2[category])}
+            ${createMetricRows(data[0][category], data[1][category])}
         </div>
     `).join('');
 }
 
 // Function to create metric rows
 function createMetricRows(player1Metrics, player2Metrics) {
+    if (!player1Metrics || !player2Metrics) {
+        console.error('Metrics data missing', player1Metrics, player2Metrics); // Debugging
+        return '';
+    }
+
     return Object.keys(player1Metrics).map(metric => `
         <div class="metric-row">
-            <div class="value-left ${player1Metrics[metric] > player2Metrics[metric] ? 'highlight' : ''}">${player1Metrics[metric]}</div>
+            <div class="value-left ${player1Metrics[metric] > player2Metrics[metric] ? 'highlight' : ''}">${formatNumberWithCommas(Math.round(player1Metrics[metric]) || 0)}</div>
             <div class="metric">${formatText(metric)}</div>
-            <div class="value-right ${player2Metrics[metric] > player1Metrics[metric] ? 'highlight' : ''}">${player2Metrics[metric]}</div>
+            <div class="value-right ${player2Metrics[metric] > player1Metrics[metric] ? 'highlight' : ''}">${formatNumberWithCommas(Math.round(player2Metrics[metric]) || 0)}</div>
         </div>
     `).join('');
 }
 
 // Function to format text to sentence case and replace underscores with spaces
 function formatText(text) {
-    const result = text.replace(/_/g, ' ');
-    return result.charAt(0).toUpperCase() + result.slice(1).toLowerCase();
+    if (typeof text === 'string') {
+        const result = text.replace(/_/g, ' ');
+        return result.charAt(0).toUpperCase() + result.slice(1).toLowerCase();
+    }
+    return text;
 }
 
 // Initialize general data on initial site load

@@ -101,3 +101,4 @@ function initializeComparePage() {
         fetch('/get_players_by_team').then(response => response.json()),
         fetch('/get_players_by_position').then(response => response.json())
     ]).then(([allPlayers, players
+}
