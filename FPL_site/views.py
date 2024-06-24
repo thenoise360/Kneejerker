@@ -1,8 +1,9 @@
 from datetime import datetime
 from flask import render_template, request, jsonify
 from FPL_site import app
+from requests import models
 from . import gameweekSummary
-from models import get_player_points, get_comparison_stats, get_players
+from models import get_player_points, get_players, get_players_by_team, get_players_by_position, get_comparison_stats, get_player_index_scores, get_player_net_transfers
 
 @app.route('/')
 def home():
@@ -12,9 +13,8 @@ def home():
 def players():
     player_data = get_player_points()
     sorted_data = sorted(player_data.items(), key=lambda x: x[1], reverse=True)
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return render_template('player.html', players=sorted_data)
-    return render_template('player.html', players=sorted_data, title='Player Points', year=datetime.now().year)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    return render_template('player.html', is_ajax=is_ajax, players=sorted_data, title='Player Points', year=datetime.now().year)
 
 @app.route('/player_data')
 def player_points():
@@ -27,8 +27,8 @@ def player_points():
 
 @app.route('/team')
 def team():
-    return render_template('team.html', title='Team', year=datetime.now().year)
-
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    return render_template('team.html', is_ajax=is_ajax, title='Team')
 
 @app.route('/compare')
 def compare():
@@ -39,6 +39,33 @@ def compare():
 def get_players_route():
     players = get_players()
     return jsonify(players)
+
+@app.route('/get_players_by_team')
+def get_players_by_team_route():
+    players = get_players_by_team()
+    return jsonify(players)
+
+@app.route('/get_players_by_position')
+def get_players_by_position_route():
+    players = get_players_by_position()
+    return jsonify(players)
+
+@app.route('/get_player_index_scores')
+def get_player_index_scores_route():
+    try:
+        players = get_player_index_scores()
+        return jsonify(players)
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/get_player_net_transfers')
+def get_player_net_transfers_route():
+    try:
+        player_id = request.args.get('id')
+        net_transfers = get_player_net_transfers(player_id)
+        return jsonify(net_transfers)
+    except Exception as e:
+        return str(e), 500
 
 @app.route('/compare_players')
 def compare_players_route():

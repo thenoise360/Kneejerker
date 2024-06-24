@@ -1,6 +1,7 @@
-{% if not request.is_xhr %}
+{% if not is_ajax %}
 {% extends 'layout.html' %}
 {% endif %}
+
 {% block content %}
 <div class="container">
     <h1>Player Points This Season</h1>

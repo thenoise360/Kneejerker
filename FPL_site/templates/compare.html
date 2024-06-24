@@ -6,19 +6,34 @@
 <div class="container text-center">
     <h1>Player Comparison</h1>
     <p>Pick two players:</p>
-    <div class="custom-dropdown" id="player1Dropdown" tabindex="0">
-        <div class="selected">Select Player 1</div>
-        <div class="options"></div>
+    <div class="controls">
+        <div class="pill-container" id="pillContainer"></div>
+        <div class="filters">
+            <div class="custom-dropdown" id="player1Dropdown" tabindex="0">
+                <div class="selected">Player 1</div>
+                <div class="options">
+                    <div class="search-bar">
+                        <span class="material-icons search"> search</span>
+                        <input type="text" placeholder="Search players" class="search-input">
+                    </div>
+                    <div class="dropdown-content"></div>
+                </div>
+            </div>
+            <div class="custom-dropdown" id="player2Dropdown" tabindex="0">
+                <div class="selected">Player 2</div>
+                <div class="options">
+                    <div class="search-bar">
+                        <span class="material-icons search"> search</span>
+                        <input type="text" placeholder="Search players" class="search-input">
+                    </div>
+                    <div class="dropdown-content"></div>
+                </div>
+            </div>
+            <button id="compareButton">Compare</button>
+        </div>
     </div>
-    <div class="custom-dropdown" id="player2Dropdown" tabindex="0">
-        <div class="selected">Select Player 2</div>
-        <div class="options"></div>
-    </div>
-    <button id="compareButton">Compare</button>
-
-    <div id="comparisonResult" class="row mt-4">
-        <div id="player1Details" class="col-md-6"></div>
-        <div id="player2Details" class="col-md-6"></div>
+    <div id="comparisonResult" class="comparison-cards mt-4">
+        <!-- Cards will be dynamically populated here -->
     </div>
 </div>
 {% endblock %}
