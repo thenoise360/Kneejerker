@@ -12,7 +12,6 @@ function formatNumberWithCommas(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-
 // Team to T-shirt image mapping
 const teamTshirts = {
     1: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', // Arsenal
@@ -312,6 +311,7 @@ function comparePlayers(allPlayers) {
 // Function to display comparison data in the comparison result
 function displayComparisonData(data, player1, player2, team1, team2) {
     const comparisonResult = document.getElementById('comparisonResult');
+    const playerSummary = document.getElementById('playerSummary');
 
     // Fetch net transfers and then create the player comparison card
     Promise.all([
@@ -325,7 +325,11 @@ function displayComparisonData(data, player1, player2, team1, team2) {
         const playerComparisonCard = createPlayerComparisonCard(player1, player2, team1, team2);
         const comparisonCards = createComparisonCards(data);
 
-        comparisonResult.innerHTML = playerComparisonCard + comparisonCards;
+        playerSummary.innerHTML = playerComparisonCard
+        comparisonResult.innerHTML = comparisonCards;
+
+        // Hide controls and show edit icon
+        toggleControls(false);
     }).catch(error => console.error('Error loading net transfers:', error));
 }
 
@@ -412,10 +416,32 @@ function formatText(text) {
     return text;
 }
 
+// Function to toggle the visibility of the controls and edit icon
+function toggleControls(showControls) {
+    const controlsContainer = document.querySelector('.controls-container');
+    const editIcon = document.querySelector('.edit-icon');
+    const editButton = document.querySelector('.edit');
+
+    if (showControls) {
+        controlsContainer.style.display = 'block';
+        editIcon.style.display = 'none';
+        editButton.style.display = 'none';
+    } else {
+        controlsContainer.style.display = 'none';
+        editIcon.style.display = 'block';
+        editButton.style.display = 'flex';
+    }
+}
+
 // Initialize general data on initial site load
 function initializeGeneralData() {
     console.log('General data initialized');
 }
+
+// Attach event listener to the edit icon
+document.querySelector('.edit').addEventListener('click', function () {
+    toggleControls(true);
+});
 
 // Call initializeGeneralData
 initializeGeneralData();

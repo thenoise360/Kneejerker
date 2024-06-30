@@ -5,32 +5,43 @@
 {% block content %}
 <div class="container text-center">
     <h1>Player Comparison</h1>
-    <p>Pick two players:</p>
-    <div class="controls">
-        <div class="pill-container" id="pillContainer"></div>
-        <div class="filters">
-            <div class="custom-dropdown" id="player1Dropdown" tabindex="0">
-                <div class="selected">Player 1</div>
-                <div class="options">
-                    <div class="search-bar">
-                        <span class="material-icons search"> search</span>
-                        <input type="text" placeholder="Search players" class="search-input">
-                    </div>
-                    <div class="dropdown-content"></div>
-                </div>
-            </div>
-            <div class="custom-dropdown" id="player2Dropdown" tabindex="0">
-                <div class="selected">Player 2</div>
-                <div class="options">
-                    <div class="search-bar">
-                        <span class="material-icons search"> search</span>
-                        <input type="text" placeholder="Search players" class="search-input">
-                    </div>
-                    <div class="dropdown-content"></div>
-                </div>
-            </div>
-            <button id="compareButton">Compare</button>
+    <div class="sub-line">
+        <p class="pick-players">Pick two players:</p>
+        <div class="edit" id="editIcon" style="display: none;">
+            <p class="edit-text">Edit players</p>
+            <span class="material-icons edit-icon" style="display: none;">edit</span>
         </div>
+    </div>
+    <div class="controls-container">
+        <div class="controls">
+            <div class="pill-container" id="pillContainer"></div>
+            <div class="filters">
+                <div class="custom-dropdown" id="player1Dropdown" tabindex="0">
+                    <div class="selected">Select Player 1</div>
+                    <div class="options">
+                        <div class="search-bar">
+                            <span class="material-icons search"> search</span>
+                            <input type="text" placeholder="Search players" class="search-input">
+                        </div>
+                        <div class="dropdown-content"></div>
+                    </div>
+                </div>
+                <div class="custom-dropdown" id="player2Dropdown" tabindex="0">
+                    <div class="selected">Select Player 2</div>
+                    <div class="options">
+                        <div class="search-bar">
+                            <span class="material-icons search"> search</span>
+                            <input type="text" placeholder="Search players" class="search-input">
+                        </div>
+                        <div class="dropdown-content"></div>
+                    </div>
+                </div>
+                <button id="compareButton">Compare</button>
+            </div>
+        </div>
+    </div>
+    <div id="playerSummary" class="player-summary">
+        <!-- Player summary will populate here-->
     </div>
     <div id="comparisonResult" class="comparison-cards mt-4">
         <!-- Cards will be dynamically populated here -->

@@ -1,0 +1,16 @@
+{
+    "schema": "2022_2023_events",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "elements"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "elements": "2022_2023_events@elements"
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "schema": "2022_2023_elementsummary",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "history_past",
+        "fixtures",
+        "history"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "history_past": "2022_2023_elementsummary@history_past",
+        "fixtures": "2022_2023_elementsummary@fixtures",
+        "history": "2022_2023_elementsummary@history"
+    }
+}

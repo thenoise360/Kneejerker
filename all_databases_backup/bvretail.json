@@ -1,0 +1,18 @@
+{
+    "schema": "bvretail",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "profile",
+        "brand"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "profile": "bvretail@profile",
+        "brand": "bvretail@brand"
+    }
+}

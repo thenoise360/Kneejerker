@@ -1,0 +1,18 @@
+{
+    "schema": "samsung",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "samsung_uk_respondent_weighting",
+        "samsung_uk_weighting_scheme"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "samsung_uk_respondent_weighting": "samsung@samsung_uk_respondent_weighting",
+        "samsung_uk_weighting_scheme": "samsung@samsung_uk_weighting_scheme"
+    }
+}

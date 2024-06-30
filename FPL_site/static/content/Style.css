@@ -314,6 +314,16 @@ a {
 
 /* COMPARE.HTML */
 
+.sub-line{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.pick-players{
+    width: -webkit-fill-available;
+}
+
 /* Filter styles */
 
 .filters {
@@ -326,8 +336,16 @@ a {
 /* Custom Dropdown Styles */
 /* Add styles for mobile dropdown visibility */
 @media (max-width: 768px) {
+
+    .filters {
+        display: flex;
+        flex-direction: column;
+        align-content: center;
+        align-items: baseline;
+    }
+
     .custom-dropdown {
-        width: 100%;
+        width: -webkit-fill-available !important;
     }
 
         .custom-dropdown .options {
@@ -344,7 +362,7 @@ a {
 .custom-dropdown {
     position: relative;
     display: flex;
-    width: fit-content;
+    width: -webkit-fill-available;
     border: 1px solid #ccc;
     border-radius: 4px;
     cursor: pointer;
@@ -354,6 +372,7 @@ a {
 
     .custom-dropdown .selected {
         padding: 10px;
+        width: -webkit-fill-available;
         background: #fff;
     }
 
@@ -429,6 +448,10 @@ a {
 }
 
 /* Comparison Cards */
+.player-summary{
+    width: -webkit-fill-available
+}
+
 .comparison-cards {
     display: flex;
     flex-wrap: wrap;
@@ -456,6 +479,8 @@ a {
         flex-direction: column;
         align-items: center;
     }
+
+   
 
 }
 
@@ -539,6 +564,44 @@ a {
         color: #FFFFFF;
         background-color: #37003C;
     }
+
+.controls-container {
+    transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    position: relative;
+}
+
+
+.edit-text {
+    width: fit-content;
+    text-wrap: nowrap;
+    margin: 0px;
+}
+
+.edit {
+    font-size: 14px !important;
+    color: #fff;
+    background-color: #37003C;
+    border: 1px solid #37003C;
+    padding: 8px 4px;
+    height: fit-content;
+    flex-direction: row;
+    border-radius: 3px;
+    align-items: center;
+    width: fit-content;
+}
+    .edit:hover {
+        background-color: rgba(55, 0, 60, 0.2);
+        color: #37003C;
+    }
+.edit-icon {
+    display: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding-left: 4px;
+    transition: all 0.5s ease;
+    z-index: 1001;
+    color: inherit;
+}
 
 /* Compare Button Styles */
 #compareButton {

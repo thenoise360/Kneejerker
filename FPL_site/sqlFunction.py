@@ -917,40 +917,41 @@ def updateHistoryTable(user, password, database,currentElement):
     cursor.close()
 
 def updateHistoryPastTable(user, password, database,currentElement, n):
-    table = 'history_past'
+    if 'detail' not in currentElement:
+        table = 'history_past'
 
-    dbConnect = connectToDB(user, password, database)
-    cursor = dbConnect.cursor()
+        dbConnect = connectToDB(user, password, database)
+        cursor = dbConnect.cursor()
 
-    for element in currentElement[table]:
-        elementsKept = dict()
-        elementsKept['id'] = n
-        for item in element:
-            if isinstance(element[item], list) == False and isinstance(element[item], dict) == False:
-                valueType = str(type(element[item])).replace("<class","").replace(">","").replace("'","").replace(" ","")
-                if valueType == "NoneType":
-                    value = 0
-                elif valueType == "bool":
-                    if element[item] == True:
-                        value = 1
-                    if element[item] == False:
+        for element in currentElement[table]:
+            elementsKept = dict()
+            elementsKept['id'] = n
+            for item in element:
+                if isinstance(element[item], list) == False and isinstance(element[item], dict) == False:
+                    valueType = str(type(element[item])).replace("<class","").replace(">","").replace("'","").replace(" ","")
+                    if valueType == "NoneType":
                         value = 0
-                else:
-                    value = element[item]
-                    if isinstance(value, str) == True:
-                        valueClean = str(unicodeReplace(str(value))).replace("'","")
-                        value = valueClean
-                elementsKept[item] = value
+                    elif valueType == "bool":
+                        if element[item] == True:
+                            value = 1
+                        if element[item] == False:
+                            value = 0
+                    else:
+                        value = element[item]
+                        if isinstance(value, str) == True:
+                            valueClean = str(unicodeReplace(str(value))).replace("'","")
+                            value = valueClean
+                    elementsKept[item] = value
 
-        columns = ','.join("`"+str(x).replace('/','_')+"`" for x in elementsKept.keys())
-        values = ','.join("'"+str(x).replace('/','_')+"'" for x in elementsKept.values())
+            columns = ','.join("`"+str(x).replace('/','_')+"`" for x in elementsKept.keys())
+            values = ','.join("'"+str(x).replace('/','_')+"'" for x in elementsKept.values())
 
-        sql = "INSERT IGNORE INTO `%s` (%s) VALUES (%s);" % (table, columns, values)
+            sql = "INSERT IGNORE INTO `%s` (%s) VALUES (%s);" % (table, columns, values)
 
-        cursor.execute(sql)
-        dbConnect.commit()
+            cursor.execute(sql)
+            dbConnect.commit()
 
-    cursor.close()
+        cursor.close()
 
 createTables = input("Do you want to create any tables? (Y/N) - ONLY NEEDED AT THE START OF THE SEASON > ")
 if createTables in ["y","Y","Yes","yes"]:

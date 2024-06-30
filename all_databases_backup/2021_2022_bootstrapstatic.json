@@ -1,0 +1,26 @@
+{
+    "schema": "2021_2022_bootstrapstatic",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "elements",
+        "events",
+        "element_stats",
+        "teams",
+        "game_settings",
+        "phases"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "elements": "2021_2022_bootstrapstatic@elements",
+        "events": "2021_2022_bootstrapstatic@events",
+        "element_stats": "2021_2022_bootstrapstatic@element_stats",
+        "teams": "2021_2022_bootstrapstatic@teams",
+        "game_settings": "2021_2022_bootstrapstatic@game_settings",
+        "phases": "2021_2022_bootstrapstatic@phases"
+    }
+}
