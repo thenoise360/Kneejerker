@@ -14,7 +14,7 @@ def players():
     player_data = get_player_points()
     sorted_data = sorted(player_data.items(), key=lambda x: x[1], reverse=True)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('player.html', is_ajax=is_ajax, players=sorted_data, title='Player Points', year=datetime.now().year)
+    return render_template('players.html', is_ajax=is_ajax, players=sorted_data, title='Player Points', year=datetime.now().year)
 
 @app.route('/player_data')
 def player_points():
