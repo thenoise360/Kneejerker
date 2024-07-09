@@ -28,12 +28,16 @@ def get_players():
     return players
 
 def get_players_by_team():
-    # Assuming you have a database connection utility called connect_db
+    # Connect to the database
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    cursor.execute(f'SELECT t.name AS "Team", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM `{db}`.`elements` p JOIN `{db}`.`teams` t on p.team = t.id;')
+
+    # Execute SQL query to get players and their respective teams
+    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.elements p JOIN {db}.teams t on p.team = t.id')
+
+    # Fetch all results from the executed query
     players = cursor.fetchall()
-    dbConnect.close()  # Always close the database connection
+    dbConnect.close()  # Close the database connection
 
     # Initialize the final dictionary
     teams_dict = {}
@@ -43,11 +47,16 @@ def get_players_by_team():
         team_name = entry['Team']
         full_name = f"{entry['First_name']} {entry['Surname']}"
         player_id = entry['ID']
+        team_id = entry['team_id']
     
         if team_name not in teams_dict:
             teams_dict[team_name] = {}
     
-        teams_dict[team_name][full_name] = player_id
+        teams_dict[team_name][full_name] = {
+            'full_name': full_name, 
+            'id': player_id, 
+            'team': team_id
+        }
 
     # Sort the dictionary by player names within each team
     for team in teams_dict:
@@ -56,13 +65,48 @@ def get_players_by_team():
     return teams_dict
 
 def get_players_by_position():
-    # Assuming you have a database connection utility called connect_db
+    # Connect to the database
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    cursor.execute(f'SELECT t.name AS "Team", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM `{db}`.`elements` p JOIN `{db}`.`teams` t on p.team = t.id;')
+
+    positions = {
+        1: 'Goalkeeper',
+        2: 'Defender',
+        3: 'Midfielder',
+        4: 'Forward'
+    }
+
+    # Execute SQL query to get players and their respective teams
+    cursor.execute(f'SELECT p.element_type AS "position_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.elements p')
+
+    # Fetch all results from the executed query
     players = cursor.fetchall()
-    dbConnect.close()  # Always close the database connection
-    return players
+    dbConnect.close()  # Close the database connection
+
+    # Initialize the final dictionary
+    positions_dict = {}
+
+    # Process the data to create the desired structure
+    for entry in players:
+        position_name = positions[entry['position_id']]
+        full_name = f"{entry['First_name']} {entry['Surname']}"
+        player_id = entry['ID']
+        position_id = entry['position_id']
+    
+        if position_name not in positions_dict:
+            positions_dict[position_name] = {}
+    
+        positions_dict[position_name][full_name] = {
+            'full_name': full_name, 
+            'id': player_id, 
+            'position': position_id
+        }
+
+    # Sort the dictionary by player names within each position
+    for position in positions_dict:
+        positions_dict[position] = dict(sorted(positions_dict[position].items()))
+
+    return positions_dict
 
 def get_player_net_transfers(player_id):
     # Assuming you have a database connection utility called connect_db

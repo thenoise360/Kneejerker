@@ -1,0 +1,16 @@
+{
+    "schema": "2021_2022_detailedstats",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "detailedstats"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "detailedstats": "2021_2022_detailedstats@detailedstats"
+    }
+}

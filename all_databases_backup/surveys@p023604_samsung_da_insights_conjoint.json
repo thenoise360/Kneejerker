@@ -1,0 +1,32 @@
+{
+    "options": {
+        "schema": "surveys",
+        "table": "p023604_samsung_da_insights_conjoint",
+        "columns": [
+            "dataId",
+            "responseId",
+            "varCode",
+            "CH1",
+            "CH2",
+            "optValue",
+            "text",
+            "serverTimeStamp"
+        ],
+        "primaryIndex": "dataId",
+        "defaultCharacterSet": "utf8mb4",
+        "fieldsTerminatedBy": "\t",
+        "fieldsEnclosedBy": "",
+        "fieldsOptionallyEnclosed": false,
+        "fieldsEscapedBy": "\\",
+        "linesTerminatedBy": "\n"
+    },
+    "triggers": [],
+    "includesData": true,
+    "includesDdl": true,
+    "extension": "tsv.zst",
+    "chunking": true,
+    "compression": "zstd",
+    "primaryIndex": [
+        "dataId"
+    ]
+}

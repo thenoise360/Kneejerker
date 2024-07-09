@@ -1,0 +1,18 @@
+{
+    "schema": "2023_2024_elementsummary",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "history",
+        "history_past"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "history": "2023_2024_elementsummary@history",
+        "history_past": "2023_2024_elementsummary@history_past"
+    }
+}

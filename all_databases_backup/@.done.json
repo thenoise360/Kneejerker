@@ -1,0 +1,124 @@
+{
+    "end": "2024-06-28 15:26:11",
+    "dataBytes": 32012979,
+    "tableDataBytes": {
+        "2021_2022_bootstrapstatic": {
+            "elements": 182303,
+            "events": 5112,
+            "game_settings": 109,
+            "teams": 1421,
+            "element_stats": 377,
+            "phases": 168
+        },
+        "2021_2022_elementsummary": {
+            "fixtures": 671,
+            "history_past": 164586,
+            "history": 2506990
+        },
+        "2021_2022_detailedstats": {
+            "detailedstats": 78836
+        },
+        "samsung": {
+            "samsung_uk_respondent_weighting": 233682,
+            "samsung_uk_weighting_scheme": 189314
+        },
+        "2021_2022_events": {
+            "elements": 2367751
+        },
+        "2021_2022_fixtures": {
+            "fixtures": 90012
+        },
+        "bvretail": {
+            "brand": 11650560,
+            "profile": 560420
+        },
+        "2022_2023_bootstrapstatic": {
+            "events": 5074,
+            "elements": 239978,
+            "element_stats": 566,
+            "game_settings": 109,
+            "teams": 1430,
+            "phases": 168
+        },
+        "2022_2023_elementsummary": {
+            "history_past": 152906,
+            "fixtures": 671,
+            "history": 2955609
+        },
+        "2022_2023_events": {
+            "elements": 2921349
+        },
+        "2022_2023_fixtures": {
+            "fixtures": 93221
+        },
+        "surveys": {
+            "p023604_samsung_da_insights_conjoint": 0,
+            "dataforsurvey21699_samsung": 47054,
+            "dataforsurvey21699": 71828
+        },
+        "2022_2023_detailedstats": {
+            "detailedstats": 85045
+        },
+        "2023_2024_bootstrapstatic": {
+            "events": 5407,
+            "elements": 261446,
+            "element_stats": 566,
+            "game_settings": 170,
+            "teams": 1434,
+            "phases": 168
+        },
+        "2023_2024_elementsummary": {
+            "history": 3373313,
+            "history_past": 277142
+        },
+        "2023_2024_events": {
+            "elements": 3389112
+        },
+        "2023_2024_fixtures": {
+            "fixtures": 96901
+        }
+    },
+    "chunkFileBytes": {
+        "2021_2022_elementsummary@fixtures.tsv.zst": 671,
+        "2021_2022_bootstrapstatic@elements.tsv.zst": 182303,
+        "bvretail@brand.tsv.zst": 11650560,
+        "2023_2024_bootstrapstatic@elements.tsv.zst": 261446,
+        "2021_2022_elementsummary@history_past.tsv.zst": 164586,
+        "2022_2023_elementsummary@history_past.tsv.zst": 152906,
+        "samsung@samsung_uk_weighting_scheme.tsv.zst": 189314,
+        "2021_2022_bootstrapstatic@events.tsv.zst": 5112,
+        "2022_2023_events@elements.tsv.zst": 2921349,
+        "2021_2022_bootstrapstatic@game_settings.tsv.zst": 109,
+        "2021_2022_bootstrapstatic@teams.tsv.zst": 1421,
+        "2021_2022_bootstrapstatic@element_stats.tsv.zst": 377,
+        "2021_2022_bootstrapstatic@phases.tsv.zst": 168,
+        "2022_2023_bootstrapstatic@element_stats.tsv.zst": 566,
+        "2021_2022_detailedstats@detailedstats.tsv.zst": 78836,
+        "samsung@samsung_uk_respondent_weighting.tsv.zst": 233682,
+        "2021_2022_fixtures@fixtures.tsv.zst": 90012,
+        "2022_2023_bootstrapstatic@elements.tsv.zst": 239978,
+        "2023_2024_elementsummary@history_past.tsv.zst": 277142,
+        "2022_2023_bootstrapstatic@events.tsv.zst": 5074,
+        "2021_2022_elementsummary@history.tsv.zst": 2506990,
+        "2021_2022_events@elements.tsv.zst": 2367751,
+        "2022_2023_bootstrapstatic@teams.tsv.zst": 1430,
+        "2022_2023_bootstrapstatic@game_settings.tsv.zst": 109,
+        "2022_2023_bootstrapstatic@phases.tsv.zst": 168,
+        "surveys@p023604_samsung_da_insights_conjoint.tsv.zst": 0,
+        "bvretail@profile.tsv.zst": 560420,
+        "2022_2023_elementsummary@fixtures.tsv.zst": 671,
+        "2022_2023_fixtures@fixtures.tsv.zst": 93221,
+        "surveys@dataforsurvey21699_samsung.tsv.zst": 47054,
+        "2023_2024_events@elements.tsv.zst": 3389112,
+        "surveys@dataforsurvey21699.tsv.zst": 71828,
+        "2022_2023_elementsummary@history.tsv.zst": 2955609,
+        "2023_2024_bootstrapstatic@element_stats.tsv.zst": 566,
+        "2022_2023_detailedstats@detailedstats.tsv.zst": 85045,
+        "2023_2024_bootstrapstatic@events.tsv.zst": 5407,
+        "2023_2024_bootstrapstatic@game_settings.tsv.zst": 170,
+        "2023_2024_bootstrapstatic@teams.tsv.zst": 1434,
+        "2023_2024_bootstrapstatic@phases.tsv.zst": 168,
+        "2023_2024_fixtures@fixtures.tsv.zst": 96901,
+        "2023_2024_elementsummary@history.tsv.zst": 3373313
+    }
+}

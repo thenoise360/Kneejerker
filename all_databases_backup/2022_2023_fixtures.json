@@ -1,0 +1,16 @@
+{
+    "schema": "2022_2023_fixtures",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "fixtures"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "fixtures": "2022_2023_fixtures@fixtures"
+    }
+}

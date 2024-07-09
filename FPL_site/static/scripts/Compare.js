@@ -1,3 +1,4 @@
+// DOMContentLoaded event handler
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOMContentLoaded event triggered');
 
@@ -12,13 +13,12 @@ function formatNumberWithCommas(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-
 // Team to T-shirt image mapping
 const teamTshirts = {
     1: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', // Arsenal
     2: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Aston Villa
-    3: '/static/content/Tshirts/vertical-black-red-football-shirt-svgrepo-com.svg', // Bournemouth
-    4: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com', // Brentford
+    3: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', // Bournemouth
+    4: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', // Brentford
     5: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', // Brighton
     6: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Burnley
     7: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', // Chelsea
@@ -42,7 +42,7 @@ const teamTshirts = {
     'Unknown': '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', // Default for unknown teams
 };
 
-// Initialize the Compare page
+// Update the initializeComparePage function to be reusable
 function initializeComparePage() {
     console.log('initializeComparePage function called');
 
@@ -75,6 +75,10 @@ function initializeComparePage() {
         };
         initializePills(playerData);
 
+        // Flatten players by team and position for the dropdowns
+        const flattenedPlayersByTeam = flattenPlayersData(playersByTeam);
+        const flattenedPlayersByPosition = flattenPlayersData(playersByPosition);
+
         // Make "All Players" pill active by default and populate the dropdowns
         populateDropdown('player1Dropdown', allPlayers);
         populateDropdown('player2Dropdown', allPlayers);
@@ -86,16 +90,20 @@ function initializeComparePage() {
             comparePlayers(allPlayers);
         });
 
-        // Add event listeners for custom dropdowns
-        setupCustomDropdown('player1Dropdown');
-        setupCustomDropdown('player2Dropdown');
+        // Add event listeners for custom dropdowns with flattened players by team and position
+        setupCustomDropdown('player1Dropdown', flattenedPlayersByTeam);
+        setupCustomDropdown('player2Dropdown', flattenedPlayersByTeam);
     }).catch(error => console.error('Error loading player data:', error));
 }
-
 // Function to initialize pills for different player structures
 function initializePills(playerData) {
     console.log('initializePills function called');
     const pillContainer = document.getElementById('pillContainer');
+    if (!pillContainer) {
+        console.error('Pill container element not found');
+        return;
+    }
+
     pillContainer.innerHTML = Object.keys(playerData).map(key => `
         <div class="pill" data-structure="${key}">${key}</div>
     `).join('');
@@ -111,6 +119,10 @@ function initializePills(playerData) {
             // Add 'active' class to the clicked pill
             this.classList.add('active');
 
+            // Reset selected state and update dropdowns
+            resetDropdown('player1Dropdown');
+            resetDropdown('player2Dropdown');
+
             if (structure === 'All Players') {
                 populateDropdown('player1Dropdown', players);
                 populateDropdown('player2Dropdown', players);
@@ -123,108 +135,179 @@ function initializePills(playerData) {
     });
 }
 
-// Function to populate custom dropdown for "All Players"
+function resetDropdown(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    const selected = dropdown.querySelector('.selected');
+    const options = dropdown.querySelector('.options .dropdown-content');
+
+    // Reset selected text
+    selected.textContent = 'Select an option';
+    selected.dataset.id = '';
+    selected.dataset.team = '';
+
+    // Clear only the options within dropdown-content
+    if (options) {
+        options.innerHTML = '';
+    }
+}
+
+// Add players into the dropdown
 function populateDropdown(dropdownId, players) {
     console.log('populateDropdown function called for', dropdownId);
-    const dropdown = document.getElementById(dropdownId).querySelector('.dropdown-content');
-    if (!dropdown) {
+    const dropdown = document.getElementById(dropdownId);
+    const dropdownContent = dropdown.querySelector('.options .dropdown-content');
+    if (!dropdownContent) {
         console.error(`Dropdown content element not found for ${dropdownId}`);
         return;
     }
-    dropdown.innerHTML = players.map(player => `
+    dropdownContent.innerHTML = players.map(player => `
         <div class="option" data-id="${player.id}" data-team="${player.team}">${player.full_name}</div>
     `).join('');
 
-    setupCustomDropdown(dropdownId);
+    setupCustomDropdown(dropdownId, players);
+}
+
+function flattenPlayersData(playersByEntity) {
+    const flattenedPlayers = [];
+    for (const entity in playersByEntity) {
+        if (playersByEntity.hasOwnProperty(entity)) {
+            for (const player in playersByEntity[entity]) {
+                if (playersByEntity[entity].hasOwnProperty(player)) {
+                    flattenedPlayers.push(playersByEntity[entity][player]);
+                }
+            }
+        }
+    }
+    return flattenedPlayers;
 }
 
 // Function to populate custom dropdown with categories (teams or positions)
 function populateDropdownWithCategories(dropdownId, players) {
     console.log('populateDropdownWithCategories function called for', dropdownId);
-    const dropdown = document.getElementById(dropdownId).querySelector('.dropdown-content');
-    if (!dropdown) {
+    const dropdown = document.getElementById(dropdownId);
+    const dropdownContent = dropdown.querySelector('.options .dropdown-content');
+    if (!dropdownContent) {
         console.error(`Dropdown content element not found for ${dropdownId}`);
         return;
     }
-    dropdown.innerHTML = Object.keys(players).map(category => `
+    dropdownContent.innerHTML = Object.keys(players).map(category => `
         <div class="option" data-category="${category}">${category}</div>
     `).join('');
 
     setupTwoLayerDropdown(dropdownId, players);
 }
 
-// Function to set up custom dropdown behavior
-function setupCustomDropdown(dropdownId) {
+function setupCustomDropdown(dropdownId, players) {
     console.log('setupCustomDropdown function called for', dropdownId);
     const dropdown = document.getElementById(dropdownId);
     const selected = dropdown.querySelector('.selected');
     const options = dropdown.querySelector('.options');
-    const searchInput = dropdown.querySelector('.search-input');
+    let isDropdownOpen = false;
 
     if (!selected || !options) {
         console.error(`Dropdown elements not found for ${dropdownId}`);
         return;
     }
 
-    dropdown.addEventListener('click', function (e) {
-        if (e.target === selected) {
-            dropdown.classList.toggle('open');
-        }
+    selected.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleDropdown(dropdown, !isDropdownOpen);
+        isDropdownOpen = !isDropdownOpen;
     });
 
     options.addEventListener('click', function (e) {
-        if (e.target.classList.contains('option')) {
-            selected.textContent = e.target.textContent;
-            selected.dataset.id = e.target.dataset.id;
-            selected.dataset.team = e.target.dataset.team;
-            dropdown.classList.remove('open'); // Close the dropdown
+        e.stopPropagation();
+        const option = e.target.closest('.option'); // Ensure we get the correct element
+        if (option && option.dataset.id) {
+            selected.textContent = option.textContent;
+            selected.dataset.id = option.dataset.id;
+            selected.dataset.team = option.dataset.team;
+            toggleDropdown(dropdown, false);
+            isDropdownOpen = false;
         }
     });
 
-    searchInput.addEventListener('input', function () {
-        const searchTerm = this.value.toLowerCase();
-        const items = dropdown.querySelectorAll('.option');
-        items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(searchTerm) ? '' : 'none';
+    if (!options.querySelector('.search-container')) {
+        const searchContainer = document.createElement('div');
+        searchContainer.classList.add('search-container');
+        searchContainer.innerHTML = `
+            <span class="material-icons search-icon">search</span>
+            <input type="text" class="search-input" placeholder="Search...">
+        `;
+        options.prepend(searchContainer);
+
+        const searchInput = searchContainer.querySelector('.search-input');
+        searchInput.addEventListener('input', function (e) {
+            e.stopPropagation();
+            const searchTerm = this.value.toLowerCase();
+            const items = options.querySelectorAll('.option');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
         });
-    });
+    }
 
     document.addEventListener('click', function (e) {
-        if (!dropdown.contains(e.target) && !e.target.classList.contains('search-input')) {
-            dropdown.classList.remove('open');
+        if (!dropdown.contains(e.target)) {
+            toggleDropdown(dropdown, false);
+            isDropdownOpen = false;
         }
     });
+
+    // Populate dropdown with player options
+    const dropdownContent = options.querySelector('.dropdown-content');
+    if (!dropdownContent) {
+        const newDropdownContent = document.createElement('div');
+        newDropdownContent.classList.add('dropdown-content');
+        options.appendChild(newDropdownContent);
+    }
+
+    options.querySelector('.dropdown-content').innerHTML = players.map(player => `
+        <div class="option" data-id="${player.id}" data-team="${player.team}">${player.full_name}</div>
+    `).join('');
 }
 
-// Function to set up two-layer dropdown behavior
 function setupTwoLayerDropdown(dropdownId, players) {
     console.log('setupTwoLayerDropdown function called for', dropdownId);
     const dropdown = document.getElementById(dropdownId);
     const selected = dropdown.querySelector('.selected');
     const options = dropdown.querySelector('.options');
     const searchInput = dropdown.querySelector('.search-input');
+    let isDropdownOpen = false;
 
     if (!selected || !options || !searchInput) {
         console.error(`Dropdown elements not found for ${dropdownId}`);
         return;
     }
 
-    dropdown.addEventListener('click', function (e) {
-        if (!e.target.classList.contains('search-input')) {
-            if (e.target.classList.contains('option')) {
-                const category = e.target.dataset.category;
-                console.log('Option clicked:', category);
-                showSecondLayer(dropdownId, category, players[category]);
+    selected.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleDropdown(dropdown, !isDropdownOpen);
+        isDropdownOpen = !isDropdownOpen;
+    });
+
+    options.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (e.target.classList.contains('option')) {
+            const category = e.target.dataset.category;
+            if (category) {
+                console.log('Option selected in', dropdownId, 'category:', category);
+                showCategoryItems(dropdownId, category, players[category]);
             } else {
-                dropdown.classList.toggle('open');
+                selected.textContent = e.target.textContent;
+                selected.dataset.id = e.target.dataset.id;
+                selected.dataset.team = e.target.dataset.team;
+                toggleDropdown(dropdown, false);
+                isDropdownOpen = false;
             }
         }
     });
 
-    searchInput.addEventListener('input', function () {
+    searchInput.addEventListener('input', function (e) {
+        e.stopPropagation();
         const searchTerm = this.value.toLowerCase();
-        const items = dropdown.querySelectorAll('.second-layer .option');
+        const items = options.querySelectorAll('.option');
         items.forEach(item => {
             const text = item.textContent.toLowerCase();
             item.style.display = text.includes(searchTerm) ? '' : 'none';
@@ -232,50 +315,63 @@ function setupTwoLayerDropdown(dropdownId, players) {
     });
 
     document.addEventListener('click', function (e) {
-        if (!dropdown.contains(e.target) && !e.target.classList.contains('search-input')) {
-            dropdown.classList.remove('open');
+        if (!dropdown.contains(e.target)) {
+            toggleDropdown(dropdown, false);
+            isDropdownOpen = false;
         }
     });
 }
 
-// Function to show the second layer of the dropdown
-function showSecondLayer(dropdownId, category, items) {
-    console.log('showSecondLayer function called for', dropdownId, 'and category', category);
+function toggleDropdown(dropdown, open) {
+    if (open) {
+        console.log('Dropdown is closed, adding "open" class');
+        document.querySelectorAll('.custom-dropdown').forEach(dd => dd.classList.remove('open'));
+        dropdown.classList.add('open');
+    } else {
+        console.log('Dropdown is open, removing "open" class');
+        dropdown.classList.remove('open');
+    }
+}
+
+function showCategoryItems(dropdownId, category, items) {
+    console.log('showCategoryItems function called for', dropdownId, 'and category', category);
     const dropdown = document.getElementById(dropdownId);
     const options = dropdown.querySelector('.options');
-    if (!options) {
-        console.error(`Dropdown options element not found for ${dropdownId}`);
-        return;
-    }
-    options.innerHTML = `
-        <div class="back-button">Back</div>
-        <div class="search-bar">
-            <span class="material-icons">search</span>
+    const searchBarHtml = `
+        <div class="search-container">
+            <span class="material-icons search-icon">search</span>
             <input type="text" class="search-input" placeholder="Search...">
         </div>
+    `;
+    const firstLayerHtml = options.innerHTML.replace(searchBarHtml, ''); // Remove the search bar HTML from the first layer
+
+    if (!items) {
+        console.error(`No items found for category ${category}`);
+        return;
+    }
+
+    options.innerHTML = `
+        <div class="back-button-container" style="position: sticky; top: 0; background-color: white; z-index: 1;">
+            <span class="material-icons back-icon">chevron_left</span>
+            <div class="back-button">Back</div>
+            <span>//</span>
+            <span class="category-title">${category}</span>
+        </div>
+        ${searchBarHtml}
         <div class="second-layer">
-            <div class="category-title">${category}</div>
-            ${Object.entries(items).map(([name, player]) => `
-                <div class="option" data-id="${player.id}" data-team="${player.team}">${name}</div>
+            ${Object.entries(items).map(([playerName, playerData]) => `
+                <div class="option" data-id="${playerData.id}" data-team="${playerData.team}">${playerData.full_name}</div>
             `).join('')}
         </div>
     `;
 
-    dropdown.querySelector('.back-button').addEventListener('click', function () {
-        populateDropdownWithCategories(dropdownId, items);  // Repopulate the first layer
+    const backButton = dropdown.querySelector('.back-button');
+    backButton.addEventListener('click', function () {
+        options.innerHTML = `${searchBarHtml}${firstLayerHtml}`;
+        initializeDropdown(dropdownId, { category: items }); // Re-initialize the first layer correctly
     });
 
-    options.addEventListener('click', function (e) {
-        if (e.target.classList.contains('option')) {
-            const selected = dropdown.querySelector('.selected');
-            selected.textContent = e.target.textContent;
-            selected.dataset.id = e.target.dataset.id;
-            selected.dataset.team = e.target.dataset.team;
-            dropdown.classList.remove('open'); // Close the dropdown after selection
-        }
-    });
-
-    const searchInput = options.querySelector('.search-input');
+    const searchInput = dropdown.querySelector('.search-input');
     searchInput.addEventListener('input', function () {
         const searchTerm = this.value.toLowerCase();
         const items = options.querySelectorAll('.second-layer .option');
@@ -284,9 +380,19 @@ function showSecondLayer(dropdownId, category, items) {
             item.style.display = text.includes(searchTerm) ? '' : 'none';
         });
     });
+
+    options.addEventListener('click', function (e) {
+        const option = e.target.closest('.option'); // Ensure we get the correct element
+        if (option && option.dataset.id) {
+            const selected = dropdown.querySelector('.selected');
+            selected.textContent = option.textContent;
+            selected.dataset.id = option.dataset.id;
+            selected.dataset.team = option.dataset.team;
+            toggleDropdown(dropdown, false); // Close the dropdown after selection
+        }
+    });
 }
 
-// Function for user action - Compare Players
 function comparePlayers(allPlayers) {
     const player1Dropdown = document.querySelector('#player1Dropdown .selected');
     const player2Dropdown = document.querySelector('#player2Dropdown .selected');
@@ -294,13 +400,24 @@ function comparePlayers(allPlayers) {
     const id1 = player1Dropdown.dataset.id;
     const id2 = player2Dropdown.dataset.id;
 
+    if (!id1 || !id2) {
+        console.error('Player IDs not found');
+        return;
+    }
+
     const player1 = allPlayers.find(player => player.id == id1);
     const player2 = allPlayers.find(player => player.id == id2);
+
+    if (!player1 || !player2) {
+        console.error('Players not found:', id1, id2);
+        return;
+    }
 
     const team1 = player1.team;
     const team2 = player2.team;
 
-    console.log('Comparing players:', id1, id2);
+    console.log('Comparing players:', player1, player2); // Updated log
+
     fetch(`/compare_players?id1=${id1}&id2=${id2}`)
         .then(response => response.json())
         .then(data => {
@@ -312,6 +429,7 @@ function comparePlayers(allPlayers) {
 // Function to display comparison data in the comparison result
 function displayComparisonData(data, player1, player2, team1, team2) {
     const comparisonResult = document.getElementById('comparisonResult');
+    const playerSummary = document.getElementById('playerSummary');
 
     // Fetch net transfers and then create the player comparison card
     Promise.all([
@@ -325,7 +443,11 @@ function displayComparisonData(data, player1, player2, team1, team2) {
         const playerComparisonCard = createPlayerComparisonCard(player1, player2, team1, team2);
         const comparisonCards = createComparisonCards(data);
 
-        comparisonResult.innerHTML = playerComparisonCard + comparisonCards;
+        playerSummary.innerHTML = playerComparisonCard
+        comparisonResult.innerHTML = comparisonCards;
+
+        // Hide controls and show edit icon
+        toggleControls(false);
     }).catch(error => console.error('Error loading net transfers:', error));
 }
 
@@ -374,7 +496,6 @@ function createPlayerComparisonCard(player1, player2, team1, team2) {
     `;
 }
 
-
 // Function to create comparison cards
 function createComparisonCards(data) {
     const categories = Object.keys(data[0]);
@@ -405,17 +526,166 @@ function createMetricRows(player1Metrics, player2Metrics) {
 
 // Function to format text to sentence case and replace underscores with spaces
 function formatText(text) {
-    if (typeof text === 'string') {
+    if (typeof text === 'string') { // Corrected here
         const result = text.replace(/_/g, ' ');
         return result.charAt(0).toUpperCase() + result.slice(1).toLowerCase();
     }
     return text;
 }
 
+// Function to toggle the visibility of the controls and edit icon
+function toggleControls(showControls) {
+    const controlsContainer = document.querySelector('.controls-container');
+    const editIcon = document.querySelector('.edit-icon');
+    const editButton = document.querySelector('.edit');
+
+    if (showControls) {
+        controlsContainer.style.display = 'block';
+        editIcon.style.display = 'none';
+        editButton.style.display = 'none';
+    } else {
+        controlsContainer.style.display = 'none';
+        editIcon.style.display = 'block';
+        editButton.style.display = 'flex';
+    }
+}
+
+// ===================================================================================
+
+// Initialize dropdowns with new simplified approach
+function initializeDropdown(dropdownId, players) {
+    console.log('initializeDropdown function called for', dropdownId);
+    const dropdown = document.getElementById(dropdownId);
+    const selected = dropdown.querySelector('.selected');
+    const options = dropdown.querySelector('.options');
+    const searchInput = dropdown.querySelector('.search-input');
+    let isDropdownOpen = false;
+
+    if (!selected || !options || !searchInput) {
+        console.error(`Dropdown elements not found for ${dropdownId}`);
+        return;
+    }
+
+    selected.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleDropdown(dropdown, !isDropdownOpen);
+        isDropdownOpen = !isDropdownOpen;
+    });
+
+    options.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (e.target.classList.contains('option')) {
+            const category = e.target.dataset.category;
+            if (category) {
+                console.log('Option selected in', dropdownId, 'category:', category);
+                showCategoryItems(dropdownId, category, players[category]);
+            } else {
+                selected.textContent = e.target.textContent;
+                selected.dataset.id = e.target.dataset.id;
+                selected.dataset.team = e.target.dataset.team;
+                toggleDropdown(dropdown, false);
+                isDropdownOpen = false;
+            }
+        }
+    });
+
+    searchInput.addEventListener('input', function (e) {
+        e.stopPropagation();
+        const searchTerm = this.value.toLowerCase();
+        const items = options.querySelectorAll('.option');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!dropdown.contains(e.target)) {
+            toggleDropdown(dropdown, false);
+            isDropdownOpen = false;
+        }
+    });
+}
+
+// Function to toggle dropdown open/close
+function toggleDropdown(dropdown, open) {
+    if (open) {
+        console.log('Dropdown is closed, adding "open" class');
+        document.querySelectorAll('.custom-dropdown').forEach(dd => dd.classList.remove('open'));
+        dropdown.classList.add('open');
+    } else {
+        console.log('Dropdown is open, removing "open" class');
+        dropdown.classList.remove('open');
+    }
+}
+
+// Function to show category items in dropdown
+function showCategoryItems(dropdownId, category, items) {
+    console.log('showCategoryItems function called for', dropdownId, 'and category', category);
+    const dropdown = document.getElementById(dropdownId);
+    const options = dropdown.querySelector('.options');
+    const searchBarHtml = options.querySelector('.search-container').outerHTML; // Get the existing search bar HTML
+    const firstLayerHtml = options.innerHTML.replace(searchBarHtml, ''); // Remove the search bar HTML from the first layer
+
+    if (!items) {
+        console.error(`No items found for category ${category}`);
+        return;
+    }
+
+    options.innerHTML = `
+        <div class="back-button-container" style="position: sticky; top: 0; background-color: white; z-index: 1;">
+            <span class="material-icons back-icon">chevron_left</span>
+            <div class="back-button">Back</div>
+            <span>//</span>
+            <span class="category-title">${category}</span>
+        </div>
+        ${searchBarHtml}
+        <div class="second-layer">
+            ${Object.entries(items).map(([playerName, playerData]) => `
+                <div class="option" data-id="${playerData.id}" data-team="${playerData.team}">${playerData.full_name}</div>
+            `).join('')}
+        </div>
+    `;
+
+    const backButton = dropdown.querySelector('.back-button');
+    backButton.addEventListener('click', function () {
+        options.innerHTML = `${searchBarHtml}${firstLayerHtml}`;
+        initializeDropdown(dropdownId, { category: items }); // Re-initialize the first layer correctly
+    });
+
+    const searchInput = dropdown.querySelector('.search-input');
+    searchInput.addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase();
+        const items = options.querySelectorAll('.second-layer .option');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    options.addEventListener('click', function (e) {
+        const option = e.target.closest('.option'); // Ensure we get the correct element
+        if (option && option.dataset.id) {
+            const selected = dropdown.querySelector('.selected');
+            selected.textContent = option.textContent;
+            selected.dataset.id = option.dataset.id;
+            selected.dataset.team = option.dataset.team;
+            toggleDropdown(dropdown, false); // Close the dropdown after selection
+        }
+    });
+}
+
 // Initialize general data on initial site load
 function initializeGeneralData() {
     console.log('General data initialized');
 }
+
+// Modify the event listener for the edit button
+document.querySelector('.edit').addEventListener('click', function () {
+    toggleControls(true);
+    initializeComparePage(); // Reinitialize the compare page
+});
+
 
 // Call initializeGeneralData
 initializeGeneralData();

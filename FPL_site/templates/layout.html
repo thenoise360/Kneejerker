@@ -14,9 +14,9 @@
         <a href="{{ url_for('home') }}"><img src="/static/content/logo.png" alt="Logo" class="logo"></a>
         <nav class="desktop-menu">
             <ul class="list">
-                <li><a href="{{ url_for('compare') }}" data-content="compare" class="listItem">Compare</a></li>
-                <li><a href="{{ url_for('players') }}" data-content="players" class="listItem">Player</a></li>
-                <li><a href="{{ url_for('team') }}" data-content="team" class="listItem">Team</a></li>
+                <li><a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a></li>
+                <li><a href="{{ url_for('players') }}" id="players-link" data-content="players" class="listItem">Player</a></li>
+                <li><a href="{{ url_for('team') }}" id="team-link" data-content="team" class="listItem">Team</a></li>
             </ul>
         </nav>
         <div class="mobile-menu">
@@ -26,9 +26,9 @@
                 <div class="bar3"></div>
             </div>
             <div class="menu-items" id="mobileMenuItems">
-                <a href="{{ url_for('compare') }}" data-content="compare" class="listItem">Compare</a>
-                <a href="{{ url_for('players') }}" data-content="players" class="listItem">Player</a>
-                <a href="{{ url_for('team') }}" data-content="team" class="listItem">Team</a>
+                <a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a>
+                <a href="{{ url_for('players') }}" id="players-link" data-content="players" class="listItem">Player</a>
+                <a href="{{ url_for('team') }}" id="team-link" data-content="team" class="listItem">Team</a>
             </div>
         </div>
     </header>
@@ -41,11 +41,10 @@
             <!-- Main content that can be overridden in child templates -->
         </main>
         {% endblock %}
-        <hr />
-        <footer>
-            <p>&copy; {{ year }} - FPLExpert</p>
-        </footer>
     </div>
+    <footer class="footer">
+        <p>&copy; {{ year }} - FPLExpert</p>
+    </footer>
     <script src="/static/scripts/jquery-1.10.2.js"></script>
     <script src="/static/scripts/bootstrap.js"></script>
     <script src="/static/scripts/respond.js"></script>
@@ -53,9 +52,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/scripts/modernizr-2.6.2.js"></script>
-    {% if 'compare' in request.path %}
     <script src="/static/scripts/compare.js"></script>
-    {% endif %}
     {% block scripts %}{% endblock %}
 </body>
 </html>

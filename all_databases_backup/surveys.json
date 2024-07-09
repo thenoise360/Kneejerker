@@ -1,0 +1,20 @@
+{
+    "schema": "surveys",
+    "includesDdl": true,
+    "includesViewsDdl": true,
+    "includesData": true,
+    "tables": [
+        "p023604_samsung_da_insights_conjoint",
+        "dataforsurvey21699_samsung",
+        "dataforsurvey21699"
+    ],
+    "views": [],
+    "events": [],
+    "functions": [],
+    "procedures": [],
+    "basenames": {
+        "p023604_samsung_da_insights_conjoint": "surveys@p023604_samsung_da_insights_conjoint",
+        "dataforsurvey21699_samsung": "surveys@dataforsurvey21699_samsung",
+        "dataforsurvey21699": "surveys@dataforsurvey21699"
+    }
+}
