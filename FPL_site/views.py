@@ -1,11 +1,15 @@
 from datetime import datetime
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, send_from_directory
 from FPL_site import app  # Correct import statement
 from .dataModels import (
     get_player_points, get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers
 )
+
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(app.static_folder, filename)
 
 @app.route('/')
 def home():
@@ -16,7 +20,7 @@ def players():
     player_data = get_player_points()
     sorted_data = sorted(player_data.items(), key=lambda x: x[1], reverse=True)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('players.html', is_ajax=is_ajax, players=sorted_data, title='Player Points', year=datetime.now().year)
+    return render_template('players.html',  is_ajax=is_ajax, title='Team')
 
 @app.route('/player_data')
 def player_points():
