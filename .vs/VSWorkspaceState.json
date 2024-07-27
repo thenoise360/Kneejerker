@@ -1,8 +1,11 @@
 {
   "ExpandedNodes": [
     "",
-    "\\FPL_site"
+    "\\env\\Lib",
+    "\\env\\Lib\\site-packages\\flask",
+    "\\FPL_site",
+    "\\venv\\Lib\\site-packages\\flask"
   ],
-  "SelectedNode": "\\FPL_site\\sqlFunction.py",
+  "SelectedNode": "\\runserver.py",
   "PreviewInSolutionExplorer": false
 }

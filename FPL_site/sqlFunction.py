@@ -6,20 +6,15 @@ import sqlite3
 import pandas
 import json
 import requests
-import os
 import sys
 from datetime import datetime
 import pytz
+import os
 from dotenv import load_dotenv
+from .config import HOST as host, USER as user, PASSWORD as password
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
-
-# UPDATE EACH SEASON:
-
-host = os.getenv('HOST')
-user = os.getenv('USER')
-password = os.getenv('PASSWORD')
 
 season = "2024_2025"
 

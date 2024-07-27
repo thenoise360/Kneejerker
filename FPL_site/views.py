@@ -1,9 +1,11 @@
 from datetime import datetime
 from flask import render_template, request, jsonify
-from FPL_site import app
-from requests import models
-from . import gameweekSummary
-from models import get_player_points, get_players, get_players_by_team, get_players_by_position, get_comparison_stats, get_player_index_scores, get_player_net_transfers
+from FPL_site import app  # Correct import statement
+from .dataModels import (
+    get_player_points, get_players, get_players_by_team, 
+    get_players_by_position, get_comparison_stats, 
+    get_player_index_scores, get_player_net_transfers
+)
 
 @app.route('/')
 def home():
