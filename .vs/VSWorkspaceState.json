@@ -1,16 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\env\\Lib",
-    "\\env\\Lib\\site-packages",
-    "\\env\\Lib\\site-packages\\pandas",
-    "\\env\\Lib\\site-packages\\pandas\\tests",
-    "\\env\\Lib\\site-packages\\pandas\\tests\\indexing",
-    "\\env\\Lib\\site-packages\\pandas\\tests\\indexing\\__pycache__",
-    "\\env\\Lib\\site-packages\\pandas\\tests\\io",
     "\\FPL_site",
     "\\FPL_site\\templates"
   ],
-  "SelectedNode": "\\runserver.py",
+  "SelectedNode": "\\FPL_site\\__init__.py",
   "PreviewInSolutionExplorer": false
 }
