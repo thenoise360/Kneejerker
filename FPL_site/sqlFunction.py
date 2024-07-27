@@ -1,8 +1,5 @@
-﻿# TODO: -- FIX CYCLICAL IMPORT ERRORS
-import gameweekSummary
-import playerData
-import genericMethods
-import Teams
+﻿import genericMethods
+
 # -------------------------------
 import mysql.connector
 import sqlite3 
@@ -13,13 +10,18 @@ import os
 import sys
 from datetime import datetime
 import pytz
+from dotenv import load_dotenv
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
 
 # UPDATE EACH SEASON:
 
-season = "2023_2024"
+host = os.getenv('HOST')
+user = os.getenv('USER')
+password = os.getenv('PASSWORD')
+
+season = "2024_2025"
 
 conversions = {
     'int': 'INT',
@@ -953,141 +955,15 @@ def updateHistoryPastTable(user, password, database,currentElement, n):
 
         cursor.close()
 
-createTables = input("Do you want to create any tables? (Y/N) - ONLY NEEDED AT THE START OF THE SEASON > ")
-if createTables in ["y","Y","Yes","yes"]:
-    for database in databases:
-        createDatabase(user,password, database)
-        rootDatabase = database
-        database = season + "_" + database
-        for table in databases[rootDatabase]:
-            datafeed = requests.get(databases[rootDatabase][table]).json()
-            createAllSuitableTables(user,password,database,table,datafeed)
-            break
+def updateBootstrapStaticDatabase():
+        updateEventsTable(user, password, f'{season}_bootstrapstatic')
+        updateElementsTable(user, password, f'{season}_bootstrapstatic')
+        updateElementStatsTable(user, password, f'{season}_bootstrapstatic')
+        updateGameSettingsTable(user, password, f'{season}_bootstrapstatic')
+        updatePhasesTable(user, password, f'{season}_bootstrapstatic')
+        updateTeamsTable(user, password, f'{season}_bootstrapstatic')
 
-updateTables= input("Do you want to update any tables? (Y/N)> ")
-
-
-if updateTables in ["y","Y","Yes","yes"]:
-    # BOOTSTRAP STATIC =================================================================
-    bootstrapTrue = input("Do you want to update " + season + "_BootstrapStatic (Y/N)> ")
-    if bootstrapTrue == "Y" or bootstrapTrue == "y":
-        db = "" + season + "_BootstrapStatic"
-        updateEventsTable(user, password, db)
-        updateElementsTable(user, password, db)
-        updateElementStatsTable(user, password, db)
-        updateGameSettingsTable(user, password, db)
-        updatePhasesTable(user, password, db)
-        updateTeamsTable(user, password, db)
-
-    #= ELEMENT SUMMARY ================================================================================
-
-    elementSummaryTrue = input("Do you want to update " + season + "_ElementSummary (Y/N)> ")
-    if elementSummaryTrue == "Y" or elementSummaryTrue == "y":
-        db = "" + season + "_ElementSummary"
-
-        mydb = mysql.connector.connect(
-          host="localhost",
-          user=user,
-          password=password,
-          database="" + season + "_bootstrapstatic"
-        )
-
-        mycursor = mydb.cursor()
-
-        mycursor.execute("SELECT id FROM elements")
-
-        myresult = mycursor.fetchall()
-
-        ids = reformattedSortedTupleAsDict(myresult)
-        minimum = min(ids)
-        maximum = max(ids)
-
-        n = minimum
-
-        updateHistoryPast = input("Do you want to update 'history_past' (Only needs updated once a season) (Y/N)> ")
-    
-        JSON = requests.get(f"https://fantasy.premierleague.com/api/element-summary/1/")
-        currentElement = JSON.json()
-        for element in currentElement:
-            if updateHistoryPast == "y" or updateHistoryPast == 'Y' or element != "history_past":
-                deleteTable(user, password, element, db)
-            createAllSuitableTables(user, password, db, element, currentElement)
-
-
-        # while n <= maximum:
-        while n <= maximum:
-            JSON = requests.get(f"https://fantasy.premierleague.com/api/element-summary/{n}/")
-            currentElement = JSON.json()
-            runPercentage(maximum, n, f"Running player {n} of {maximum}", "All databases updated                         ")
-            updateFixturesTable(user, password, db, currentElement)
-            updateHistoryTable(user, password, db, currentElement)
-            if updateHistoryPast == "y" or updateHistoryPast == 'Y':
-                updateHistoryPastTable(user, password, db, currentElement, n)
-            n += 1
-
-        print("")
-
-    # DETAILED STATS ==============================================================================================================
-
-    detailedStatsTrue = input("Do you want to update " + season + "_DetailedStats (Y/N)> ")
-    if detailedStatsTrue == "Y" or detailedStatsTrue == "y":
-        db = "" + season + "_detailedstats"
-        playerList = detailedStats.getAllPlayers()
-        players = detailedStats.getPlayerStats(playerList)
-        table = 'detailedStats'
-        headers = list()
-        headers.append("name")
-        for person in players:
-            header = list(players[person].keys())
-            formattedHeader = [str(x).replace(' ','_').replace('%','') for x in header]
-            headers = headers + list(set(formattedHeader) - set(headers))
-
-        n = 1
-        finalData = dict()
-        for person in players:
-            formattedRecord = dict()
-            formattedData = dict()
-            records = players[person]
-            for record in records:
-                recordName = record.replace(' ','_').replace('%','') 
-                formattedRecord[recordName] = records[record]
-            formattedData['name'] = str(unicodeReplace(person)).replace("'",'')
-            
-            for header in headers:
-                if header in list(formattedRecord.keys()):
-                    formattedData[header] = formattedRecord[header]
-                elif header != "name":
-                    formattedData[header] = 0
-
-            finalData[n] = formattedData
-            n += 1
-
-        deleteTable(user, password, table, db)
-        createDetailedStatsTable(user, password, db, table, finalData)
-
-        dbConnect = connectToDB(user, password, db)
-        length = len(finalData) - 1
-        cursor = dbConnect.cursor() 
-        for element in finalData:
-            currentIndex = list(finalData).index(element)
-            genericMethods.runPercentage(length, currentIndex, f"Running {currentIndex} of {length}", "All player data collected from detailed stats")
-            columns = ','.join("`"+str(x).replace('/','_')+"`" for x in finalData[element].keys())
-            values = ','.join("'"+str(x).replace('/','_')+"'" for x in finalData[element].values())
-            sql = "INSERT INTO `%s` (%s) VALUES (%s);" % (table, columns, values)
-            cursor.execute(sql)
-            dbConnect.commit()
-        cursor.close()
-
-    # EVENTS ==============================================================================================================
-
-    eventsTrue = input("Do you want to update " + season + "_Events (Y/N)> ")
-    if eventsTrue == "Y" or eventsTrue == "y":
-        db = "" + season + "_Events"
-        updateEventsDatabase(user, password, db)
-
-    # FIXTURES ==============================================================================================================
-
-    fixturesTrue = input("Do you want to update " + season + "_Fixtures (Y/N)> ")
-    if fixturesTrue == "Y" or fixturesTrue == "y":
-        db = "" + season + "_Fixtures"
-        updateFixturesDatabase(user, password, db)
+def updateElementSummaryDatabase():
+    updateHistoryPastTable(user, password, f'{season}_elementsummary')
+    updateHistoryTable(user, password, f'{season}_elementsummary')
+    updateFixturesTable(user, password, f'{season}_elementsummary')
