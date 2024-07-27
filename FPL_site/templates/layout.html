@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - FPLExpert</title>
-    <link rel="stylesheet" href="/static/content/style.css">
-    <link rel="icon" href="/static/content/favicon.png" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='content/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='content/favicon.png') }}" type="image/x-icon">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
     <header class="App-header">
-        <a href="{{ url_for('home') }}"><img src="/static/content/logo.png" alt="Logo" class="logo"></a>
+        <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='content/logo.png') }}" alt="Logo" class="logo"></a>
         <nav class="desktop-menu">
             <ul class="list">
                 <li><a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a></li>
@@ -45,14 +45,14 @@
     <footer class="footer">
         <p>&copy; {{ year }} - FPLExpert</p>
     </footer>
-    <script src="/static/scripts/jquery-1.10.2.js"></script>
-    <script src="/static/scripts/bootstrap.js"></script>
-    <script src="/static/scripts/respond.js"></script>
-    <script src="/static/scripts/script.js"></script>
+    <script src="{{ url_for('static', filename='scripts/jquery-1.10.2.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/bootstrap.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/respond.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/script.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/static/scripts/modernizr-2.6.2.js"></script>
-    <script src="/static/scripts/compare.js"></script>
+    <script src="{{ url_for('static', filename='scripts/modernizr-2.6.2.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/compare.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

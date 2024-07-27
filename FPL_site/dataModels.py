@@ -231,7 +231,7 @@ def get_player_points():
     
     for row in cursor:
         secondName = row['second_name']
-        cleanedSurname = str.lower(genericMethods.unicodeReplace(secondName))
+        cleanedSurname = str.lower(unicodeReplace(secondName))
         points[cleanedSurname] = row['total_points']
 
     return points
