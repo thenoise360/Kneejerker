@@ -1,11 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\env\\Lib",
-    "\\env\\Lib\\site-packages\\flask",
     "\\FPL_site",
-    "\\venv\\Lib\\site-packages\\flask"
+    "\\venv"
   ],
-  "SelectedNode": "\\runserver.py",
+  "SelectedNode": "\\venv\\pyvenv.cfg",
   "PreviewInSolutionExplorer": false
 }
