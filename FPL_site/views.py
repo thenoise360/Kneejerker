@@ -1,16 +1,30 @@
 from datetime import datetime
-from flask import render_template, request, jsonify, send_from_directory
-from FPL_site import app  # Ensure this is imported after app is created
+from flask import render_template, request, jsonify, send_from_directory, abort
+from FPL_site import app
 from .dataModels import (
     get_player_points, get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers
 )
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
-    app.logger.info(f"Loading static file: {filename}")
-    return send_from_directory(app.static_folder, filename)
+    logger.info(f"Request for static file: {filename}")
+    try:
+        return send_from_directory(app.static_folder, filename)
+    except FileNotFoundError:
+        logger.error(f"Static file not found: {filename}")
+        abort(404)
+
+@app.route('/')
+def home():
+    logger.info("Request for home page")
+    return render_template('home.html', title='Home Page', year=datetime.now().year)
 
 @app.route('/')
 def home():
@@ -35,7 +49,7 @@ def player_points():
 @app.route('/team')
 def team():
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('team.html', is_ajax=is_ajax, title='Team')
+    return render_template('team.html', is_ajax=is_ajax, title='Players')
 
 @app.route('/compare')
 def compare():
