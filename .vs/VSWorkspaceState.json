@@ -1,8 +1,7 @@
 {
   "ExpandedNodes": [
     "",
-    "\\FPL_site",
-    "\\FPL_site\\templates"
+    "\\FPL_site"
   ],
   "SelectedNode": "\\FPL_site\\views.py",
   "PreviewInSolutionExplorer": false

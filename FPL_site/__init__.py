@@ -15,5 +15,4 @@ logger = logging.getLogger(__name__)
 def log_request_info():
     logger.info(f"Request: {request.method} {request.path}")
 
-# Import views at the end to avoid circular imports
 import FPL_site.views

@@ -1,11 +1,17 @@
 from datetime import datetime
-from flask import render_template, request, jsonify, send_from_directory
+from flask import render_template, request, jsonify, send_from_directory, abort
 from . import app
+import os
+import logging
 from .dataModels import (
     get_player_points, get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers
 )
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
@@ -23,19 +29,17 @@ def home():
     logger.info("Request for home page")
     return render_template('home.html', title='Home Page', year=datetime.now().year)
 
-@app.route('/')
-def home():
-    return render_template('home.html', title='Home Page', year=datetime.now().year)
-
 @app.route('/players')
 def players():
+    logger.info("Request for players page")
     player_data = get_player_points()
     sorted_data = sorted(player_data.items(), key=lambda x: x[1], reverse=True)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('players.html', is_ajax=is_ajax, title='Players')
+    return render_template('players.html', is_ajax=is_ajax, title='Team')
 
 @app.route('/player_data')
 def player_points():
+    logger.info("Request for player data")
     start = request.args.get('start', default=0, type=int)
     limit = request.args.get('limit', default=30, type=int)
     data = get_player_points()
@@ -45,48 +49,58 @@ def player_points():
 
 @app.route('/team')
 def team():
+    logger.info("Request for team page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('team.html', is_ajax=is_ajax, title='Players')
+    return render_template('team.html', is_ajax=is_ajax, title='Team')
 
 @app.route('/compare')
 def compare():
+    logger.info("Request for compare page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     return render_template('compare.html', is_ajax=is_ajax, title='Player Comparison')
 
 @app.route('/get_players')
 def get_players_route():
+    logger.info("Request for get_players")
     players = get_players()
     return jsonify(players)
 
 @app.route('/get_players_by_team')
 def get_players_by_team_route():
+    logger.info("Request for get_players_by_team")
     players = get_players_by_team()
     return jsonify(players)
 
 @app.route('/get_players_by_position')
 def get_players_by_position_route():
+    logger.info("Request for get_players_by_position")
     players = get_players_by_position()
     return jsonify(players)
 
 @app.route('/get_player_index_scores')
 def get_player_index_scores_route():
+    logger.info("Request for get_player_index_scores")
     try:
         players = get_player_index_scores()
         return jsonify(players)
     except Exception as e:
+        logger.error(f"Error: {str(e)}")
         return str(e), 500
 
 @app.route('/get_player_net_transfers')
 def get_player_net_transfers_route():
+    logger.info("Request for get_player_net_transfers")
     try:
         player_id = request.args.get('id')
         net_transfers = get_player_net_transfers(player_id)
         return jsonify(net_transfers)
     except Exception as e:
+        logger.error(f"Error: {str(e)}")
         return str(e), 500
 
 @app.route('/compare_players')
 def compare_players_route():
+    logger.info("Request for compare_players")
     id1 = request.args.get('id1', type=int)
     id2 = request.args.get('id2', type=int)
     players_data = get_comparison_stats(id1, id2)
