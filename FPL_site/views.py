@@ -4,7 +4,7 @@ from . import app
 import os
 import logging
 from .dataModels import (
-    get_player_points, get_players, get_players_by_team, 
+    get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers
 )
