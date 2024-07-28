@@ -221,21 +221,6 @@ def get_player_index_scores():
     dbConnect.close()  # Always close the database connection
     return players
 
-
-def get_player_points():
-    points = {}
-    db = f'{season}_bootstrapstatic'
-    dbConnect = connect_db()
-    cursor = dbConnect.cursor(dictionary=True)
-    cursor.execute(f"SELECT second_name, total_points FROM `{db}`.`elements`")
-    
-    for row in cursor:
-        secondName = row['second_name']
-        cleanedSurname = str.lower(unicodeReplace(secondName))
-        points[cleanedSurname] = row['total_points']
-
-    return points
-
 def get_comparison_stats(id1, id2):
     gameweek = generateCurrentGameweek()
     dbConnect = connect_db()

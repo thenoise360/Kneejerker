@@ -32,20 +32,8 @@ def home():
 @app.route('/players')
 def players():
     logger.info("Request for players page")
-    player_data = get_player_points()
-    sorted_data = sorted(player_data.items(), key=lambda x: x[1], reverse=True)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     return render_template('players.html', is_ajax=is_ajax, title='Team')
-
-@app.route('/player_data')
-def player_points():
-    logger.info("Request for player data")
-    start = request.args.get('start', default=0, type=int)
-    limit = request.args.get('limit', default=30, type=int)
-    data = get_player_points()
-    sorted_data = sorted(data.items(), key=lambda x: x[1], reverse=True)
-    segment = sorted_data[start:start + limit]
-    return jsonify(segment)
 
 @app.route('/team')
 def team():
