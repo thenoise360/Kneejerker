@@ -1,24 +1,21 @@
 from datetime import datetime
-from flask import render_template, request, jsonify, send_from_directory, abort
-from FPL_site import app
+from flask import render_template, request, jsonify, send_from_directory
+from . import app
 from .dataModels import (
     get_player_points, get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers
 )
-import logging
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
-    logger.info(f"Request for static file: {filename}")
+    app.logger.info(f"Request for static file: {filename}")
     try:
+        full_path = os.path.join(app.static_folder, filename)
+        app.logger.info(f"Full path resolved to: {full_path}")
         return send_from_directory(app.static_folder, filename)
     except FileNotFoundError:
-        logger.error(f"Static file not found: {filename}")
+        app.logger.error(f"Static file not found: {filename}")
         abort(404)
 
 @app.route('/')
