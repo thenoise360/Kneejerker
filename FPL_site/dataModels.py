@@ -8,12 +8,10 @@ import json
 host = current_config.HOST
 user = current_config.USER
 password = current_config.PASSWORD
+db = current_config.DATABASE
 
 season = "2023_2024"
-db = f'{season}_bootstrapstatic'
-
-# Debugging output to verify environment variables are loaded
-print(f"Host: {host}, User: {user}, Password: {password}")
+season_start = 2023
 
 def connect_db():
     try:
@@ -40,7 +38,7 @@ def get_players():
     # Assuming you have a database connection utility called connect_db
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.elements;"
+    query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements;"
     cursor.execute(query)
     players = cursor.fetchall()
     dbConnect.close()  # Always close the database connection
@@ -52,7 +50,7 @@ def get_players_by_team():
     cursor = dbConnect.cursor(dictionary=True)
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.elements p JOIN {db}.teams t on p.team = t.id')
+    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t on p.team = t.id')
 
     # Fetch all results from the executed query
     players = cursor.fetchall()
@@ -96,7 +94,7 @@ def get_players_by_position():
     }
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT p.element_type AS "position_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.elements p')
+    cursor.execute(f'SELECT p.element_type AS "position_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p')
 
     # Fetch all results from the executed query
     players = cursor.fetchall()
@@ -131,7 +129,7 @@ def get_player_net_transfers(player_id):
     # Assuming you have a database connection utility called connect_db
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    query = f'SELECT id, (transfers_in_event - transfers_out_event) as net_transfers FROM {db}.elements WHERE id = %s;'
+    query = f'SELECT id, (transfers_in_event - transfers_out_event) as net_transfers FROM {db}.bootstrapstatic_elements WHERE id = %s;'
     cursor.execute(query, (player_id,))
     net_transfers = cursor.fetchone()
     dbConnect.close()  # Always close the database connection
@@ -141,13 +139,13 @@ def get_player_net_transfers(player_id):
 def get_player_index_scores():
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    
-    db = f'{season}_bootstrapstatic'
+
+    #TODO: Add events DB and Fixtures DB
     events_db = f'{season}_events'
     fixtures_db = f'{season}_fixtures'
 
     query = f'''
-    WITH PlayerTeam AS (SELECT id, team_code FROM {db}.elements), 
+    WITH PlayerTeam AS (SELECT id, team_code FROM {db}.bootstrapstatic_elements), 
     FixtureDifficulties AS (
         SELECT event, team_h, team_a, team_h_difficulty, team_a_difficulty, team_h AS team_code, team_h_difficulty AS team_difficulty 
         FROM {fixtures_db}.fixtures 
@@ -158,7 +156,7 @@ def get_player_index_scores():
     TeamIctIndexSum AS (
         SELECT bs.team_code, SUM(e.ict_index) AS team_ict_index_sum 
         FROM {events_db}.elements e 
-        JOIN {db}.elements bs ON e.id = bs.id 
+        JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
         WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) 
         GROUP BY bs.team_code
     ), 
@@ -181,7 +179,7 @@ def get_player_index_scores():
             COALESCE(SUM(fd.team_difficulty), 0) AS total_team_difficulty, 
             (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100 AS player_contribution_percentage 
         FROM {events_db}.elements e 
-        JOIN {db}.elements bs ON e.id = bs.id 
+        JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
         LEFT JOIN FixtureDifficulties fd ON e.Gameweek = fd.event AND bs.team_code = fd.team_code 
         JOIN TeamIctIndexSum tis ON bs.team_code = tis.team_code 
         JOIN PlayerIctIndexSum pis ON e.id = pis.id 
@@ -225,16 +223,16 @@ def get_comparison_stats(id1, id2):
     gameweek = generateCurrentGameweek()
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
     season_player1 = cursor.fetchone()
 
-    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
     form_player1 = cursor.fetchone()
         
-    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
     contribution_player1 = cursor.fetchone()
 
-    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM 2023_2024_bootstrapstatic.elements where id={id1};")
+    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
     xG_player1 = cursor.fetchone()
 
     player1 = {
@@ -245,16 +243,16 @@ def get_comparison_stats(id1, id2):
             
     }
 
-    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
     season_player2 = cursor.fetchone()
 
-    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
     form_player2 = cursor.fetchone()
         
-    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
     contribution_player2 = cursor.fetchone()
 
-    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM 2023_2024_bootstrapstatic.elements where id={id2};")
+    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
     xG_player2 = cursor.fetchone()
 
     player2 = {

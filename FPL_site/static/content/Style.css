@@ -573,7 +573,7 @@ a {
         background-clip: #ffffff;
     }
 
-    .container {
+    .content-container {
         max-width: -webkit-fill-available;
     }
 

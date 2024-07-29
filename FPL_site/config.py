@@ -11,6 +11,7 @@ class DevelopmentConfig(Config):
     HOST = os.getenv('HOST')
     USER = os.getenv('USER')
     PASSWORD = os.getenv('PASSWORD')
+    DATABASE = os.getenv('DATABASE')
 
 class ProductionConfig(Config):
     """Production configuration."""
