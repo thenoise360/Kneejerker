@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ title }} - FPLExpert</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='content/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='content/Style.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='content/favicon.png') }}" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='content/favicon.svg') }}" type="image/x-icon">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
     <header class="App-header">
-        <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='content/logo.png') }}" alt="Logo" class="logo"></a>
+        <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='content/logo.svg') }}" alt="Logo" class="logo"></a>
         <nav class="desktop-menu">
             <ul class="list">
                 <li><a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a></li>

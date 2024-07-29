@@ -1,26 +1,36 @@
+:root {
+    --primary-color: #ADD8E6;
+    --secondary-color: #800020;
+    --tertiary-color: #F5F5DC;
+    }
+
 *, *:before, *:after {
     box-sizing: border-box;
 }
 
-.text-center{
+.text-center-height{
     height: -webkit-fill-available;
 }
 
 .footer {
-    color: #fff;
-    background-color: #37003C;
-    padding: 2px;
+    color: var(--tertiary-color);
+    background-color: var(--secondary-color);
+    padding: 10px;
     width: -webkit-fill-available;
 }
 
 @media screen and (max-width: 950px) {
     .footer {
-        color: #fff;
-        background-color: #37003C;
+        color: var(--tertiary-color);
+        background-color: var(--secondary-color);
         padding: 2px;
         width: -webkit-fill-available;
-        height: 90px;
+        height: fit-content;
     }
+}
+
+p {
+    margin: 0px;
 }
 
 html, body {
@@ -31,6 +41,7 @@ html, body {
     position: absolute;
     font-family: 'Roboto Light', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     background-color: #f7f7f7;
+    overflow-x: hidden;
 }
 
 .body-content {
@@ -57,7 +68,7 @@ html, body {
 
     /* Handle on hover */
     ::-webkit-scrollbar-thumb:hover {
-        background: #37003C;
+        background: var(--secondary-color);
     }
 
 /* Nav CCS*/
@@ -73,7 +84,7 @@ html, body {
     width: 100%;
     flex-direction: row;
     flex-wrap: nowrap;
-    background-color: #00FF87;
+    background-color: var(--primary-color);
     align-content: space-around;
 }
 
@@ -279,7 +290,7 @@ a {
         width: 100%;
         flex-direction: row;
         flex-wrap: nowrap;
-        background-color: #00FF87;
+        background-color: var(--primary-color);
         align-content: space-around;
         justify-content: space-between;
         padding-right: 40px
@@ -288,12 +299,14 @@ a {
 
 /* Breadcrumb CSS*/
 
+
 .breadcrumb {
     padding: 16px 16px;
+    border-radius: 0px !important;
     font-size: 1em;
     font-family: roboto;
-    color: #fff;
-    background-color: #37003C;
+    color: var(--tertiary-color);
+    background-color: var(--secondary-color);
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -318,7 +331,7 @@ a {
 /* Team page CSS */
 .Team-title {
     font-family: Roboto;
-    color: #00FF87;
+    color: var(--primary-color);
 }
 
 /* ============================================================================================================= */
@@ -547,6 +560,10 @@ a {
         background-clip: #ffffff;
     }
 
+    .container {
+        max-width: -webkit-fill-available;
+    }
+
    .card {
         width: auto;
         margin: 2% 1%;
@@ -612,7 +629,7 @@ a {
     }
 
 .highlight {
-    color: #37003C;
+    color: var(--secondary-color);
     font-family: Roboto;
     font-weight: 500;
     font-size: 24px
@@ -627,11 +644,11 @@ a {
 }
 
 .pill {
-    border: 1px solid #37003C;
+    border: 1px solid var(--secondary-color);
     border-radius: 20px;
     padding: 5px 15px;
     margin: 0px 5px;
-    color: #37003C;
+    color: var(--secondary-color);
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -642,7 +659,7 @@ a {
 
     .pill.active {
         color: #FFFFFF;
-        background-color: #37003C;
+        background-color: var(--secondary-color);
     }
 
 .controls-container {
@@ -660,8 +677,8 @@ a {
 .edit {
     font-size: 14px !important;
     color: #fff;
-    background-color: #37003C;
-    border: 1px solid #37003C;
+    background-color: var(--secondary-color);
+    border: 1px solid var(--secondary-color);
     padding: 8px 4px;
     height: fit-content;
     flex-direction: row;
@@ -671,7 +688,7 @@ a {
 }
     .edit:hover {
         background-color: rgba(55, 0, 60, 0.2);
-        color: #37003C;
+        color: var(--secondary-color);
     }
 .edit-icon {
     display: none;
@@ -685,11 +702,11 @@ a {
 
 /* Compare Button Styles */
 #compareButton {
-    border: 1px solid #37003C;
+    border: 1px solid var(--secondary-color);
     border-radius: 5px;
     padding: 10px 20px;
     color: #FFF;
-    background-color: #37003C;
+    background-color: var(--secondary-color);
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease;
     font-family: 'Roboto', sans-serif;
@@ -698,7 +715,7 @@ a {
 
     #compareButton:hover {
         background-color: rgba(55, 0, 60, 0.2);
-        color: #37003C;
+        color: var(--secondary-color);
     }
 
 
@@ -735,7 +752,7 @@ a {
 
 .player-name {
     font-size: 14px;
-    color: #37003C;
+    color: var(--secondary-color);
     margin-top: 10px;
     text-align: center;
 }
@@ -757,12 +774,12 @@ a {
     display: flex;
     font-size: 20px;
     font-weight: 300;
-    color: #37003C !important;
+    color: var(--secondary-color) !important;
     align-items: center;
 }
 
 .highlight-player-score {
-    color: #37003C !important;
+    color: var(--secondary-color) !important;
     font-family: Roboto;
     font-weight: 500;
     font-size: 48px !important;
@@ -780,7 +797,7 @@ a {
 
 .section-title {
     font-size: 24px;
-    color: #37003C;
+    color: var(--secondary-color);
     margin: 20px 0;
 }
 
@@ -811,7 +828,7 @@ a {
 
 .net-transfer-label {
     font-size: 14px;
-    color: #37003C;
+    color: var(--secondary-color);
 }
 
 .net-transfer-rank {
