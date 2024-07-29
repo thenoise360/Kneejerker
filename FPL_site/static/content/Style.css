@@ -1,8 +1,19 @@
 :root {
-    --primary-color: #ADD8E6;
-    --secondary-color: #800020;
-    --tertiary-color: #F5F5DC;
-    }
+    --primary-color: #BB2649;
+    --secondary-color: #17A398;
+    --tertiary-color: #B03060;
+    --white: #FFF;
+    --black-10: #E5E5E5;
+    --black-20: #CCCCCC;
+    --black-30: #B3B3B3;
+    --black-40: #999999;
+    --black-50: #808080;
+    --black-60: #666666;
+    --black-70: #4D4D4D;
+    --black-80: #333333;
+    --black-90: #1A1A1A;
+    --black-100: #000;
+}
 
 *, *:before, *:after {
     box-sizing: border-box;
@@ -13,7 +24,7 @@
 }
 
 .footer {
-    color: var(--tertiary-color);
+    color: var(--white);
     background-color: var(--secondary-color);
     padding: 10px;
     width: -webkit-fill-available;
@@ -21,7 +32,7 @@
 
 @media screen and (max-width: 950px) {
     .footer {
-        color: var(--tertiary-color);
+        color: var(--white);
         background-color: var(--secondary-color);
         padding: 2px;
         width: -webkit-fill-available;
@@ -112,6 +123,7 @@ a.listItem {
     justify-content: center;
     align-content: center;
     flex-direction: row;
+    color: var(--white);
     font-family: Roboto;
     font-weight: 400;
     font-size: 1.5em;
@@ -182,7 +194,7 @@ a {
 .bar3 {
     width: 100%;
     height: 4px;
-    background-color: #333;
+    background-color: var(--white);
 }
 
 .menu-items {
@@ -281,6 +293,7 @@ a {
         align-content: center;
         align-items: center;
         flex-wrap: wrap;
+        color: var(--white)
         min-width: -webkit-fill-available;
     }
 
@@ -305,8 +318,8 @@ a {
     border-radius: 0px !important;
     font-size: 1em;
     font-family: roboto;
-    color: var(--tertiary-color);
-    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    background-color: var(--black-20);
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
