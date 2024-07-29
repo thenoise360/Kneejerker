@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 import mysql.connector
 from mysql.connector import Error
 from FPL_site.config import current_config
@@ -139,6 +140,7 @@ def get_player_net_transfers(player_id):
 def get_player_index_scores():
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
+    players = []
 
     #TODO: Add events DB and Fixtures DB
     #events_db = f'{season}_events'
