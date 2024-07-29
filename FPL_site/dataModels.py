@@ -140,85 +140,80 @@ def get_player_net_transfers(player_id):
 def get_player_index_scores():
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    players = [None]
 
-    #TODO: Add events DB and Fixtures DB to new db strucutre
-    #events_db = f'{season}_events'
-    #fixtures_db = f'{season}_fixtures'
-
-    #query = f'''
-    #WITH PlayerTeam AS (SELECT id, team_code FROM {db}.bootstrapstatic_elements), 
-    #FixtureDifficulties AS (
-    #    SELECT event, team_h, team_a, team_h_difficulty, team_a_difficulty, team_h AS team_code, team_h_difficulty AS team_difficulty 
-    #    FROM {fixtures_db}.fixtures 
-    #    UNION ALL 
-    #    SELECT event, team_h, team_a, team_h_difficulty, team_a_difficulty, team_a AS team_code, team_a_difficulty AS team_difficulty 
-    #    FROM {fixtures_db}.fixtures
-    #), 
-    #TeamIctIndexSum AS (
-    #    SELECT bs.team_code, SUM(e.ict_index) AS team_ict_index_sum 
-    #    FROM {events_db}.elements e 
-    #    JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
-    #    WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) 
-    #    GROUP BY bs.team_code
-    #), 
-    #PlayerIctIndexSum AS (
-    #    SELECT e.id, SUM(e.ict_index) AS player_ict_index_sum 
-    #    FROM {events_db}.elements e 
-    #    WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) 
-    #    GROUP BY e.id
-    #), 
-    #RawIndexes AS (
-    #    SELECT e.id, bs.team_code, 
-    #        ((e.goals_scored + e.assists - e.expected_goal_involvements + 1) * 
-    #        (SUM(e.expected_goals_conceded - e.goals_conceded + 1)) * 
-    #        SUM(e.total_points) * 
-    #        COALESCE(SUM(fd.team_difficulty), 0) * 
-    #        (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100) AS debug_score, 
-    #        ((e.goals_scored + e.assists) - e.expected_goal_involvements + 1) AS sum_expected_involvement_achieved_during_period, 
-    #        SUM(e.expected_goals_conceded - e.goals_conceded + 1) AS sum_expected_goals_conceded_achieved_during_period, 
-    #        SUM(e.total_points) AS total_points, 
-    #        COALESCE(SUM(fd.team_difficulty), 0) AS total_team_difficulty, 
-    #        (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100 AS player_contribution_percentage 
-    #    FROM {events_db}.elements e 
-    #    JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
-    #    LEFT JOIN FixtureDifficulties fd ON e.Gameweek = fd.event AND bs.team_code = fd.team_code 
-    #    JOIN TeamIctIndexSum tis ON bs.team_code = tis.team_code 
-    #    JOIN PlayerIctIndexSum pis ON e.id = pis.id 
-    #    WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) 
-    #    GROUP BY e.id, bs.team_code, pis.player_ict_index_sum, tis.team_ict_index_sum 
-    #    HAVING player_contribution_percentage IS NOT NULL
-    #), 
-    #MinMaxScore AS (
-    #    SELECT MIN(debug_score) AS min_debug_score, MAX(debug_score) AS max_debug_score 
-    #    FROM RawIndexes
-    #) 
-    #SELECT ri.id, 
-    #    CASE WHEN mm.max_debug_score = mm.min_debug_score THEN 0 
-    #    ELSE ((ri.debug_score - mm.min_debug_score) / (mm.max_debug_score - mm.min_debug_score)) * 100 END AS "index", 
-    #    ri.sum_expected_involvement_achieved_during_period, 
-    #    ri.sum_expected_goals_conceded_achieved_during_period, 
-    #    ri.total_points, 
-    #    ri.total_team_difficulty, 
-    #    ri.player_contribution_percentage, 
-    #    ri.debug_score 
-    #FROM RawIndexes ri, MinMaxScore mm 
-    #WHERE ri.player_contribution_percentage IS NOT NULL 
-    #UNION ALL 
-    #SELECT e.id, 0 AS "index", 
-    #    NULL AS sum_expected_involvement_achieved_during_period, 
-    #    NULL AS sum_expected_goals_conceded_achieved_during_period, 
-    #    NULL AS total_points, 
-    #    NULL AS total_team_difficulty, 
-    #    NULL AS player_contribution_percentage, 
-    #    NULL AS debug_score 
-    #FROM {events_db}.elements e 
-    #WHERE e.id NOT IN (SELECT id FROM RawIndexes);
-    #'''
+    query = f'''
+    WITH PlayerTeam AS (SELECT id, team_code FROM {db}.bootstrapstatic_elements), 
+    FixtureDifficulties AS (
+        SELECT event, team_h, team_a, team_h_difficulty, team_a_difficulty, team_h AS team_code, team_h_difficulty AS team_difficulty 
+        FROM {db}.fixtures_fixtures WHERE year_start = {season_start}
+        UNION ALL 
+        SELECT event, team_h, team_a, team_h_difficulty, team_a_difficulty, team_a AS team_code, team_a_difficulty AS team_difficulty 
+        FROM {db}.fixtures_fixtures WHERE year_start = {season_start}
+    ), 
+    TeamIctIndexSum AS (
+        SELECT bs.team_code, SUM(e.ict_index) AS team_ict_index_sum 
+        FROM {db}.events_elements e 
+        JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
+        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND  WHERE year_start = {season_start}
+        GROUP BY bs.team_code
+    ), 
+    PlayerIctIndexSum AS (
+        SELECT e.id, SUM(e.ict_index) AS player_ict_index_sum 
+        FROM {db}.events.elements e 
+        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND  WHERE year_start = {season_start}
+        GROUP BY e.id
+    ), 
+    RawIndexes AS (
+        SELECT e.id, bs.team_code, 
+            ((e.goals_scored + e.assists - e.expected_goal_involvements + 1) * 
+            (SUM(e.expected_goals_conceded - e.goals_conceded + 1)) * 
+            SUM(e.total_points) * 
+            COALESCE(SUM(fd.team_difficulty), 0) * 
+            (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100) AS debug_score, 
+            ((e.goals_scored + e.assists) - e.expected_goal_involvements + 1) AS sum_expected_involvement_achieved_during_period, 
+            SUM(e.expected_goals_conceded - e.goals_conceded + 1) AS sum_expected_goals_conceded_achieved_during_period, 
+            SUM(e.total_points) AS total_points, 
+            COALESCE(SUM(fd.team_difficulty), 0) AS total_team_difficulty, 
+            (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100 AS player_contribution_percentage 
+        FROM {db}.events_elements e 
+        JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
+        LEFT JOIN FixtureDifficulties fd ON e.Gameweek = fd.event AND bs.team_code = fd.team_code 
+        JOIN TeamIctIndexSum tis ON bs.team_code = tis.team_code 
+        JOIN PlayerIctIndexSum pis ON e.id = pis.id 
+        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) 
+        GROUP BY e.id, bs.team_code, pis.player_ict_index_sum, tis.team_ict_index_sum 
+        HAVING player_contribution_percentage IS NOT NULL
+    ), 
+    MinMaxScore AS (
+        SELECT MIN(debug_score) AS min_debug_score, MAX(debug_score) AS max_debug_score 
+        FROM RawIndexes
+    ) 
+    SELECT ri.id, 
+        CASE WHEN mm.max_debug_score = mm.min_debug_score THEN 0 
+        ELSE ((ri.debug_score - mm.min_debug_score) / (mm.max_debug_score - mm.min_debug_score)) * 100 END AS "index", 
+        ri.sum_expected_involvement_achieved_during_period, 
+        ri.sum_expected_goals_conceded_achieved_during_period, 
+        ri.total_points, 
+        ri.total_team_difficulty, 
+        ri.player_contribution_percentage, 
+        ri.debug_score 
+    FROM RawIndexes ri, MinMaxScore mm 
+    WHERE ri.player_contribution_percentage IS NOT NULL 
+    UNION ALL 
+    SELECT e.id, 0 AS "index", 
+        NULL AS sum_expected_involvement_achieved_during_period, 
+        NULL AS sum_expected_goals_conceded_achieved_during_period, 
+        NULL AS total_points, 
+        NULL AS total_team_difficulty, 
+        NULL AS player_contribution_percentage, 
+        NULL AS debug_score 
+    FROM {db}.events_elements e 
+    WHERE e.id NOT IN (SELECT id FROM RawIndexes);
+    '''
     
-    #cursor.execute(query)
-    #players = cursor.fetchall()
-    #dbConnect.close()  # Always close the database connection
+    cursor.execute(query)
+    players = cursor.fetchall()
+    dbConnect.close()  # Always close the database connection
     return players
 
 def get_comparison_stats(id1, id2):

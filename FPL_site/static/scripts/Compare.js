@@ -60,15 +60,12 @@ function initializeComparePage() {
     ]).then(([allPlayers, playersByTeam, playersByPosition, playerIndexScores]) => {
         // Merge index scores with player data
         allPlayers.forEach(player => {
-            const indexScore = 0
-
-            // TODO: REACTIVATE ONCE THE DATA IS ACTUALLY THE RIGHT STRUCTURE IN DATAMODELS.PY
-            //const indexScore = playerIndexScores.find(score => score.id === player.id);
-            //if (indexScore) {
-            //    player.player_index_score = indexScore.index;
-            //} else {
-            //    player.player_index_score = 'TBD';
-            //}
+            const indexScore = playerIndexScores.find(score => score.id === player.id);
+            if (indexScore) {
+                player.player_index_score = indexScore.index;
+            } else {
+                player.player_index_score = 'TBD';
+            }
         });
 
         const playerData = {
