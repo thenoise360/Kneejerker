@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 import mysql.connector
 from mysql.connector import Error
 from FPL_site.config import current_config
@@ -13,6 +12,8 @@ db = current_config.DATABASE
 
 season = "2023_2024"
 season_start = 2023
+
+NULL = None
 
 def connect_db():
     try:
