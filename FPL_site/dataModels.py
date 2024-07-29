@@ -140,9 +140,9 @@ def get_player_net_transfers(player_id):
 def get_player_index_scores():
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    players = []
+    players = [None]
 
-    #TODO: Add events DB and Fixtures DB
+    #TODO: Add events DB and Fixtures DB to new db strucutre
     #events_db = f'{season}_events'
     #fixtures_db = f'{season}_fixtures'
 
