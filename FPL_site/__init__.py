@@ -1,18 +1,20 @@
-from flask import Flask, request
-import os
-import logging
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from .config import current_config
 
-template_dir = os.path.abspath('FPL_site/templates')
-static_dir = os.path.abspath('FPL_site/static')
+app = Flask(__name__)
 
-app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+# Use the current configuration
+config = current_config
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqldb://{config.USER}:{config.PASSWORD}@{config.HOST}/{config.DATABASE}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
 
-@app.before_request
-def log_request_info():
-    logger.info(f"Request: {request.method} {request.path}")
+db = SQLAlchemy(app)
 
+# Ensure the database connection is initialized within an application context
+with app.app_context():
+    db.create_all()
+
+# Import the views to register routes
 import FPL_site.views

@@ -13,12 +13,24 @@ class DevelopmentConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
 
+    # Print out the variables for debugging
+    print(f"Development - HOST: {HOST}")
+    print(f"Development - USER: {USER}")
+    print(f"Development - PASSWORD: {PASSWORD}")
+    print(f"Development - DATABASE: {DATABASE}")
+
 class ProductionConfig(Config):
     """Production configuration."""
     HOST = os.getenv('HOST')
     USER = os.getenv('USER')
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
+
+    # Print out the variables for debugging
+    print(f"Production - HOST: {HOST}")
+    print(f"Production - USER: {USER}")
+    print(f"Production - PASSWORD: {PASSWORD}")
+    print(f"Production - DATABASE: {DATABASE}")
 
 def get_config():
     env = os.getenv('FLASK_ENV', 'development')
