@@ -141,27 +141,26 @@ def get_player_net_transfers(player_id):
 def get_player_index_scores():
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-
     query = f'''
     WITH PlayerTeam AS (SELECT id, team_code FROM {db}.bootstrapstatic_elements), 
     FixtureDifficulties AS (
-        SELECT event, team_h, team_a, team_h_difficulty, team_a_difficulty, team_h AS team_code, team_h_difficulty AS team_difficulty 
-        FROM {db}.fixtures_fixtures WHERE year_start = {season_start}
+        SELECT f.event, f.team_h, f.team_a, f.team_h_difficulty, f.team_a_difficulty, f.team_h AS team_code, f.team_h_difficulty AS team_difficulty 
+        FROM {db}.fixtures_fixtures f WHERE f.year_start = {season_start}
         UNION ALL 
-        SELECT event, team_h, team_a, team_h_difficulty, team_a_difficulty, team_a AS team_code, team_a_difficulty AS team_difficulty 
-        FROM {db}.fixtures_fixtures WHERE year_start = {season_start}
+        SELECT f.event, f.team_h, f.team_a, f.team_h_difficulty, f.team_a_difficulty, f.team_a AS team_code, f.team_a_difficulty AS team_difficulty 
+        FROM {db}.fixtures_fixtures f WHERE f.year_start = {season_start}
     ), 
     TeamIctIndexSum AS (
         SELECT bs.team_code, SUM(e.ict_index) AS team_ict_index_sum 
         FROM {db}.events_elements e 
         JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
-        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND  WHERE year_start = {season_start}
+        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND e.year_start = {season_start}
         GROUP BY bs.team_code
     ), 
     PlayerIctIndexSum AS (
         SELECT e.id, SUM(e.ict_index) AS player_ict_index_sum 
-        FROM {db}.events.elements e 
-        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND  WHERE year_start = {season_start}
+        FROM {db}.events_elements e 
+        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND e.year_start = {season_start}
         GROUP BY e.id
     ), 
     RawIndexes AS (
@@ -186,8 +185,8 @@ def get_player_index_scores():
         HAVING player_contribution_percentage IS NOT NULL
     ), 
     MinMaxScore AS (
-        SELECT MIN(debug_score) AS min_debug_score, MAX(debug_score) AS max_debug_score 
-        FROM RawIndexes
+        SELECT MIN(ri.debug_score) AS min_debug_score, MAX(ri.debug_score) AS max_debug_score 
+        FROM RawIndexes ri
     ) 
     SELECT ri.id, 
         CASE WHEN mm.max_debug_score = mm.min_debug_score THEN 0 
@@ -209,9 +208,9 @@ def get_player_index_scores():
         NULL AS player_contribution_percentage, 
         NULL AS debug_score 
     FROM {db}.events_elements e 
-    WHERE e.id NOT IN (SELECT id FROM RawIndexes);
+    WHERE e.id NOT IN (SELECT ri.id FROM RawIndexes ri);
     '''
-    
+
     cursor.execute(query)
     players = cursor.fetchall()
     dbConnect.close()  # Always close the database connection
