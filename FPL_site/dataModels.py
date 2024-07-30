@@ -49,7 +49,7 @@ def get_players():
 
     try:
         cursor = dbConnect.cursor(dictionary=True)
-        query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements;"
+        query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements WHERE year_start = {season_start}"
         logger.info(f"Executing query: {query}")
         cursor.execute(query)
         players = cursor.fetchall()
@@ -67,7 +67,7 @@ def get_players_by_team():
     cursor = dbConnect.cursor(dictionary=True)
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t on p.team = t.id')
+    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start}')
 
     # Fetch all results from the executed query
     players = cursor.fetchall()
@@ -111,7 +111,7 @@ def get_players_by_position():
     }
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT p.element_type AS "position_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p')
+    cursor.execute(f'SELECT p.element_type AS "position_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p WHERE p.year_start = {season_start}')
 
     # Fetch all results from the executed query
     players = cursor.fetchall()
@@ -146,7 +146,7 @@ def get_player_net_transfers(player_id):
     # Assuming you have a database connection utility called connect_db
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    query = f'SELECT id, (transfers_in_event - transfers_out_event) as net_transfers FROM {db}.bootstrapstatic_elements WHERE id = %s;'
+    query = f'SELECT id, (transfers_in_event - transfers_out_event) as net_transfers FROM {db}.bootstrapstatic_elements WHERE id = %s and year_start = {season_start};'
     cursor.execute(query, (player_id,))
     net_transfers = cursor.fetchone()
     dbConnect.close()  # Always close the database connection
@@ -235,16 +235,16 @@ def get_comparison_stats(id1, id2):
     gameweek = generateCurrentGameweek()
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
     season_player1 = cursor.fetchone()
 
-    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
     form_player1 = cursor.fetchone()
         
-    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
     contribution_player1 = cursor.fetchone()
 
-    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements where id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
     xG_player1 = cursor.fetchone()
 
     player1 = {
@@ -255,16 +255,16 @@ def get_comparison_stats(id1, id2):
             
     }
 
-    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
     season_player2 = cursor.fetchone()
 
-    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
     form_player2 = cursor.fetchone()
         
-    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
     contribution_player2 = cursor.fetchone()
 
-    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements where id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
     xG_player2 = cursor.fetchone()
 
     player2 = {

@@ -26,12 +26,6 @@ class ProductionConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
 
-    # Print out the variables for debugging
-    print(f"Production - HOST: {HOST}")
-    print(f"Production - USER: {USER}")
-    print(f"Production - PASSWORD: {PASSWORD}")
-    print(f"Production - DATABASE: {DATABASE}")
-
 def get_config():
     env = os.getenv('FLASK_ENV', 'development')
     if env == 'production':
