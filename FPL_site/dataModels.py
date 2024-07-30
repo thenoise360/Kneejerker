@@ -1,9 +1,14 @@
 import mysql.connector
 from mysql.connector import Error
 from FPL_site.config import current_config
-from FPL_site.genericMethods import unicodeReplace  # Ensure this import is correct and exists
+from FPL_site.genericMethods import unicodeReplace
 import requests
 import json
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 host = current_config.HOST
 user = current_config.USER
@@ -25,7 +30,7 @@ def connect_db():
         )
         return mydb
     except Error as e:
-        print(f"Error while connecting to MySQL: {e}")
+        logger.error(f"Error while connecting to MySQL: {e}")
         return None
 
 # Get us the current gameweek number
@@ -34,16 +39,26 @@ def generateCurrentGameweek():
     for keys in todaysData:
         if keys == 'current_event':
             return todaysData[keys]
-   
+
 
 def get_players():
-    # Assuming you have a database connection utility called connect_db
     dbConnect = connect_db()
-    cursor = dbConnect.cursor(dictionary=True)
-    query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements;"
-    cursor.execute(query)
-    players = cursor.fetchall()
-    dbConnect.close()  # Always close the database connection
+    if dbConnect is None:
+        logger.error("Failed to connect to the database.")
+        return []
+
+    try:
+        cursor = dbConnect.cursor(dictionary=True)
+        query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements;"
+        logger.info(f"Executing query: {query}")
+        cursor.execute(query)
+        players = cursor.fetchall()
+    except Error as e:
+        logger.error(f"Error executing query: {e}")
+        return []
+    finally:
+        dbConnect.close()  # Always close the database connection
+
     return players
 
 def get_players_by_team():
