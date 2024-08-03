@@ -50,7 +50,7 @@ html, body {
     width: 100%;
     height: 100%;
     position: absolute;
-    font-family: 'Roboto Light', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-family: 'Roboto Light', 'Helvetica', 'Segoe UI' Arial, sans-serif;
     background-color: #f7f7f7;
     overflow-x: hidden;
 }

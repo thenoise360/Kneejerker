@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kneejerker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='content/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='content/Style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='content/favicon.svg') }}" type="image/x-icon">
+    <link rel="manifest" href="assets/site.webmanifest">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 </head>
@@ -18,6 +20,7 @@
                 <li><a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a></li>
                 <li><a href="{{ url_for('players') }}" id="players-link" data-content="players" class="listItem">Player</a></li>
                 <li><a href="{{ url_for('team') }}" id="team-link" data-content="team" class="listItem">Team</a></li>
+                <li><a href="https://kneejerker.canny.io/user-feedback/" id="team-link" data-content="team" class="listItem">Request improvements</a></li>
             </ul>
         </nav>
         <div class="mobile-menu">
@@ -30,6 +33,7 @@
                 <a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a>
                 <a href="{{ url_for('players') }}" id="players-link" data-content="players" class="listItem">Player</a>
                 <a href="{{ url_for('team') }}" id="team-link" data-content="team" class="listItem">Team</a>
+                <a href="https://kneejerker.canny.io/user-feedback/" id="team-link" data-content="team" class="listItem">Request improvements</a>
             </div>
         </div>
     </header>
