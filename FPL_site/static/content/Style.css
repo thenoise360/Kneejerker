@@ -55,6 +55,12 @@ html, body {
     overflow-x: hidden;
 }
 
+.footer-content{
+    display: flex;
+    justify-content: space-around;
+    margin: auto;
+}
+
 .body-content {
     margin: 10px;
     height: fit-content;
