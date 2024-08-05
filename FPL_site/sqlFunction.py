@@ -1,29 +1,32 @@
 ﻿import sys
 import os
 
+# Get the directory of the current file
+current_dir = os.path.dirname(__file__)
+
 # Add the project root directory to sys.path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.insert(0, project_root)
 
 # Add the FPL_site directory to sys.path
-fpl_site_dir = os.path.join(project_root, 'FPL_site')
+fpl_site_dir = current_dir
 sys.path.insert(0, fpl_site_dir)
 
 # Import necessary modules
 import genericMethods
 import mysql.connector
 import pymysql
-import sqlite3 
+import sqlite3
 import pandas
 import json
 import requests
 from datetime import datetime
 import pytz
+from dataModels import get_players
 from dotenv import load_dotenv
 from config import current_config
-from FPL_site import dataModels
 
-# Your existing code here
+# Access configuration variables
 host = current_config.HOST
 user = current_config.USER
 password = current_config.PASSWORD
@@ -374,13 +377,13 @@ def updateFixturesTables(user, password, database):
     cursor.close()
     dbConnect.close()
 
-#done!!:
 def updateAllTables():
-    players = dataModels.get_players()
+    players = get_players()
     updateFixturesTables(user, password, db)
     updateEventTables(user, password, db)
     updateBootstrapStaticTables(user, password, db)
     for player in players:
         updateElementsummaryTables(user, password, db, player['id'])
 
-updateAllTables()
+print("Project root:", project_root)
+print("FPL_site directory:", fpl_site_dir)

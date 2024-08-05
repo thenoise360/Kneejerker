@@ -1,12 +1,14 @@
 {
   "ExpandedNodes": [
     "",
+    "\\env",
     "\\FPL_site",
     "\\FPL_site\\static",
     "\\FPL_site\\static\\content",
     "\\FPL_site\\static\\scripts",
-    "\\FPL_site\\templates"
+    "\\FPL_site\\templates",
+    "\\venv"
   ],
-  "SelectedNode": "\\FPL_site\\sqlFunction.py",
+  "SelectedNode": "\\FPL_site\\run_update.py",
   "PreviewInSolutionExplorer": false
 }
