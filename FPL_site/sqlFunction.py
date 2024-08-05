@@ -83,15 +83,18 @@ def connectToSQL(user, password):
     
     return mydb
 
-def connectToDB(user, password, database):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user=user,
-        password=password,
-        database=database
-    )
-    
-    return mydb
+def connectToDB(user, password, database, host):
+    try:
+        mydb = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database
+        )
+        return mydb
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return None
 
 def checkDatabases(user, password):
     mydb = connectToSQL(user, password)
@@ -126,7 +129,7 @@ def updateEventTables(user, password, database):
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/event/{currentGameweek}/live").json()
     currentDateTime = datetime.now(pytz.utc)
     
-    dbConnect = connectToDB(user, password, database)
+    dbConnect = connectToDB(user, password, database, host)
     cursor = dbConnect.cursor()
 
   
@@ -180,7 +183,7 @@ def updateElementsummaryTables(user, password, database, player_id):
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/element-summary/{player_id}/").json()
     currentDateTime = datetime.now(pytz.utc)
     
-    dbConnect = connectToDB(user, password, database)
+    dbConnect = connectToDB(user, password, database, host)
     cursor = dbConnect.cursor()
 
     if 'detail' in currentElement:
@@ -241,7 +244,7 @@ def updateElementsummaryTables(user, password, database, player_id):
 def updateBootstrapStaticTables(user, password, database):
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/bootstrap-static").json()
     
-    dbConnect = connectToDB(user, password, database)
+    dbConnect = connectToDB(user, password, database, host)
     cursor = dbConnect.cursor()
 
     for table in currentElement:
@@ -308,7 +311,7 @@ def updateFixturesTables(user, password, database):
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/fixtures/").json()
     currentDateTime = datetime.now(pytz.utc)
     
-    dbConnect = connectToDB(user, password, database)
+    dbConnect = connectToDB(user, password, database, host)
     cursor = dbConnect.cursor()
 
     # Retrieve column names for the table
