@@ -169,22 +169,30 @@ def updateEventTables(user, password, database, host):
     print(f"Events tables updated")
     cursor.close()
 
-def updateElementsummaryTables(user, password, database, player_id, host):
-    currentElement = requests.get(f"https://fantasy.premierleague.com/api/element-summary/{player_id}/").json()
-    currentDateTime = datetime.now(pytz.utc)
-    
+def updateElementsummaryTablesBatch(user, password, database, host):
+    players = get_players()
     dbConnect = connectToDB(user, password, database, host)
     cursor = dbConnect.cursor()
 
-    if 'detail' in currentElement:
-        return
-    else:
+    table_data = {
+        "fixtures": [],
+        "history": [],
+        "history_past": []
+    }
+
+    for player in players:
+        player_id = player['id']
+        currentElement = requests.get(f"https://fantasy.premierleague.com/api/element-summary/{player_id}/").json()
+        currentDateTime = datetime.now(pytz.utc)
+
+        if 'detail' in currentElement:
+            continue
+
         for table in currentElement:
             if table not in ["fixtures", "history", "history_past"]:
                 continue
+            
             for element in currentElement[table]:
-                true_table = f"elementsummary_{table}"
-                
                 elementsKept = dict()
                 for item in element:
                     if not isinstance(element[item], (list, dict)):
@@ -208,19 +216,26 @@ def updateElementsummaryTables(user, password, database, player_id, host):
 
                 columns = ','.join(f"`{str(x).replace('/', '_')}`" for x in elementsKept.keys())
                 values = ','.join(f"'{str(x).replace('/', '_')}'" for x in elementsKept.values())
+                table_data[table].append((columns, values))
 
-                sql_insert = f"""
-                    INSERT INTO {true_table} ({columns}) VALUES ({values})
-                    ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in elementsKept.keys()])};
-                """
-                try:
-                    cursor.execute(sql_insert)
-                    dbConnect.commit()
-                except pymysql.Error as e:
-                    print(f"Error executing SQL for table {table}: {e}")
+    for table, data in table_data.items():
+        true_table = f"elementsummary_{table}"
+        if data:
+            all_columns = data[0][0]  # Get columns from the first element as all are the same
+            all_values = ','.join([f"({values})" for _, values in data])
+            sql_insert = f"""
+                INSERT INTO {true_table} ({all_columns}) VALUES {all_values}
+                ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in data[0][0].split(',')])};
+            """
+            try:
+                cursor.execute(sql_insert)
+                dbConnect.commit()
+            except pymysql.Error as e:
+                print(f"Error executing SQL for table {true_table}: {e}")
 
-        print(f"Element_summary tables - player added: {player_id}")
-        cursor.close()
+    print(f"Element_summary tables updated")
+    cursor.close()
+    dbConnect.close()
 
 def updateBootstrapStaticTables(user, password, database, host):
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/bootstrap-static").json()
@@ -360,12 +375,10 @@ def updateFixturesTables(user, password, database, host):
     dbConnect.close()
 
 def updateAllTables():
-    players = get_players()
+    updateElementsummaryTablesBatch(user, password, db, host)
     updateFixturesTables(user, password, db, host)
     updateEventTables(user, password, db, host)
     updateBootstrapStaticTables(user, password, db, host)
-    for player in players:
-        updateElementsummaryTables(user, password, db, player['id'], host)
 
 print("Project root:", project_root)
 print("FPL_site directory:", fpl_site_dir)
