@@ -120,7 +120,7 @@ def typeConverter(value):
 
 
 
-def updateEventTables(user, password, database):
+def updateEventTables(user, password, database, host):
     if generateCurrentGameweek() != None:
         currentGameweek = generateCurrentGameweek()
     else:
@@ -179,7 +179,7 @@ def updateEventTables(user, password, database):
     print(f"Events tables updated")
     cursor.close()
 
-def updateElementsummaryTables(user, password, database, player_id):
+def updateElementsummaryTables(user, password, database, player_id, host):
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/element-summary/{player_id}/").json()
     currentDateTime = datetime.now(pytz.utc)
     
@@ -241,7 +241,7 @@ def updateElementsummaryTables(user, password, database, player_id):
         print(f"Element_summary tables - player added: {player_id}")
         cursor.close()
 
-def updateBootstrapStaticTables(user, password, database):
+def updateBootstrapStaticTables(user, password, database, host):
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/bootstrap-static").json()
     
     dbConnect = connectToDB(user, password, database, host)
@@ -307,11 +307,15 @@ def updateBootstrapStaticTables(user, password, database):
     print(f"Element_summary tables - table updated: {true_table}")
     cursor.close()
 
-def updateFixturesTables(user, password, database):
+def updateFixturesTables(user, password, database, host):
+    dbConnect = connectToDB(user, password, database, host)
+    if dbConnect is None:
+        print("Failed to connect to the database.")
+        return
+
     currentElement = requests.get(f"https://fantasy.premierleague.com/api/fixtures/").json()
     currentDateTime = datetime.now(pytz.utc)
     
-    dbConnect = connectToDB(user, password, database, host)
     cursor = dbConnect.cursor()
 
     # Retrieve column names for the table
@@ -382,11 +386,11 @@ def updateFixturesTables(user, password, database):
 
 def updateAllTables():
     players = get_players()
-    updateFixturesTables(user, password, db)
-    updateEventTables(user, password, db)
-    updateBootstrapStaticTables(user, password, db)
+    updateFixturesTables(user, password, db, host)
+    updateEventTables(user, password, db, host)
+    updateBootstrapStaticTables(user, password, db, host)
     for player in players:
-        updateElementsummaryTables(user, password, db, player['id'])
+        updateElementsummaryTables(user, password, db, player['id'], host)
 
 print("Project root:", project_root)
 print("FPL_site directory:", fpl_site_dir)
