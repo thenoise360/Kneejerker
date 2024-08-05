@@ -132,7 +132,6 @@ def updateEventTables(user, password, database, host):
     dbConnect = connectToDB(user, password, database, host)
     cursor = dbConnect.cursor()
 
-  
     for element in currentElement['elements']:
         true_table = f"events_elements"
                 
@@ -157,24 +156,15 @@ def updateEventTables(user, password, database, host):
         columns = ','.join(f"`{str(x).replace('/', '_')}`" for x in elementsKept.keys())
         values = ','.join(f"'{str(x).replace('/', '_')}'" for x in elementsKept.values())
 
+        sql_insert = f"""
+            INSERT INTO {true_table} ({columns}) VALUES ({values})
+            ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in elementsKept.keys()])};
+        """
         try:
-            sql_replace = f"""
-                REPLACE INTO {true_table} ({columns}) VALUES ({values});
-            """
-            try:
-                cursor.execute(sql_replace)
-                dbConnect.commit()
-            except pymysql.Error as e:
-                print(f"Error executing SQL for table {true_table}: {e}")
-        except:
-            sql_replace = f"""
-                REPLACE INTO {true_table} ({columns}) VALUES ({values});
-            """
-            try:
-                cursor.execute(sql_replace)
-                dbConnect.commit()
-            except pymysql.Error as e:
-                print(f"Error executing SQL for table {true_table}: {e}")
+            cursor.execute(sql_insert)
+            dbConnect.commit()
+        except pymysql.Error as e:
+            print(f"Error executing SQL for table {true_table}: {e}")
 
     print(f"Events tables updated")
     cursor.close()
@@ -219,24 +209,15 @@ def updateElementsummaryTables(user, password, database, player_id, host):
                 columns = ','.join(f"`{str(x).replace('/', '_')}`" for x in elementsKept.keys())
                 values = ','.join(f"'{str(x).replace('/', '_')}'" for x in elementsKept.values())
 
-                if table == "fixtures" or table == "history" or table == "history_past":
-                    sql_replace = f"""
-                        REPLACE INTO {true_table} ({columns}) VALUES ({values});
-                    """
-                    try:
-                        cursor.execute(sql_replace)
-                        dbConnect.commit()
-                    except pymysql.Error as e:
-                        print(f"Error executing SQL for table {table}: {e}")
-                else:
-                    sql_replace = f"""
-                        REPLACE INTO {true_table} ({columns}) VALUES ({values});
-                    """
-                    try:
-                        cursor.execute(sql_replace)
-                        dbConnect.commit()
-                    except pymysql.Error as e:
-                        print(f"Error executing SQL for table {table}: {e}")
+                sql_insert = f"""
+                    INSERT INTO {true_table} ({columns}) VALUES ({values})
+                    ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in elementsKept.keys()])};
+                """
+                try:
+                    cursor.execute(sql_insert)
+                    dbConnect.commit()
+                except pymysql.Error as e:
+                    print(f"Error executing SQL for table {table}: {e}")
 
         print(f"Element_summary tables - player added: {player_id}")
         cursor.close()
@@ -285,24 +266,15 @@ def updateBootstrapStaticTables(user, password, database, host):
             columns = ','.join(f"`{str(x).replace('/', '_')}`" for x in elementsKept.keys())
             values = ','.join(f"'{str(x).replace('/', '_')}'" for x in elementsKept.values())
 
-            if table == "events" or table == "elements" or table == "teams":
-                sql_replace = f"""
-                    REPLACE INTO {true_table} ({columns}) VALUES ({values});
-                """
-                try:
-                    cursor.execute(sql_replace)
-                    dbConnect.commit()
-                except pymysql.Error as e:
-                    print(f"Error executing SQL for table {table}: {e}")
-            else:
-                sql_replace = f"""
-                    REPLACE INTO {true_table} ({columns}) VALUES ({values});
-                """
-                try:
-                    cursor.execute(sql_replace)
-                    dbConnect.commit()
-                except pymysql.Error as e:
-                    print(f"Error executing SQL for table {table}: {e}")
+            sql_insert = f"""
+                INSERT INTO {true_table} ({columns}) VALUES ({values})
+                ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in elementsKept.keys()])};
+            """
+            try:
+                cursor.execute(sql_insert)
+                dbConnect.commit()
+            except pymysql.Error as e:
+                print(f"Error executing SQL for table {table}: {e}")
 
     print(f"Bootstrap static table updated: {true_table}")
     cursor.close()
@@ -373,9 +345,12 @@ def updateFixturesTables(user, password, database, host):
                 except pymysql.Error as e:
                     print(f"Error executing SQL update for table {true_table}: {e}")
         else:
-            sql_replace = f"REPLACE INTO {true_table} ({columns}) VALUES ({values})"
+            sql_insert = f"""
+                INSERT INTO {true_table} ({columns}) VALUES ({values})
+                ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in elementsKept.keys()])};
+            """
             try:
-                cursor.execute(sql_replace)
+                cursor.execute(sql_insert)
                 dbConnect.commit()
             except pymysql.Error as e:
                 print(f"Error executing SQL insert for table {true_table}: {e}")
