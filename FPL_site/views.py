@@ -19,7 +19,11 @@ def custom_static(filename):
     try:
         full_path = os.path.join(app.static_folder, filename)
         app.logger.info(f"Full path resolved to: {full_path}")
-        return send_from_directory(app.static_folder, filename)
+        if os.path.exists(full_path):
+            return send_from_directory(app.static_folder, filename)
+        else:
+            app.logger.error(f"Static file not found at path: {full_path}")
+            abort(404)
     except FileNotFoundError:
         app.logger.error(f"Static file not found: {filename}")
         abort(404)
@@ -28,6 +32,23 @@ def custom_static(filename):
 def home():
     logger.info("Request for home page")
     return render_template('home.html', title='Home Page', year=datetime.now().year)
+
+@app.route('/api/net-transfers')
+def net_transfers():
+    data = {
+        'labels': ['Haaland', 'Salah', 'Pickford', 'Gordon', 'Saka', 'Watkins', 'Burn', 'Gvardiol', 'Palmer', 'Saliba'],
+        'values': [1242233, 943631, 872269, 652834, 598723, 554295, 421678, 293029, 182592, 163206]
+    }
+    return jsonify(data)
+
+@app.route('/api/relative-ownership')
+def relative_ownership():
+    data = {
+        'labels': ['Haaland', 'Salah', 'Pickford', 'Gordon', 'Saka', 'Watkins', 'Burn', 'Gvardiol', 'Palmer', 'Saliba'],
+        'oldValues': [32, 72, 16, 38, 21, 86, 11, 22, 32, 9],
+        'newValues': [62, 82, 25, 46, 29, 91, 16, 26, 35, 10]
+    }
+    return jsonify(data)
 
 @app.route('/players')
 def players():
