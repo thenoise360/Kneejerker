@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kneejerker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='content/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='content/Style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='content/favicon.svg') }}" type="image/x-icon">
@@ -55,9 +55,11 @@
     <script src="{{ url_for('static', filename='scripts/respond.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/Script.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script> <!-- Add this line -->
+    <script src="{{ url_for('static', filename='scripts/Script.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/modernizr-2.6.2.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/Compare.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/home.js') }}"></script> <!-- Ensure home.js is loaded last -->
     {% block scripts %}{% endblock %}
 </body>
 </html>

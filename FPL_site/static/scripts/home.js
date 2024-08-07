@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const svg = chartContainer.querySelector('svg');
 
         if (svg) {
-            // Example of adding classes
             svg.classList.add('custom-svg');
             const bars = svg.querySelectorAll('path'); // Bars in the chart
             bars.forEach((bar, index) => {
@@ -36,7 +35,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 label.classList.add('custom-label');
             });
 
-            // Adjust SVG width to fill available space
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '400');
         }
@@ -70,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const sortedData = data.labels.map((label, index) => ({
                         label: label,
                         value: data.values[index]
-                    })).sort((a, b) => a.value - b.value);
+                    })).sort((a, b) => a.value - b.value); // Change to descending order
 
                     const labels = sortedData.map(item => truncateLabel(item.label));
                     const values = sortedData.map(item => item.value);
@@ -88,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         newValue: data.newValues[index],
                         oldValue: data.oldValues[index],
                         change: data.newValues[index] - data.oldValues[index]
-                    })).sort((a, b) => a.change - b.change);
+                    })).sort((a, b) => a.change - b.change); // Change to descending order
 
                     const labels = sortedData.map(item => truncateLabel(item.label));
                     const values = sortedData.map(item => item.change);
@@ -110,6 +108,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (chartInstances[chartId]) {
             chartInstances[chartId].dispose();
         }
+
+        if (typeof echarts === 'undefined') {
+            console.error('echarts is not defined. Make sure echarts is included in your HTML.');
+            return;
+        }
+
         chartInstances[chartId] = echarts.init(chartDom, null, { renderer: 'svg' });
 
         const option = {
@@ -143,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 {
                     type: 'bar',
                     data: values,
-                    barCategoryGap: '16px',
+                    barCategoryGap: '4px',
                     itemStyle: {
                         color: function (params) {
                             return params.dataIndex === 9 ? 'var(--primary-color)' : 'var(--black-20)';
@@ -190,28 +194,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     pills.forEach(pill => {
         pill.addEventListener('click', function () {
-            // Remove active class from all pills
             pills.forEach(p => p.classList.remove('active'));
-            // Add active class to the clicked pill
             this.classList.add('active');
 
-            // Hide all charts and descriptions
             charts.forEach(chart => chart.classList.remove('active'));
             Object.values(descriptions).forEach(desc => desc.style.display = 'none');
 
-            // Show the target chart and description
             const target = document.getElementById(this.dataset.target);
             target.classList.add('active');
             descriptions[this.dataset.target].style.display = 'block';
 
-            // Ensure the target chart is properly sized
             fetchChartData(`/api/${this.dataset.target}`, this.dataset.target);
         });
     });
 
     initializeCharts();
 
-    // Function to call the Flask endpoint
     function callUpdateEndpoint() {
         fetch('/api/update-data')
             .then(response => {
@@ -222,13 +220,11 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(data => {
                 console.log(data.message);
-                // Optionally, update the charts here if needed
                 initializeCharts();
             })
             .catch(error => console.error('Error:', error));
     }
 
-    // Function to check if user is active
     function isUserActive() {
         let lastActiveTime = Date.now();
 
@@ -240,21 +236,19 @@ document.addEventListener('DOMContentLoaded', function () {
         window.addEventListener('keydown', updateActivity);
 
         setInterval(() => {
-            if (Date.now() - lastActiveTime < 30000) { // User is active within the last 30 seconds
+            if (Date.now() - lastActiveTime < 30000) {
                 callUpdateEndpoint();
             }
-        }, 30000); // Call every 30 seconds
+        }, 30000);
     }
 
     isUserActive();
 
-    // Resize charts on window resize
     window.addEventListener('resize', function () {
         Object.keys(chartInstances).forEach(chartId => {
             chartInstances[chartId].resize();
         });
     });
 
-    // Update the time display every second
     setInterval(updateLastUpdatedTime, 1000);
 });

@@ -179,7 +179,6 @@ a {
 }
 
 /* Mobile Menu Styles */
-
 .mobile-menu {
     display: flex;
     align-items: center;
@@ -192,7 +191,8 @@ a {
     justify-content: space-between;
     width: 30px;
     height: 20px;
-    margin-right: 20px
+    margin-right: 20px;
+    z-index: 1001; /* Ensure it's on top */
 }
 
 .bar1,
@@ -201,74 +201,45 @@ a {
     width: 100%;
     height: 4px;
     background-color: var(--white);
+    transition: all 0.3s ease;
+}
+
+.burger-icon.open .bar1 {
+    transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.burger-icon.open .bar2 {
+    opacity: 0;
+}
+
+.burger-icon.open .bar3 {
+    transform: rotate(45deg) translate(-5px, -6px);
 }
 
 .menu-items {
     display: none;
+    transition: all 0.3s ease; /* Add transition */
 }
-
-    /* Menu Item X */
 
     .menu-items.open {
         display: flex;
         flex-direction: column;
         align-items: center;
+        min-width: 80%;
     }
-
-
-.burger-icon.open .bar1 {
-    transform: rotate(-45deg) translate(0px, 3px);
-}
-
-.burger-icon.open .bar2 {
-    transform: rotate(45deg) translate(-3px, -5px);
-}
-
-.burger-icon.open .bar3 {
-    opacity: 0;
-}
-
-/* Show mobile menu on small screens */
-.mobile-menu.open .menu-items {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 80%;
-}
-
 
 /* Responsive Menu */
+@media screen and (max-width: 950px) {
+    .desktop-menu {
+        display: none;
+    }
 
-.desktop-menu {
-    display: contents;
-}
-
-    .desktop-menu ul {
+    .mobile-menu {
         display: flex;
-        width: 100%;
-        justify-content: space-around; /* This distributes space around items equally */
-        list-style: none;
-        padding: 0;
-        margin: 0;
     }
-
-    .desktop-menu li {
-        margin-right: 20px;
-    }
-
-        .desktop-menu li:last-child {
-            margin-right: 0;
-        }
-
-    .desktop-menu a {
-        text-decoration: none;
-    }
-
-/* Mobile menu styles */
-
-.mobile-menu {
-    display: none;
 }
+
+
 
 @media screen and (max-width: 950px) {
     /* Show mobile menu on small screens */
@@ -664,6 +635,7 @@ a {
 
 .pill {
     border: 1px solid var(--secondary-color);
+    background-color: var(--white);
     border-radius: 20px;
     padding: 5px 15px;
     margin: 0px 5px;
@@ -899,7 +871,7 @@ a {
     width: 8px;
     height: 8px;
     border-radius: 10px;
-    -webkit-animation: pulse 1s infinite;
+    -webkit-animation: pulse 2s infinite;
 }
 
 .live-pill {
@@ -941,11 +913,6 @@ a {
     margin: 8px 0px;
     width: -webkit-fill-available;
 }
-
-    .update-row .pill.live {
-        background-color: red;
-        color: white;
-    }
 
 .last-updated {
     margin-right: 4px;
