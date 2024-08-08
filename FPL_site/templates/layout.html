@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kneejerker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='content/bootstrap.min.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='content/Style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='content/favicon.svg') }}" type="image/x-icon">
     <link rel="manifest" href="assets/site.webmanifest">
@@ -13,28 +16,33 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
-    <header class="App-header">
-        <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='content/logo.svg') }}" alt="Logo" class="logo"></a>
-        <nav class="desktop-menu">
-            <ul class="list">
-                <li><a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a></li>
-                <li><a href="{{ url_for('players') }}" id="players-link" data-content="players" class="listItem">Player</a></li>
-                <li><a href="{{ url_for('team') }}" id="team-link" data-content="team" class="listItem">Team</a></li>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a href="{{ url_for('home') }}" class="navbar-brand">
+            <img src="{{ url_for('static', filename='content/logo.svg') }}" alt="Logo" class="logo">
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a href="{{ url_for('home') }}" id="home-link" class="nav-link listItem">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('compare') }}" id="compare-link" class="nav-link listItem">Compare</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('players') }}" id="players-link" class="nav-link listItem">Player</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('team') }}" id="team-link" class="nav-link listItem">Team</a>
+                </li>
+                <li class="nav-item">
+                    <a href="https://kneejerker.canny.io/user-feedback/" target="_blank" class="nav-link listItem">Feedback</a>
+                </li>
             </ul>
-        </nav>
-        <div class="mobile-menu">
-            <div class="burger-icon" id="burgerIcon">
-                <div class="bar1"></div>
-                <div class="bar2"></div>
-                <div class="bar3"></div>
-            </div>
-            <div class="menu-items" id="mobileMenuItems">
-                <a href="{{ url_for('compare') }}" id="compare-link" data-content="compare" class="listItem">Compare</a>
-                <a href="{{ url_for('players') }}" id="players-link" data-content="players" class="listItem">Player</a>
-                <a href="{{ url_for('team') }}" id="team-link" data-content="team" class="listItem">Team</a>
-            </div>
         </div>
-    </header>
+    </nav>
     <div class="breadcrumb" id="breadcrumbs">
         <!-- Breadcrumbs will be dynamically added here if necessary -->
     </div>
@@ -47,13 +55,12 @@
     </div>
     <footer class="footer">
         <div class="footer-content">
-            <a href="https://kneejerker.canny.io/user-feedback/" target="_blank">Request improvements to the site here!</a><p>&copy; {{ year }} - FPLExpert</p>
+            <p>&copy; {{ year }} - FPLExpert</p>
         </div>
     </footer>
     <script src="{{ url_for('static', filename='scripts/jquery-1.10.2.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/bootstrap.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/respond.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/Script.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script> <!-- Add this line -->
     <script src="{{ url_for('static', filename='scripts/Script.js') }}"></script>

@@ -250,5 +250,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    setInterval(updateLastUpdatedTime, 1000);
+    setInterval(updateLastUpdatedTime, 30000);
 });
