@@ -1,0 +1,125 @@
+
+/* Compare - player summary cards */
+
+.comparison-card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 1% 1%;
+    background-color: #ffffff;
+}
+
+.player-info {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: -webkit-fill-available;
+}
+
+    .player img {
+        width: 50px;
+        height: auto;
+    }
+
+.player-name {
+    font-size: 14px;
+    color: var(--secondary-color);
+    margin-top: 10px;
+    text-align: center;
+}
+
+.player-score {
+    font-size: 36px;
+    font-weight: 300;
+    margin: 20px 10px 0px 0px;
+    display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-between;
+}
+
+.spacer {
+    width: 54px;
+}
+
+.player-score-title {
+    display: flex;
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--secondary-color) !important;
+    align-items: center;
+}
+
+.highlight-player-score {
+    color: var(--secondary-color) !important;
+    font-family: Roboto;
+    font-weight: 500;
+    font-size: 48px !important;
+}
+
+.player-score-value {
+    text-align: center;
+    color: #888;
+    width: -webkit-fill-available;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+}
+
+.section-title {
+    font-size: 24px;
+    color: var(--secondary-color);
+    margin: 20px 0;
+}
+
+.net-transfers {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 20px;
+    width: -webkit-fill-available;
+}
+
+.net-transfer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: -webkit-fill-available;
+}
+
+.net-transfer-value {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.net-transfer-placeholder {
+    color: #ccc;
+}
+
+.net-transfer-label {
+    font-size: 14px;
+    color: var(--secondary-color);
+}
+
+.net-transfer-rank {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+}
+
+.divider {
+    width: 100%;
+    height: 1px;
+    background-color: #ccc;
+    margin: 20px 0;
+}
