@@ -26,12 +26,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 carouselInner.innerHTML = '';
 
                 players.forEach((player, index) => {
-                    console.log('Full player data:', player); // Log the entire player object
-                    console.log('Player:', player.name);
-                    console.log('Difficulty:', player.difficulty);
-                    console.log('Weeks:', player.weeks);
-                    console.log('Scores:', player.scores);
-
                     // Carousel Indicator
                     const indicator = document.createElement('button');
                     indicator.setAttribute('type', 'button');
@@ -52,7 +46,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <span class="chart-player">${player.name}</span>
                             </div>
                             <div class="chart-card-body">
-                                <span class="chart-total">${player.scores.reduce((a, b) => a + b, 0)} vs. ${averageScores.reduce((a, b) => a + b, 0)}</span>
+                                <div class="chart-total-row">
+                                    <span class="chart-total">${player.scores.reduce((a, b) => a + b, 0)}</span><span class="vs-total">vs. ${averageScores.reduce((a, b) => a + b, 0)}</span>
+                                </div>
+                                <div class="chart-total-descriptions">
+                                    <span class="chart-description">Points vs. average</span>
+                                </div>
+                            </div>
                                 <div id="chart-${index + 1}" class="line-chart"></div>
                             </div>
                         </div>
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Render chart only for the first item, others will be rendered when they become visible
                     if (index === 0) {
-                        renderLineChart(`chart-${index + 1}`, player.weeks, player.scores, averageScores, player.difficulty, allScores);
+                        renderLineChart(`chart-${index + 1}`, player.weeks, player.scores, averageScores, player.difficulty, allScores, player.name);
                     }
                 });
 

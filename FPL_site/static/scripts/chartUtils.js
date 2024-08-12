@@ -137,7 +137,7 @@ export function applyCustomClasses(chartId, chartType) {
         svg.setAttribute('height', '400');
     }
 }
-export function renderLineChart(chartId, weeks, scores, averageScores, difficulty, allScores) {
+export function renderLineChart(chartId, weeks, scores, averageScores, difficulty, allScores, playerName) {
     const chartDom = document.getElementById(chartId);
     if (typeof echarts === 'undefined') {
         console.error('ECharts is not defined. Ensure ECharts is included in your HTML.');
@@ -180,7 +180,7 @@ export function renderLineChart(chartId, weeks, scores, averageScores, difficult
                             <span>${playerData} points</span>
                         </div>
                         <div style="display:flex; justify-content: space-between;">
-                            <span>${params[1]?.seriesName || 'Average'}</span>
+                            <span>${params[1]?.seriesName || 'Avg'}</span>
                             <span>${avgData} points</span>
                         </div>
                         <hr style="border-top:1px solid #999;margin: 8px 0;">
@@ -251,7 +251,7 @@ export function renderLineChart(chartId, weeks, scores, averageScores, difficult
         },
         series: [
             {
-                name: 'Player Score',
+                name: playerName,
                 type: 'line',
                 data: scores,
                 smooth: true,

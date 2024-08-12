@@ -147,10 +147,11 @@ canvas {
 
 .carousel-control-prev-icon,
 .carousel-control-next-icon {
-    background-color: rgba(0, 0, 0, 0.5); /* Make sure the icons have a visible background */
-    width: 30px;
+    background-color: rgba(0, 0, 0, 0.0); /* Make sure the icons have a visible background */
+    width: 10px;
     height: 30px;
-    border-radius: 50%; /* Optionally, make them circular */
+    filter: invert(100%);
+    color: var(--black-90);
 }
 
 .carousel-control-prev,
@@ -159,5 +160,74 @@ canvas {
 }
 
 #playerCarousel{
+    width: -webkit-fill-available;
+}
+
+.chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0px;
+}
+
+.chart-card-body{
+    line-height: 100%;
+}
+
+.chart-rank{
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--black-70);
+}
+
+.chart-player {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--black-70);
+}
+
+#positionDropdown {
+    border: none;
+    background: var(--black-10);
+    padding: 4px;
+    border-radius: 5px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: none;
+    text-align: center;
+}
+
+.chart-total{
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--black-70);
+}
+
+.vs-total {
+    margin-left: 8px;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--black-70);
+}
+
+.chart-total-row {
+    display: flex;
+    align-items: baseline;
+}
+
+.chart-total-description{
+    margin-top: 2px;
+}
+
+.chart-description{
+    font-size: 12px;
+    font-weight: 300;
+}
+
+.dropdown-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     width: -webkit-fill-available;
 }
