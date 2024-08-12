@@ -231,3 +231,15 @@ canvas {
     align-items: center;
     width: -webkit-fill-available;
 }
+
+.category-label {
+    color: var(--black-30);
+    font-weight: 500;
+}
+
+
+.category-value {
+    margin-left: 8px;
+    color: var(--white);
+    font-weight: 500;
+}

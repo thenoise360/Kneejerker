@@ -176,17 +176,17 @@ export function renderLineChart(chartId, weeks, scores, averageScores, difficult
                 return `
                     <div style="line-height:1.5;">
                         <div style="display:flex; justify-content: space-between;">
-                            <span>${params[0].seriesName || 'Player'}</span>
-                            <span>${playerData} points</span>
+                            <span class="category-label">${params[0].seriesName || 'Player'}:</span>
+                            <span class="category-value">${playerData} points</span>
                         </div>
                         <div style="display:flex; justify-content: space-between;">
-                            <span>${params[1]?.seriesName || 'Avg'}</span>
-                            <span>${avgData} points</span>
+                            <span class="category-label">Avg:</span>
+                            <span class="category-value">${avgData} points</span>
                         </div>
                         <hr style="border-top:1px solid #999;margin: 8px 0;">
                         <div style="display:flex; justify-content: space-between;">
-                            <span>Difficulty</span>
-                            <span>${difficultyValue}</span>
+                            <span class="category-label">Difficulty:</span>
+                            <span class="category-value">${difficultyValue}</span>
                         </div>
                     </div>`;
             },

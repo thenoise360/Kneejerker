@@ -6,6 +6,6 @@
     "\\FPL_site\\static\\scripts",
     "\\FPL_site\\templates"
   ],
-  "SelectedNode": "\\FPL_site\\views.py",
+  "SelectedNode": "\\runserver.py",
   "PreviewInSolutionExplorer": false
 }
