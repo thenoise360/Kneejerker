@@ -1,0 +1,15 @@
+{
+  "name": "fpl_site",
+  "version": "1.0.0",
+  "description": "A rebuild of the FPL Console App to allow the information to be better rendered.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "14.x"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
