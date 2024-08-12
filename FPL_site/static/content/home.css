@@ -1,0 +1,245 @@
+
+/* HOME */
+
+@-webkit-keyframes pulse {
+    0% {
+        background-color: #fa7a7a
+    }
+
+    25% {
+        background-color: #fc6262
+    }
+
+    50% {
+        background-color: #fc5151
+    }
+
+    75% {
+        background-color: #ff4242
+    }
+
+    100% {
+        background-color: #FF0000
+    }
+
+    75% {
+        background-color: #ff4242
+    }
+
+    50% {
+        background-color: #fc5151
+    }
+
+    25% {
+        background-color: #fc6262
+    }
+
+    0% {
+        background-color: #fa7a7a
+    }
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 10px;
+    -webkit-animation: pulse 2s infinite;
+}
+
+.live-pill {
+    background-color: var(--black-10);
+    border: none;
+    border-radius: 20px;
+    padding: 1px 8px;
+    margin: 0px 5px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.live-text {
+    color: #FF0000 !important;
+    margin-left: 4px;
+    font-weight: bold;
+}
+
+.pill-container-home {
+    display: flex;
+    flex-direction: row;
+    margin: 10px 0px;
+    width: fit-content;
+    justify-content: flex-start;
+    width: -webkit-fill-available;
+}
+
+.description {
+    text-align: left;
+    width: -webkit-fill-available;
+    font-weight: 300;
+    margin: 8px 8px;
+}
+
+.update-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0px;
+    width: -webkit-fill-available;
+}
+
+.last-updated {
+    margin-right: 4px;
+    font-weight: 300;
+}
+
+.chart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: -webkit-fill-available;
+}
+
+.chart {
+    display: none;
+    width: -webkit-fill-available;
+    height: 400px; /* Adjust height as needed */
+}
+
+    .chart.active {
+        display: block;
+        width: -webkit-fill-available;
+    }
+
+canvas {
+    width: -webkit-fill-available !important;
+    height: auto !important;
+}
+
+.custom-svg {
+    width: -webkit-fill-available !important;
+    height: 400px !important;
+}
+
+.custom-bar {
+    transition: fill 0.3s;
+}
+
+.primary-bar {
+    fill: var(--primary-color) !important;
+}
+
+.custom-bar:not(.primary-bar) {
+    fill: var(--black-20) !important;
+}
+
+.custom-label {
+    font-family: inherit !important;
+}
+
+/* LINE CHARTS */
+
+.line-chart {
+    width: 100%;
+    height: 300px; /* Adjust the height as needed */
+    min-width: 300px; /* Ensure a reasonable minimum width */
+    display: block;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(0, 0, 0, 0.0); /* Make sure the icons have a visible background */
+    width: 10px;
+    height: 30px;
+    filter: invert(100%);
+    color: var(--black-90);
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    width: 5%; /* Ensure the click area is large enough */
+}
+
+#playerCarousel{
+    width: -webkit-fill-available;
+}
+
+.chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0px;
+}
+
+.chart-card-body{
+    line-height: 100%;
+}
+
+.chart-rank{
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--black-70);
+}
+
+.chart-player {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--black-70);
+}
+
+#positionDropdown {
+    border: none;
+    background: var(--black-10);
+    padding: 4px;
+    border-radius: 5px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: none;
+    text-align: center;
+}
+
+.chart-total{
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--black-70);
+}
+
+.vs-total {
+    margin-left: 8px;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--black-70);
+}
+
+.chart-total-row {
+    display: flex;
+    align-items: baseline;
+}
+
+.chart-total-description{
+    margin-top: 2px;
+}
+
+.chart-description{
+    font-size: 12px;
+    font-weight: 300;
+}
+
+.dropdown-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: -webkit-fill-available;
+}
+
+.category-label {
+    color: var(--black-30);
+    font-weight: 500;
+}
+
+
+.category-value {
+    margin-left: 8px;
+    color: var(--white);
+    font-weight: 500;
+}
