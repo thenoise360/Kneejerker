@@ -3,9 +3,8 @@
     "",
     "\\FPL_site",
     "\\FPL_site\\static",
-    "\\FPL_site\\static\\scripts",
     "\\FPL_site\\templates"
   ],
-  "SelectedNode": "\\package.json",
+  "SelectedNode": "\\runserver.py",
   "PreviewInSolutionExplorer": false
 }

@@ -6,7 +6,8 @@ import logging
 from .dataModels import (
     get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
-    get_player_index_scores, get_player_net_transfers
+    get_player_index_scores, get_player_net_transfers,
+    get_player_ownership, get_top_10_net_transfers
 )
 
 # Set up logging
@@ -35,19 +36,12 @@ def home():
 
 @app.route('/api/net-transfers')
 def net_transfers():
-    data = {
-        'labels': ['Haaland', 'Salah', 'Pickford', 'Gordon', 'Saka', 'Watkins', 'Burn', 'Gvardiol', 'Palmer', 'Saliba'],
-        'values': [1242233, 943631, 872269, 652834, 598723, 554295, 421678, 293029, 182592, 163206]
-    }
+    data = get_top_10_net_transfers()
     return jsonify(data)
 
 @app.route('/api/relative-ownership')
 def relative_ownership():
-    data = {
-        'labels': ['Haaland', 'Salah', 'Pickford', 'Gordon', 'Saka', 'Watkins', 'Burn', 'Gvardiol', 'Palmer', 'Saliba'],
-        'oldValues': [32, 72, 16, 38, 21, 86, 11, 22, 32, 9],
-        'newValues': [62, 82, 25, 46, 29, 91, 16, 26, 35, 10]
-    }
+    data = get_player_ownership()
     return jsonify(data)
 
 @app.route('/api/top-5-players')

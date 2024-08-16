@@ -16,7 +16,7 @@ password = current_config.PASSWORD
 db = current_config.DATABASE
 
 season = "2023_2024"
-season_start = 2023
+season_start = 2024
 
 NULL = None
 
@@ -278,3 +278,89 @@ def get_comparison_stats(id1, id2):
     dbConnect.close()  # It's important to close the connection
     return [player1, player2]
    
+def get_player_ownership():
+    dbConnect = connect_db()
+    cursor = dbConnect.cursor(dictionary=True)
+
+    currentGW = generateCurrentGameweek()
+    if currentGW == None:
+        currentGW = 1
+
+    # Execute SQL query to get players and their respective teams
+    cursor.execute(f'''
+    SELECT second_name, selected_by_percent
+    FROM {db}.bootstrapstatic_elements 
+    WHERE year_start = {season_start} AND gameweek = {currentGW}
+    ORDER BY 
+	    selected_by_percent 
+    DESC 
+    LIMIT 10;
+    ''')
+
+    # Fetch all results from the executed query
+    playersNow = cursor.fetchall()
+
+    labels = list()
+    oldValues = list()
+    newValues = list()
+
+    for player in playersNow:
+        labels.append(player['second_name'])
+        newValues.append(player['selected_by_percent'])
+        if currentGW > 1:
+            cursor.execute(f'''
+                SELECT selected_by_percent
+                FROM {db}.bootstrapstatic_elements 
+                WHERE year_start = {season_start} AND gameweek = 1 AND second_name = '{player['second_name']}';
+            ''')
+
+            playerThen = cursor.fetchall()
+            oldValues.append(playerThen[0]['selected_by_percent'])
+        else:
+            oldValues.append(0)
+    
+    ownership = {
+        'labels': labels,
+        'oldValues': oldValues,
+        'newValues': newValues
+        }
+
+    dbConnect.close()  # Close the database connection
+
+    return ownership
+
+def get_top_10_net_transfers():
+    dbConnect = connect_db()
+    cursor = dbConnect.cursor(dictionary=True)
+
+    currentGW = generateCurrentGameweek()
+    if currentGW == None:
+        currentGW = 1
+
+    # Execute SQL query to get players and their respective teams
+    cursor.execute(f'''
+    SELECT second_name, (transfers_in_event - transfers_out_event) as net_transfers FROM {db}.bootstrapstatic_elements WHERE year_start = 2023 and gameweek = 38
+    ORDER BY 
+	    net_transfers 
+    DESC 
+        LIMIT 10;
+    ''')
+
+    # Fetch all results from the executed query
+    playersNow = cursor.fetchall()
+
+    labels = list()
+    transfers = list()
+
+    for player in playersNow:
+        labels.append(player['second_name'])
+        transfers.append(player['net_transfers'])
+    
+    data = {
+        'labels': labels,
+        'values': transfers
+        }
+
+    dbConnect.close()  # Close the database connection
+
+    return data
