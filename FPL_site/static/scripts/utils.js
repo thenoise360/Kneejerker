@@ -8,8 +8,13 @@ export function updateLastUpdatedTime() {
 
 export function formatNumber(value) {
     if (window.innerWidth <= 768) { // Mobile view
-        return (value / 1000000).toFixed(2) + 'M';
+        if (value >= 100000) {
+            return (value / 1000000).toFixed(2) + 'M';
+        } else {
+            return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); 
+        }
     }
+    // Desktop view: format with thousand separators
     return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 

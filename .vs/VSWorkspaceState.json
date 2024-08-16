@@ -3,6 +3,7 @@
     "",
     "\\FPL_site",
     "\\FPL_site\\static",
+    "\\FPL_site\\static\\scripts",
     "\\FPL_site\\templates"
   ],
   "SelectedNode": "\\runserver.py",
