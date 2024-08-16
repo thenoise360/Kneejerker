@@ -330,37 +330,21 @@ def get_player_ownership():
     return ownership
 
 def get_top_10_net_transfers():
-    dbConnect = connect_db()
-    cursor = dbConnect.cursor(dictionary=True)
+    playerData = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').json()['elements']
+    playersNetTransfers = {}
 
-    currentGW = generateCurrentGameweek()
-    if currentGW == None:
-        currentGW = 1
+    # Calculate net transfers for each player
+    for player in playerData:
+        netTransfers = player['transfers_in_event'] - player['transfers_out_event']
+        playersNetTransfers[player['second_name']] = netTransfers
 
-    # Execute SQL query to get players and their respective teams
-    cursor.execute(f'''
-    SELECT second_name, (transfers_in_event - transfers_out_event) as net_transfers FROM {db}.bootstrapstatic_elements WHERE year_start = 2023 and gameweek = 38
-    ORDER BY 
-	    net_transfers 
-    DESC 
-        LIMIT 10;
-    ''')
+    # Sort the dictionary by values in descending order and pick the top 10
+    sorted_net_transfers = sorted(playersNetTransfers.items(), key=lambda item: item[1], reverse=True)[:10]
 
-    # Fetch all results from the executed query
-    playersNow = cursor.fetchall()
-
-    labels = list()
-    transfers = list()
-
-    for player in playersNow:
-        labels.append(player['second_name'])
-        transfers.append(player['net_transfers'])
-    
+    # Prepare the data in the required format
     data = {
-        'labels': labels,
-        'values': transfers
-        }
-
-    dbConnect.close()  # Close the database connection
+        'labels': [item[0] for item in sorted_net_transfers],
+        'values': [item[1] for item in sorted_net_transfers]
+    }
 
     return data
