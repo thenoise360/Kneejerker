@@ -286,9 +286,17 @@ def get_player_ownership():
     if currentGW == None:
         currentGW = 1
 
+    playerData = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').json()['elements']
+    playersNetTransfers = {}
+
+    currentOwnership = dict()
+
+    for player in playerData:
+        currentOwnership[player['id']] = {'second_name': player['second_name'], 'selected': player['selected_by_percent']}
+
     # Execute SQL query to get players and their respective teams
     cursor.execute(f'''
-    SELECT second_name, selected_by_percent
+    SELECT second_name, selected_by_percent, id
     FROM {db}.bootstrapstatic_elements 
     WHERE year_start = {season_start} AND gameweek = {currentGW}
     ORDER BY 
@@ -306,18 +314,12 @@ def get_player_ownership():
 
     for player in playersNow:
         labels.append(player['second_name'])
-        newValues.append(player['selected_by_percent'])
-        if currentGW > 1:
-            cursor.execute(f'''
-                SELECT selected_by_percent
-                FROM {db}.bootstrapstatic_elements 
-                WHERE year_start = {season_start} AND gameweek = 1 AND second_name = '{player['second_name']}';
-            ''')
-
-            playerThen = cursor.fetchall()
-            oldValues.append(playerThen[0]['selected_by_percent'])
+        oldValues.append(player['selected_by_percent'])
+        if currentGW >= 1:
+            currentPlayer = currentOwnership[player['id']]
+            newValues.append(float(currentPlayer['selected']))
         else:
-            oldValues.append(0)
+            newValues.append(0)
     
     ownership = {
         'labels': labels,
