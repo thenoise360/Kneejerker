@@ -375,10 +375,11 @@ def updateFixturesTables(user, password, database, host):
     dbConnect.close()
 
 def updateAllTables():
-    updateElementsummaryTablesBatch(user, password, db, host)
-    updateFixturesTables(user, password, db, host)
-    updateEventTables(user, password, db, host)
     updateBootstrapStaticTables(user, password, db, host)
+    updateFixturesTables(user, password, db, host)
+    # FIX THESE TWO
+    updateEventTables(user, password, db, host)
+    updateElementsummaryTablesBatch(user, password, db, host)
 
 print("Project root:", project_root)
 print("FPL_site directory:", fpl_site_dir)

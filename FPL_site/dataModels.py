@@ -235,16 +235,16 @@ def get_comparison_stats(id1, id2):
     gameweek = generateCurrentGameweek()
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start} AND gameweek = {gameweek};")
     season_player1 = cursor.fetchone()
 
-    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start} AND gameweek = {gameweek};")
     form_player1 = cursor.fetchone()
         
-    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start} AND gameweek = {gameweek};")
     contribution_player1 = cursor.fetchone()
 
-    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start};")
+    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements WHERE id={id1} AND year_start={season_start} AND gameweek = {gameweek};")
     xG_player1 = cursor.fetchone()
 
     player1 = {
@@ -255,16 +255,16 @@ def get_comparison_stats(id1, id2):
             
     }
 
-    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT total_points, bonus, points_per_game, value_season, starts, minutes, now_cost, selected_by_percent, ict_index FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start} AND gameweek = {gameweek};")
     season_player2 = cursor.fetchone()
 
-    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT  transfers_in_event, transfers_out_event, chance_of_playing_next_round,  form, bps FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start} AND gameweek = {gameweek};")
     form_player2 = cursor.fetchone()
         
-    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT  goals_scored, assists, clean_sheets, penalties_saved, yellow_cards, red_cards, saves FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start} AND gameweek = {gameweek};")
     contribution_player2 = cursor.fetchone()
 
-    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start};")
+    cursor.execute(f"SELECT expected_goals, expected_assists, expected_goal_involvements FROM {db}.bootstrapstatic_elements WHERE id={id2} AND year_start={season_start} AND gameweek = {gameweek};")
     xG_player2 = cursor.fetchone()
 
     player2 = {
