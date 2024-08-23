@@ -6,7 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const charts = document.querySelectorAll('.chart');
     const lastUpdatedTime = document.getElementById('last-updated-time');
     const descriptions = {
-        'net-transfers': document.getElementById('description-net-transfers'),
+        'net-transfers-in': document.getElementById('description-net-transfers-in'),
+        'net-transfers-out': document.getElementById('description-net-transfers-out'),
         'relative-ownership': document.getElementById('description-relative-ownership')
     };
     const chartInstances = {};
@@ -16,31 +17,49 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                if (chartId === 'net-transfers') {
-                    const sortedData = data.labels.map((label, index) => ({
+                let sortedData, labels, values, formattedValues;
+
+                if (chartId === 'net-transfers-in') {
+                    // Sort by value in descending order (highest to lowest)
+                    sortedData = data.labels.map((label, index) => ({
                         label: truncateLabel(label),
                         value: data.values[index]
                     })).sort((a, b) => a.value - b.value);
 
-                    const labels = sortedData.map(item => item.label);
-                    const values = sortedData.map(item => item.value);
-                    const formattedValues = sortedData.map(item => formatNumber(item.value));
+                    labels = sortedData.map(item => item.label);
+                    values = sortedData.map(item => item.value);
+                    formattedValues = sortedData.map(item => formatNumber(item.value));
+
+                    renderBarChart(chartId, labels, values, formattedValues);
+                } else if (chartId === 'net-transfers-out') {
+                    // Sort by value in ascending order (most negative to least negative)
+                    sortedData = data.labels.map((label, index) => ({
+                        label: truncateLabel(label),
+                        value: data.values[index]
+                    })).sort((a, b) => a.value - b.value);
+
+                    labels = sortedData.map(item => item.label);
+                    values = sortedData.map(item => item.value);
+                    formattedValues = sortedData.map(item => formatNumber(-item.value));
 
                     renderBarChart(chartId, labels, values, formattedValues);
                 } else if (chartId === 'relative-ownership') {
-                    const sortedData = data.labels.map((label, index) => ({
+                    // Sort by change in descending order (highest change first)
+                    sortedData = data.labels.map((label, index) => ({
                         label: truncateLabel(label),
-                        newValue: data.newValues[index],
-                        oldValue: data.oldValues[index],
                         change: data.newValues[index] - data.oldValues[index]
                     })).sort((a, b) => a.change - b.change);
 
-                    const labels = sortedData.map(item => item.label);
-                    const values = sortedData.map(item => item.change);
-                    const formattedValues = sortedData.map(item => formatOwnership(item.oldValue, item.newValue));
+                    labels = sortedData.map(item => item.label);
+                    values = sortedData.map(item => item.change);
+                    formattedValues = sortedData.map(item => formatOwnership(
+                        data.oldValues[data.labels.indexOf(item.label)],
+                        data.newValues[data.labels.indexOf(item.label)]
+                    ));
 
                     renderBarChart(chartId, labels, values, formattedValues);
                 }
+
                 lastUpdatedTimestamp = Date.now();
                 updateLastUpdatedTime();
             })
@@ -48,7 +67,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function initializeCharts() {
-        fetchChartData('/api/net-transfers', 'net-transfers');
+        fetchChartData('/api/net-transfers-in', 'net-transfers-in');
+        fetchChartData('/api/net-transfers-out', 'net-transfers-out');
         fetchChartData('/api/relative-ownership', 'relative-ownership');
     }
 
@@ -58,13 +78,20 @@ document.addEventListener('DOMContentLoaded', function () {
             this.classList.add('active');
 
             charts.forEach(chart => chart.classList.remove('active'));
-            Object.values(descriptions).forEach(desc => desc.style.display = 'none');
+            Object.values(descriptions).forEach(desc => {
+                if (desc) {
+                    desc.style.display = 'none';
+                }
+            });
 
             const target = document.getElementById(this.dataset.target);
-            target.classList.add('active');
-            descriptions[this.dataset.target].style.display = 'block';
-
-            fetchChartData(`/api/${this.dataset.target}`, this.dataset.target);
+            if (target) {
+                target.classList.add('active');
+                descriptions[this.dataset.target].style.display = 'block';
+                fetchChartData(`/api/${this.dataset.target}`, this.dataset.target);
+            } else {
+                console.error(`Target element for ${this.dataset.target} not found.`);
+            }
 
             // Ensure chart is resized properly
             Object.keys(chartInstances).forEach(chartId => {

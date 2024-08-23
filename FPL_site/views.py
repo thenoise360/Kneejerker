@@ -7,7 +7,7 @@ from .dataModels import (
     get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers,
-    get_player_ownership, get_top_10_net_transfers
+    get_player_ownership, get_top_10_net_transfers_in, get_top_10_net_transfers_out
 )
 
 # Set up logging
@@ -34,15 +34,21 @@ def home():
     logger.info("Request for home page")
     return render_template('home.html', title='Home Page', year=datetime.now().year)
 
-@app.route('/api/net-transfers')
-def net_transfers():
-    data = get_top_10_net_transfers()
+@app.route('/api/net-transfers-in')
+def net_transfers_in():
+    data = get_top_10_net_transfers_in()
+    return jsonify(data)
+
+@app.route('/api/net-transfers-out')
+def net_transfers_out():
+    data = get_top_10_net_transfers_out()
     return jsonify(data)
 
 @app.route('/api/relative-ownership')
 def relative_ownership():
     data = get_player_ownership()
     return jsonify(data)
+
 
 @app.route('/api/top-5-players')
 def top_5_players():

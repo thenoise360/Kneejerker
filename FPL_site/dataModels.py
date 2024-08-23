@@ -331,22 +331,42 @@ def get_player_ownership():
 
     return ownership
 
-def get_top_10_net_transfers():
+# For Net Transfers In
+def get_top_10_net_transfers_in():
     playerData = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').json()['elements']
     playersNetTransfers = {}
 
-    # Calculate net transfers for each player
     for player in playerData:
-        netTransfers = player['transfers_in_event'] - player['transfers_out_event']
-        playersNetTransfers[player['second_name']] = netTransfers
+        netTransfersIn = player['transfers_in_event'] - player['transfers_out_event']
+        playersNetTransfers[player['second_name']] = netTransfersIn
 
-    # Sort the dictionary by values in descending order and pick the top 10
-    sorted_net_transfers = sorted(playersNetTransfers.items(), key=lambda item: item[1], reverse=True)[:10]
+    sorted_net_transfers_in = sorted(playersNetTransfers.items(), key=lambda item: item[1], reverse=True)[:10]
 
-    # Prepare the data in the required format
     data = {
-        'labels': [item[0] for item in sorted_net_transfers],
-        'values': [item[1] for item in sorted_net_transfers]
+        'labels': [item[0] for item in sorted_net_transfers_in],
+        'values': [item[1] for item in sorted_net_transfers_in]
     }
 
     return data
+
+def get_top_10_net_transfers_out():
+    playerData = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').json()['elements']
+    playersNetTransfersOut = {}
+
+    # Calculate net transfers out for each player
+    for player in playerData:
+        netTransfersOut = player['transfers_out_event'] - player['transfers_in_event']
+        playersNetTransfersOut[player['second_name']] = netTransfersOut  # Store as negative value
+
+    # Sort the dictionary by values in descending order and pick the top 10
+    sorted_net_transfers_out = sorted(playersNetTransfersOut.items(), key=lambda item: item[1], reverse=True)[:10]
+
+    # Prepare the data in the required format
+    data = {
+        'labels': [item[0] for item in sorted_net_transfers_out],
+        'values': [item[1] for item in sorted_net_transfers_out]
+    }
+
+    return data
+
+
