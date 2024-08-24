@@ -243,3 +243,177 @@ canvas {
     color: var(--white);
     font-weight: 500;
 }
+
+/* Player card */
+
+.player-name {
+    display: flex;
+}
+
+.heading-row {
+    display: flex;
+}
+
+.measure-title {
+    display: flex;
+}
+
+.player-values {
+    display: flex;
+}
+
+.measure-values {
+    display: flex;
+}
+
+.average-values {
+    display: flex;
+}
+
+.position-average-title {
+    display: flex;
+}
+
+.injury-warning {
+    display: flex;
+}
+
+/* Upcoming Fixtures */
+
+.fixtures-card {
+    display:flex;
+    min-height: 280px;
+    justify-content: space-around;
+}
+
+.fixture-details {
+    display: flex;
+    width: -webkit-fill-available;
+    flex-direction: column;
+}
+
+.shirt {
+    max-width: 50px;
+}
+
+.shirt.no-fixture{
+    opacity: 0;
+}
+
+.fixture-heading {
+    display: flex;
+    color: var(--black-40);
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.fixtures {
+    display: flex;
+    width: -webkit-fill-available;
+}
+
+.difficulty-2 {
+    display: flex;
+    color: var(--black-80);
+    background-color: #01FC7A;
+    padding: 4px 8px;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.difficulty-3 {
+    display: flex;
+    color: var(--black-80);
+    background-color: var(--black-10);
+    padding: 4px 8px;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.difficulty-4 {
+    display: flex;
+    color: var(--black-10);
+    background-color: #FF1751;
+    padding: 4px 8px;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.difficulty-5 {
+    display: flex;
+    color: var(--black-10);
+    background-color: #80072D;
+    padding: 4px 8px;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.no-fixture {
+    display: flex;
+    color: var(--primary-color);
+    font-weight: 800;
+    padding: 4px 8px;
+    background-color: none;
+    width: -webkit-fill-available;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.no-fixture-text {
+    display: flex;
+    color: var(--primary-color);
+    font-weight: 700;
+    background-color: none;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+
+.venue-row{
+    display: flex;
+}
+
+.coat-hanger {
+    display: flex;
+    width: -webkit-fill-available;
+    justify-content: center;
+    margin: 10px 0px;
+}
+
+.team-shirts {
+    display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-between;
+}
+
+.home {
+    display: flex;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--black-80);
+    font-size: 16px;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.away {
+    display: flex;
+    font-weight: 300;
+    color: var(--black-80);
+    font-size: 16px;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.legend {
+    margin: 8px;
+    display: flex;
+    align-content: center;
+    align-items: center;
+}
+
+.legend-title {
+    display: flex;
+    margin: 0px 10px;
+}
