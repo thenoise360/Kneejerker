@@ -246,32 +246,80 @@ canvas {
 
 /* Player card */
 
-.player-name {
+.players-name {
     display: flex;
+    width: -webkit-fill-available;
+    color: var(--black-80);
+    font-size: 24px;
+    font-weight: 500;
+    margin: 8px;
+    justify-content: center;
+}
+
+.player-team-name {
+    color: var(--black-60);
+    font-size: 14px;
+    font-weight: 300;
+    display: flex;
+    justify-content: center;
 }
 
 .heading-row {
     display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-around;
 }
 
 .measure-title {
     display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-around;
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .player-values {
     display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-around;
+    margin-bottom: 8px
 }
 
 .measure-values {
     display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-around;
+    font-size: 26px;
+    font-weight: 400;
 }
+
+.higher{
+    color: var(--secondary-color)
+}
+
+.lower{
+    color: var(--primary-color)
+}
+
 
 .average-values {
     display: flex;
+    width: -webkit-fill-available;
+    justify-content: space-around;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--black-40)
 }
 
 .position-average-title {
     display: flex;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--black-30);
+    width: -webkit-fill-available;
+    justify-content: center;
+    margin: 0px 0px 16px 0px;
+}
 }
 
 .injury-warning {
@@ -379,6 +427,8 @@ canvas {
     width: -webkit-fill-available;
     justify-content: center;
     margin: 10px 0px;
+    flex-direction: column;
+    align-items: center;
 }
 
 .team-shirts {
