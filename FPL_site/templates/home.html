@@ -1,6 +1,7 @@
 ﻿{% extends 'layout.html' %}
 {% block content %}
 <div class="content-container text-center-height">
+    <!-- Live player transfers-->
     <div class="card">
         <div class="update-row">
             <div class="live-pill">
@@ -22,20 +23,35 @@
             <div id="relative-ownership" class="chart" style="width: 100%; height: 400px;"></div>
         </div>
     </div>
-
-    <div class="card">
-        <div class="dropdown-container">
-            <label for="positionDropdown">Top players last 5 weeks:</label>
-            <select id="positionDropdown">
-                <option value="goalkeepers">Goalkeepers</option>
-                <option value="defenders">Defenders</option>
-                <option value="midfielders" selected>Midfielders</option>
-                <option value="forwards">Forwards</option>
-            </select>
+    <!-- Player summary card-->
+    <div class="card fixtures-card">
+        <div id="player-summary-name" class="players-name">Noussair Mazraoui</div>
+        <div class="coat-hanger">
+            <img class="shirt" src='/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg' />
+            <div class="player-team-name">Man Utd</div>
         </div>
-        <div id="playerCarousel" class="carousel slide" data-bs-interval="false">
+
+        <div id="summaryCarousel" class="carousel slide" style="width: -webkit-fill-available;" data-bs-interval="false">
             <div class="carousel-indicators" id="carouselIndicators"></div>
-            <div class="carousel-inner" id="carouselInner"></div>
+            <div class="carousel-inner" id="playerCarouselInner">
+                <!-- REPLACE-->
+                <div id="player-summary-headings" class="heading-row">
+                    <div class="measure-title">Goals</div>
+                    <div class="measure-title">Assists</div>
+                    <div class="measure-title">Clean sheets</div>
+                </div>
+                <div id="player-summary-values" class="player-values">
+                    <div class="measure-values higher">2</div>
+                    <div class="measure-values higher">3</div>
+                    <div class="measure-values lower">1</div>
+                </div>
+                <div id="player-summary-average-values" class="average-values">
+                    <div id="metric-1" class="average-values">0.5</div>
+                    <div id="metric-2" class="average-values">1.2</div>
+                    <div id="metric-3" class="average-values">2.1</div>
+                </div>
+
+            </div>
             <button class="carousel-control-prev" type="button" data-bs-target="#playerCarousel" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Previous</span>
@@ -45,8 +61,86 @@
                 <span class="visually-hidden">Next</span>
             </button>
         </div>
+
+
+        <div id="playerCarousel" class="carousel slide" data-bs-interval="false">
+
+        </div>
+        <div class="position-average-title">Position average</div>
+        <div id="injury-warning" class="injury-warning" style="display: none"><span class="material-icons">warning</span>Twisted anjke: 75% chance of playing</div>
     </div>
-</div>
+        <!-- Upcoming fixtures-->
+        <div class="card fixtures-card">
+            <div class="fixture-heading">Upcoming fixtures</div>
+            <div class="fixture-details">
+                <div class="fixtures">
+                    <div id="fixture-1" class="difficulty-2">BOU</div>
+                    <div id="fixture-2" class="difficulty-3">NEW</div>
+                    <div id="fixture-3" class="no-fixture">-</div>
+                    <div id="fixture-4" class="difficulty-5">ARS</div>
+                    <div id="fixture-5" class="difficulty-4">LIV</div>
+                </div>
+                <div class="team-shirts">
+                    <div class="coat-hanger">
+                        <img class="shirt" src='/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg' />
+                    </div>
+                    <div class="coat-hanger">
+                        <img class="shirt" src='/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg' />
+                    </div>
+                    <div class="coat-hanger">
+                        <img class="shirt no-fixture" src="/static/content/Tshirts/placeholder.svg" />
+                    </div>
+                    <div class="coat-hanger">
+                        <img class="shirt" src="/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg" />
+                    </div>
+                    <div class="coat-hanger">
+                        <img class="shirt" src="/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg" />
+                    </div>
+                </div>
+                <div class="venue-row">
+                    <div id="fixture-1" class="home">Home</div>
+                    <div id="fixture-2" class="away">Away</div>
+                    <div id="fixture-3" class="no-fixture-text">Blank</div>
+                    <div id="fixture-4" class="home">Home</div>
+                    <div id="fixture-5" class="away">Away</div>
+                </div>
+            </div>
+            <div class="legend">
+                <div class="legend-title">Difficulty</div>
+                <div style="display: flex;">
+                    <div class="difficulty-2">2</div>
+                    <div class="difficulty-3">3</div>
+                    <div class="difficulty-4">4</div>
+                    <div class="difficulty-5">5</div>
+                </div>
+            </div>
+        </div>
+        <!-- Last 5 GW performance-->
+        <!-- Top 5 players-->
+        <div class="card">
+            <div class="dropdown-container">
+                <label for="positionDropdown">Top players last 5 weeks:</label>
+                <select id="positionDropdown">
+                    <option value="goalkeepers">Goalkeepers</option>
+                    <option value="defenders">Defenders</option>
+                    <option value="midfielders" selected>Midfielders</option>
+                    <option value="forwards">Forwards</option>
+                </select>
+            </div>
+            <div id="playerCarousel" class="carousel slide" data-bs-interval="false">
+                <div class="carousel-indicators" id="carouselIndicators"></div>
+                <div class="carousel-inner" id="carouselInner"></div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#playerCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#playerCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
 <script src="{{ url_for('static', filename='scripts/chartUtils.js') }}" type="module"></script>
 <script src="{{ url_for('static', filename='scripts/utils.js') }}" type="module"></script>

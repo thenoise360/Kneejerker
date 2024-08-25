@@ -3,8 +3,14 @@
     "",
     "\\FPL_site",
     "\\FPL_site\\static",
-    "\\FPL_site\\static\\scripts",
-    "\\FPL_site\\templates"
+    "\\FPL_site\\static\\content",
+    "\\venv",
+    "\\venv\\Lib",
+    "\\venv\\Lib\\site-packages",
+    "\\venv\\Lib\\site-packages\\mysql",
+    "\\venv\\Lib\\site-packages\\mysql\\connector",
+    "\\venv\\Lib\\site-packages\\mysql\\connector\\aio",
+    "\\venv\\Lib\\site-packages\\mysql\\connector\\aio\\plugins"
   ],
   "SelectedNode": "\\runserver.py",
   "PreviewInSolutionExplorer": false
