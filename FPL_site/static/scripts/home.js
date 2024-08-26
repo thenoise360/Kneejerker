@@ -138,72 +138,80 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function selectPlayer(playerId) {
         Promise.all([
-            fetch(`/get_next_5_fixtures?id=${playerId}`).then(response => response.json()),
-            fetch(`/get_player_summary?id=${playerId}`).then(response => response.json())
-        ])
-            .then(([fixtures, playerSummary]) => {
-                if (playerSummary.error) {
-                    console.error('Error in player summary:', playerSummary.error);
-                    return;
+            fetch(`/get_player_summary?id=${playerId}`).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
-                const playerData = {
-                    id: playerId,
-                    name: playerSummary.name, // Replace with actual player name
-                    teamName: playerSummary.team_name, // Replace with actual team name
-                    shirtImage: playerSummary.shirtImage, // Replace with actual shirt image
-                    metrics: playerSummary.metrics, // Use the fetched metrics from player summary
-                    fixtures: fixtures // Use the fetched fixtures here
-                };
-
-                populatePlayerSummary(playerData);
-                updateFixtureDetails(playerData);
+                return response.json();
+            }),
+            fetch(`/get_next_5_fixtures?id=${playerId}`).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
             })
-            .catch(error => console.error('Error fetching player data:', error));
+        ])
+        .then(([playerDataResponse, fixtures]) => {
+            if (Array.isArray(playerDataResponse) && playerDataResponse.length > 0) {
+                const playerData = playerDataResponse[0]; // Extract the player data from the array
+                console.log("Received player data:", playerData);
+    
+                if (!playerData || !playerData.metrics || !Array.isArray(playerData.metrics)) {
+                    console.error("Invalid player data received:", playerData);
+                } else {
+                    playerData.fixtures = fixtures; // Ensure fixtures are correctly added to playerData
+                    populatePlayerSummary(playerData);
+                    updateFixtureDetails(playerData);
+                }
+            } else {
+                console.error("Unexpected response format:", playerDataResponse);
+            }
+        })
+        .catch(error => console.error('Error fetching player data:', error));
     }
-
+    
     function populatePlayerSummary(player) {
         const carouselIndicators = document.getElementById('carouselIndicators');
         const summaryCarouselInner = document.getElementById('summaryCarouselInner');
-
+    
         if (!carouselIndicators || !summaryCarouselInner) {
             console.error("Carousel elements not found in the DOM.");
             return;
         }
-
+    
         if (!player || !player.metrics || !Array.isArray(player.metrics)) {
             console.error("Invalid player data provided.");
             return;
         }
-
+    
         const metricGroups = [];
         const metricsPerGroup = 3;
-
+    
         // Split metrics into groups of 3
         for (let i = 0; i < player.metrics.length; i += metricsPerGroup) {
             metricGroups.push(player.metrics.slice(i, i + metricsPerGroup));
         }
-
+    
         // Generate carousel indicators
         carouselIndicators.innerHTML = metricGroups.map((_, index) => `
-        <button type="button" data-bs-target="#summaryCarousel" data-bs-slide-to="${index}" ${index === 0 ? 'class="active" aria-current="true"' : ''} aria-label="Slide ${index + 1}"></button>
-    `).join('');
-
+            <button type="button" data-bs-target="#summaryCarousel" data-bs-slide-to="${index}" ${index === 0 ? 'class="active" aria-current="true"' : ''} aria-label="Slide ${index + 1}"></button>
+        `).join('');
+    
         // Generate carousel items
         summaryCarouselInner.innerHTML = metricGroups.map((group, groupIndex) => `
-        <div class="carousel-item ${groupIndex === 0 ? 'active' : ''}">
-            <div class="heading-row">
-                ${group.map(metric => `<div class="measure-title">${metric.title}</div>`).join('')}
+            <div class="carousel-item ${groupIndex === 0 ? 'active' : ''}">
+                <div class="heading-row">
+                    ${group.map(metric => `<div class="measure-title">${metric.title}</div>`).join('')}
+                </div>
+                <div class="player-values">
+                    ${group.map(metric => `<div class="measure-values">${metric.value}</div>`).join('')}
+                </div>
+                <div class="average-values">
+                    ${group.map(metric => `<div class="average-values">${metric.averageValue}</div>`).join('')}
+                </div>
             </div>
-            <div class="player-values">
-                ${group.map(metric => `<div class="measure-values">${metric.value}</div>`).join('')}
-            </div>
-            <div class="average-values">
-                ${group.map(metric => `<div class="average-values">${metric.averageValue}</div>`).join('')}
-            </div>
-        </div>
-    `).join('');
-
+        `).join('');
+    
         // Reinitialize the carousel
         const myCarousel = document.querySelector('#summaryCarousel');
         if (myCarousel) {
@@ -213,21 +221,28 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             new bootstrap.Carousel(myCarousel);  // Reinitialize the carousel
         }
-
+    
         // Update player name, shirt, and team
         document.getElementById('player-summary-name').textContent = player.name || 'Unknown';
+        document.getElementById('player-value').textContent = "\u00A3" + player.value || '£-.-';
+        document.getElementById('minutes').textContent = player.minutes || '-';
+        document.getElementById('position-name').textContent = player.position_name || 'Position';
         document.querySelector('.coat-hanger .shirt').src = player.shirtImage || '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
-        document.querySelector('.coat-hanger .player-team-name').textContent = player.teamName || '-';
+        document.querySelector('.coat-hanger .player-team-name').textContent = player.team_name || '-';
     }
-
-
+    
     function updateFixtureDetails(player) {
+        if (!player.fixtures || !Array.isArray(player.fixtures)) {
+            console.error("Invalid fixtures data provided.");
+            return;
+        }
+    
         player.fixtures.forEach((fixture, index) => {
             const fixtureElement = document.getElementById(`fixture-${index + 1}`);
             if (fixtureElement) {
                 fixtureElement.className = `difficulty-${fixture.difficulty}`;
                 fixtureElement.textContent = fixture.teamName;
-
+    
                 const shirtElement = document.querySelector(`.team-shirts .coat-hanger:nth-child(${index + 1}) .shirt`);
                 if (shirtElement) {
                     shirtElement.src = fixture.shirtImage;
@@ -235,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         shirtElement.classList.add('no-fixture')
                     }
                 }
-
+    
                 const venueElement = document.querySelector(`.venue-row .venue:nth-child(${index + 1})`);
                 if (venueElement) {
                     venueElement.textContent = fixture.homeOrAway;
@@ -244,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
+    
     function initializeCharts() {
         fetchChartData('/api/net-transfers-in', 'net-transfers-in');
         fetchChartData('/api/net-transfers-out', 'net-transfers-out');

@@ -24,11 +24,23 @@
         </div>
     </div>
     <!-- Player summary card-->
-    <div class="card fixtures-card" style="display: none">
-        <div id="player-summary-name" class="players-name">-</div>
-        <div class="coat-hanger">
-            <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
-            <div class="player-team-name">-</div>
+    <div class="card fixtures-card">
+        <div class="player-summary-area">
+            <div class="supporting-metrics">
+                <div  class="supporting-metrics-values"  id="player-value">£-.-</div>
+                <div id="metric-text">value</div>
+            </div>
+            <div class="player-details">
+                <div id="player-summary-name" class="players-name">-</div>
+                <div class="coat-hanger">
+                    <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
+                    <div class="player-team-name">-</div>
+                </div>
+            </div>
+            <div class="supporting-metrics">
+                <div class="supporting-metrics-values" id="minutes">-.-</div>
+                <div id="metric-text">Avg mins</div>
+            </div>
         </div>
         <div id="summaryCarousel" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-indicators" id="carouselIndicators"></div>
@@ -44,7 +56,10 @@
                 <span class="visually-hidden">Next</span>
             </button>
         </div>
-        <div class="position-average-title">Position average</div>
+        <div class="position-average-title">
+            <div id="position-name">Position</div>
+            <div>&nbspaverage</div>
+        </div>
         <div id="injury-warning" class="injury-warning" style="display: none"><span class="material-icons">warning</span>Twisted anjke: 75% chance of playing</div>
     </div>
     <!-- Upcoming fixtures-->

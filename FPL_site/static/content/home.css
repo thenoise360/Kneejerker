@@ -254,6 +254,7 @@ canvas {
     font-weight: 500;
     margin: 8px;
     justify-content: center;
+    text-align: center;
 }
 
 .player-team-name {
@@ -411,6 +412,31 @@ canvas {
     width: -webkit-fill-available !important;
 }
 
+.player-summary-area {
+    display: flex;
+    width: -webkit-fill-available !important;
+    margin: 10px 0px 50px;
+}
+
+.supporting-metrics {
+    display: flex;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--black-70);
+    width: -webkit-fill-available !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.supporting-metrics-values {
+    font-size: 22px;
+    font-weight: 500;
+}
+
+.player-details {
+    width: -webkit-fill-available !important;
+}
 
 .blank {
     display: flex;
