@@ -6,6 +6,34 @@ import requests
 import json
 import logging
 
+player_shirts = {
+        1: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', # Arsenal
+        2: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Aston Villa
+        3: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', # Bournemouth
+        4: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', # Brentford
+        5: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', # Brighton
+        99: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Burnley
+        6: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', # Chelsea
+        7: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', # Crystal Palace
+        8: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Everton
+        9: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Fulham
+        10: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', # Ipswich Town
+        99: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Leeds
+        11: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Leicester
+        12: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Liverpool
+        99: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', # Luton
+        13: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', # Man City
+        14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Man Utd
+        15: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', # Newcastle
+        16: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Nottingham Forest
+        99: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Sheffield Utd
+        17: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', # Southampton
+        18: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Spurs
+        19: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # West Ham
+        20: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', # Wolves
+        1000: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Default for unknown teams
+};
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -292,11 +320,11 @@ def get_player_ownership():
     currentOwnership = dict()
 
     for player in playerData:
-        currentOwnership[player['id']] = {'second_name': player['second_name'], 'selected': player['selected_by_percent']}
+        currentOwnership[player['id']] = {'web_name': player['web_name'], 'selected': player['selected_by_percent']}
 
     # Execute SQL query to get players and their respective teams
     cursor.execute(f'''
-    SELECT second_name, selected_by_percent, id
+    SELECT web_name, selected_by_percent, id
     FROM {db}.bootstrapstatic_elements 
     WHERE year_start = {season_start} AND gameweek = {currentGW}
     ORDER BY 
@@ -311,10 +339,12 @@ def get_player_ownership():
     labels = list()
     oldValues = list()
     newValues = list()
+    ids = list()
 
     for player in playersNow:
-        labels.append(player['second_name'])
+        labels.append(player['web_name'])
         oldValues.append(player['selected_by_percent'])
+        ids.append(player['id'])
         if currentGW >= 1:
             currentPlayer = currentOwnership[player['id']]
             newValues.append(float(currentPlayer['selected']))
@@ -324,7 +354,8 @@ def get_player_ownership():
     ownership = {
         'labels': labels,
         'oldValues': oldValues,
-        'newValues': newValues
+        'newValues': newValues,
+        'ids': ids
         }
 
     dbConnect.close()  # Close the database connection
@@ -335,16 +366,19 @@ def get_player_ownership():
 def get_top_10_net_transfers_in():
     playerData = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').json()['elements']
     playersNetTransfers = {}
+    idToName = dict()
 
     for player in playerData:
         netTransfersIn = player['transfers_in_event'] - player['transfers_out_event']
-        playersNetTransfers[player['second_name']] = netTransfersIn
+        playersNetTransfers[player['id']] = netTransfersIn
+        idToName[player['id']] = player['web_name'] 
 
     sorted_net_transfers_in = sorted(playersNetTransfers.items(), key=lambda item: item[1], reverse=True)[:10]
 
     data = {
-        'labels': [item[0] for item in sorted_net_transfers_in],
-        'values': [item[1] for item in sorted_net_transfers_in]
+        'labels': [idToName[item[0]] for item in sorted_net_transfers_in],
+        'values': [item[1] for item in sorted_net_transfers_in],
+        'ids': [item[0] for item in sorted_net_transfers_in]
     }
 
     return data
@@ -352,21 +386,165 @@ def get_top_10_net_transfers_in():
 def get_top_10_net_transfers_out():
     playerData = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').json()['elements']
     playersNetTransfersOut = {}
+    idToName = dict()
 
     # Calculate net transfers out for each player
     for player in playerData:
         netTransfersOut = player['transfers_out_event'] - player['transfers_in_event']
-        playersNetTransfersOut[player['second_name']] = netTransfersOut  # Store as negative value
+        playersNetTransfersOut[player['id']] = netTransfersOut  # Store as negative value
+        idToName[player['id']] = player['web_name'] 
 
     # Sort the dictionary by values in descending order and pick the top 10
     sorted_net_transfers_out = sorted(playersNetTransfersOut.items(), key=lambda item: item[1], reverse=True)[:10]
 
     # Prepare the data in the required format
     data = {
-        'labels': [item[0] for item in sorted_net_transfers_out],
-        'values': [item[1] for item in sorted_net_transfers_out]
+        'labels': [idToName[item[0]] for item in sorted_net_transfers_out],
+        'values': [item[1] for item in sorted_net_transfers_out],
+        'ids': [item[0] for item in sorted_net_transfers_out]
     }
 
     return data
 
 
+def next_5_fixtures(player_id):
+
+    dbConnect = connect_db()
+    cursor = dbConnect.cursor(dictionary=True)
+
+    query = f'SELECT t.name as "team", t.short_name as "team_short", p.team AS "team_id", CONCAT(p.first_name, " ", p.second_name) AS "Full_name", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id={player_id};'
+    cursor.execute(query)
+    player_info = cursor.fetchone()
+
+    # Always ensure you fetch all results or close the cursor before executing another query
+    query = f'SELECT id, short_name FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
+    cursor.execute(query)
+    teams = cursor.fetchall()  # Fetch all team information
+
+    gw = generateCurrentGameweek()
+    i = gw + 1
+
+    fixtures = list()
+
+    while i < gw + 6:
+        fixture = dict()
+        team_id = player_info['team_id']
+        query = f'SELECT team_a, team_h, team_a_difficulty, team_h_difficulty FROM {db}.fixtures_fixtures WHERE year_start = {season_start} AND (team_h={team_id} OR team_a={team_id}) AND event = {i};'
+        cursor.execute(query)
+        difficulty_info = cursor.fetchone()  # Fetch the difficulty info for the current fixture
+
+        # Process the result
+        if difficulty_info['team_a'] == player_info['team_id']:
+            venue = 'Away'
+            opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_h'])
+            opponent_id = difficulty_info['team_h']
+        elif difficulty_info['team_h'] == player_info['team_id']:
+            venue = 'Home'
+            opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_a'])
+            opponent_id = difficulty_info['team_a']
+        else:
+            venue = 'blank'
+            opponent = '-'
+            opponent_id = 1000
+
+
+        if venue == 'Away':
+            difficulty = difficulty_info['team_a_difficulty']
+        elif venue == 'Home':
+            difficulty = difficulty_info['team_h_difficulty']
+        else: 
+            difficulty = "None"
+
+        fixture = {
+            'teamName': opponent, 
+            'difficulty': difficulty, 
+            'shirtImage': player_shirts[opponent_id], 
+            'homeOrAway': venue}
+        fixtures.append(fixture)
+        i += 1                 
+
+    cursor.close()  # Close the cursor after using it
+    dbConnect.close()  # Close the database connection
+
+    return fixtures
+
+def get_teams(player_id):
+    # Connect to the database
+    dbConnect = connect_db()
+    cursor = dbConnect.cursor(dictionary=True)
+
+    # Execute SQL query to get players and their respective teams
+    cursor.execute(f'SELECT t.name AS "Team" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id = {player_id}')
+
+    # Fetch all results from the executed query
+    teams = cursor.fetchall()
+    dbConnect.close()  # Close the database connection
+
+    return teams
+
+def fetch_player_summary(player_id):
+    try:
+        logger.info(f"Request for player_summary with player_id: {player_id}")
+        
+        # Validate player_id
+        try:
+            player_id = int(player_id)
+        except ValueError:
+            logger.error(f"Invalid player_id provided: {player_id}")
+            return {"error": "Invalid player ID provided."}, 400
+
+        # Fetch data from FPL API
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
+        if response.status_code != 200:
+            logger.error(f"Failed to fetch data from FPL API. Status Code: {response.status_code}")
+            return {"error": "Failed to fetch data from external API."}, 502
+
+        data = response.json()
+        elements = data.get('elements', [])
+        teams = data.get('teams', [])
+
+        # Find the player in elements
+        player = next((p for p in elements if p['id'] == player_id), None)
+        if not player:
+            logger.warning(f"Player with ID {player_id} not found in FPL data.")
+            return {"error": "Player not found."}, 404
+
+        # Calculate averages
+        valid_players = [p for p in elements if p['minutes'] > 0]
+        if not valid_players:
+            logger.warning(f"No valid players with minutes found.")
+            return {"error": "No valid player data found."}, 500
+
+        average_goals = round(sum(p['goals_scored'] for p in valid_players) / len(valid_players), 2)
+        average_assists = round(sum(p['assists'] for p in valid_players) / len(valid_players), 2)
+        average_form = round(sum(float(p['form']) for p in valid_players) / len(valid_players), 2)
+
+        # Get team info
+        team = next((t for t in teams if t['id'] == player['team']), None)
+        if not team:
+            logger.warning(f"Team for player ID {player_id} not found.")
+            team_name = "Unknown"
+            shirt_image = "/static/content/Tshirts/default-shirt.svg"
+        else:
+            team_name = team['name']
+            shirt_image = f"/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg"
+
+        # Create player summary
+        player_summary = {
+            'id': player_id,
+            'name': player['web_name'],
+            'team_name': team_name,
+            'shirtImage': shirt_image,
+            'metrics': [
+                {'title': 'Goals', 'value': player['goals_scored'], 'averageValue': average_goals},
+                {'title': 'Assists', 'value': player['assists'], 'averageValue': average_assists},
+                {'title': 'Form', 'value': float(player['form']), 'averageValue': average_form},
+            ]
+        }
+
+        logger.info(f"Successfully retrieved summary for player ID {player_id}")
+        return player_summary, 200
+
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred while processing player ID {player_id}: {str(e)}")
+        return {"error": "An unexpected error occurred."}, 500

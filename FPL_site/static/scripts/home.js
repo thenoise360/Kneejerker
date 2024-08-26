@@ -13,57 +13,236 @@ document.addEventListener('DOMContentLoaded', function () {
     const chartInstances = {};
     let lastUpdatedTimestamp = Date.now();
 
+    function initializeChartClickHandling(chartInstance, sortedData) {
+        let selectedIndex = null;
+
+        // Ensure the click event is set up correctly
+        chartInstance.off('click'); // Clear any previous event listeners
+        chartInstance.on('click', function (params) {
+            // Check if the click is on the series, which includes the bars and associated labels
+            if (params.componentType === 'series' || params.componentType === 'label') {
+                console.log('Clicked on:', params.name, 'with ID:', sortedData[params.dataIndex].id);
+
+                selectedIndex = params.dataIndex;
+
+                // Update the colors: Selected bar becomes primary color, others become the default
+                chartInstance.setOption({
+                    series: [{
+                        itemStyle: {
+                            color: function (params) {
+                                return params.dataIndex === selectedIndex
+                                    ? 'var(--primary-color)'
+                                    : 'var(--black-20)';
+                            }
+                        }
+                    }]
+                });
+
+                const playerId = sortedData[params.dataIndex].id;
+                if (playerId) {
+                    selectPlayer(playerId);
+                } else {
+                    console.error("Player ID is missing for the selected data point.");
+                }
+            }
+        });
+
+        // Handle hover states (optional)
+        chartInstance.on('mousemove', function (params) {
+            if (params.componentType === 'series' || params.componentType === 'label') {
+                chartInstance.dispatchAction({
+                    type: 'highlight',
+                    seriesIndex: 0,
+                    dataIndex: params.dataIndex,
+                });
+            }
+        });
+
+        chartInstance.on('mouseout', function () {
+            chartInstance.dispatchAction({
+                type: 'downplay',
+                seriesIndex: 0,
+            });
+        });
+    }
+
+
+
     function fetchChartData(url, chartId) {
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                let sortedData, labels, values, formattedValues;
+                console.log("Chart Data:", data);
 
-                if (chartId === 'net-transfers-in') {
-                    // Sort by value in descending order (highest to lowest)
-                    sortedData = data.labels.map((label, index) => ({
-                        label: truncateLabel(label),
-                        value: data.values[index]
-                    })).sort((a, b) => a.value - b.value);
+                if (data.labels && data.labels.length > 0 && data.values) {
+                    let sortedData, labels, values, formattedValues;
 
-                    labels = sortedData.map(item => item.label);
-                    values = sortedData.map(item => item.value);
-                    formattedValues = sortedData.map(item => formatNumber(item.value));
+                    if (chartId === 'net-transfers-in') {
+                        sortedData = data.labels.map((label, index) => ({
+                            label: truncateLabel(label),
+                            value: data.values[index],
+                            id: data.ids ? data.ids[index] : null
+                        })).sort((a, b) => a.value - b.value);
 
+                        labels = sortedData.map(item => item.label);
+                        values = sortedData.map(item => item.value);
+                        formattedValues = sortedData.map(item => formatNumber(item.value));
+
+                    } else if (chartId === 'net-transfers-out') {
+                        sortedData = data.labels.map((label, index) => ({
+                            label: truncateLabel(label),
+                            value: data.values[index],
+                            id: data.ids ? data.ids[index] : null
+                        })).sort((a, b) => a.value - b.value);
+
+                        labels = sortedData.map(item => item.label);
+                        values = sortedData.map(item => item.value);
+                        formattedValues = sortedData.map(item => formatNumber(-item.value)); // Make the values negative
+
+                    } else if (chartId === 'relative-ownership') {
+                        sortedData = data.labels.map((label, index) => ({
+                            label: truncateLabel(label),
+                            change: data.newValues[index] - data.oldValues[index],
+                            id: data.ids ? data.ids[index] : null
+                        })).sort((a, b) => a.change - b.change);
+
+                        labels = sortedData.map(item => item.label);
+                        values = sortedData.map(item => item.change);
+                        formattedValues = sortedData.map(item => formatOwnership(
+                            data.oldValues[data.labels.indexOf(item.label)],
+                            data.newValues[data.labels.indexOf(item.label)]
+                        ));
+                    }
+
+                    // Render the chart
                     renderBarChart(chartId, labels, values, formattedValues);
-                } else if (chartId === 'net-transfers-out') {
-                    // Sort by value in ascending order (most negative to least negative)
-                    sortedData = data.labels.map((label, index) => ({
-                        label: truncateLabel(label),
-                        value: data.values[index]
-                    })).sort((a, b) => a.value - b.value);
 
-                    labels = sortedData.map(item => item.label);
-                    values = sortedData.map(item => item.value);
-                    formattedValues = sortedData.map(item => formatNumber(-item.value));
+                    // Get the instance of the chart
+                    const chartInstance = echarts.getInstanceByDom(document.getElementById(chartId));
 
-                    renderBarChart(chartId, labels, values, formattedValues);
-                } else if (chartId === 'relative-ownership') {
-                    // Sort by change in descending order (highest change first)
-                    sortedData = data.labels.map((label, index) => ({
-                        label: truncateLabel(label),
-                        change: data.newValues[index] - data.oldValues[index]
-                    })).sort((a, b) => a.change - b.change);
+                    if (chartInstance) {
+                        initializeChartClickHandling(chartInstance, sortedData);
+                    } else {
+                        console.error("Chart instance not found for ID:", chartId);
+                    }
 
-                    labels = sortedData.map(item => item.label);
-                    values = sortedData.map(item => item.change);
-                    formattedValues = sortedData.map(item => formatOwnership(
-                        data.oldValues[data.labels.indexOf(item.label)],
-                        data.newValues[data.labels.indexOf(item.label)]
-                    ));
-
-                    renderBarChart(chartId, labels, values, formattedValues);
+                    lastUpdatedTimestamp = Date.now();
+                    updateLastUpdatedTime();
+                } else {
+                    console.error("No data available for the chart.");
                 }
-
-                lastUpdatedTimestamp = Date.now();
-                updateLastUpdatedTime();
             })
             .catch(error => console.error('Error fetching chart data:', error));
+    }
+
+
+    function selectPlayer(playerId) {
+        Promise.all([
+            fetch(`/get_next_5_fixtures?id=${playerId}`).then(response => response.json()),
+            fetch(`/get_player_summary?id=${playerId}`).then(response => response.json())
+        ])
+            .then(([fixtures, playerSummary]) => {
+                if (playerSummary.error) {
+                    console.error('Error in player summary:', playerSummary.error);
+                    return;
+                }
+
+                const playerData = {
+                    id: playerId,
+                    name: playerSummary.name, // Replace with actual player name
+                    teamName: playerSummary.team_name, // Replace with actual team name
+                    shirtImage: playerSummary.shirtImage, // Replace with actual shirt image
+                    metrics: playerSummary.metrics, // Use the fetched metrics from player summary
+                    fixtures: fixtures // Use the fetched fixtures here
+                };
+
+                populatePlayerSummary(playerData);
+                updateFixtureDetails(playerData);
+            })
+            .catch(error => console.error('Error fetching player data:', error));
+    }
+
+    function populatePlayerSummary(player) {
+        const carouselIndicators = document.getElementById('carouselIndicators');
+        const summaryCarouselInner = document.getElementById('summaryCarouselInner');
+
+        if (!carouselIndicators || !summaryCarouselInner) {
+            console.error("Carousel elements not found in the DOM.");
+            return;
+        }
+
+        if (!player || !player.metrics || !Array.isArray(player.metrics)) {
+            console.error("Invalid player data provided.");
+            return;
+        }
+
+        const metricGroups = [];
+        const metricsPerGroup = 3;
+
+        // Split metrics into groups of 3
+        for (let i = 0; i < player.metrics.length; i += metricsPerGroup) {
+            metricGroups.push(player.metrics.slice(i, i + metricsPerGroup));
+        }
+
+        // Generate carousel indicators
+        carouselIndicators.innerHTML = metricGroups.map((_, index) => `
+        <button type="button" data-bs-target="#summaryCarousel" data-bs-slide-to="${index}" ${index === 0 ? 'class="active" aria-current="true"' : ''} aria-label="Slide ${index + 1}"></button>
+    `).join('');
+
+        // Generate carousel items
+        summaryCarouselInner.innerHTML = metricGroups.map((group, groupIndex) => `
+        <div class="carousel-item ${groupIndex === 0 ? 'active' : ''}">
+            <div class="heading-row">
+                ${group.map(metric => `<div class="measure-title">${metric.title}</div>`).join('')}
+            </div>
+            <div class="player-values">
+                ${group.map(metric => `<div class="measure-values">${metric.value}</div>`).join('')}
+            </div>
+            <div class="average-values">
+                ${group.map(metric => `<div class="average-values">${metric.averageValue}</div>`).join('')}
+            </div>
+        </div>
+    `).join('');
+
+        // Reinitialize the carousel
+        const myCarousel = document.querySelector('#summaryCarousel');
+        if (myCarousel) {
+            const carouselInstance = bootstrap.Carousel.getInstance(myCarousel);
+            if (carouselInstance) {
+                carouselInstance.dispose();  // Dispose of the previous instance
+            }
+            new bootstrap.Carousel(myCarousel);  // Reinitialize the carousel
+        }
+
+        // Update player name, shirt, and team
+        document.getElementById('player-summary-name').textContent = player.name || 'Unknown';
+        document.querySelector('.coat-hanger .shirt').src = player.shirtImage || '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
+        document.querySelector('.coat-hanger .player-team-name').textContent = player.teamName || '-';
+    }
+
+
+    function updateFixtureDetails(player) {
+        player.fixtures.forEach((fixture, index) => {
+            const fixtureElement = document.getElementById(`fixture-${index + 1}`);
+            if (fixtureElement) {
+                fixtureElement.className = `difficulty-${fixture.difficulty}`;
+                fixtureElement.textContent = fixture.teamName;
+
+                const shirtElement = document.querySelector(`.team-shirts .coat-hanger:nth-child(${index + 1}) .shirt`);
+                if (shirtElement) {
+                    shirtElement.src = fixture.shirtImage;
+                    if (fixture.difficulty === 0) {
+                        shirtElement.classList.add('no-fixture')
+                    }
+                }
+
+                const venueElement = document.querySelector(`.venue-row .venue:nth-child(${index + 1})`);
+                if (venueElement) {
+                    venueElement.textContent = fixture.homeOrAway;
+                    venueElement.className = fixture.homeOrAway.toLowerCase();
+                }
+            }
+        });
     }
 
     function initializeCharts() {
@@ -110,4 +289,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     setInterval(updateLastUpdatedTime, 30000);
+
 });

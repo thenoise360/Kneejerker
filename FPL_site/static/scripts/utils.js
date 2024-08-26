@@ -8,7 +8,7 @@ export function updateLastUpdatedTime() {
 
 export function formatNumber(value) {
     if (window.innerWidth <= 768) { // Mobile view
-        if (value >= 100000) {
+        if (value >= 1000000) {
             return (value / 1000000).toFixed(2) + 'M';
         } else {
             return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); 
@@ -55,5 +55,5 @@ export function isUserActive(initializeCharts) {
 }
 
 export function truncateLabel(label, maxLength = 20) {
-    return label.length > maxLength ? label.substring(0, maxLength - 3) + '...' : label;
+    return label.length > maxLength ? label.substring(label.length, maxLength - 3) + '...' : label;
 }
