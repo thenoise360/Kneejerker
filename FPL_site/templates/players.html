@@ -3,16 +3,38 @@
 {% endif %}
 
 {% block content %}
-<div class="player-container">
-    <div class="holding-page">
-        <img src="\static\content\HoldingPages\goal-set-up.png" class="placeholder-image" />
-        <div class="placeholder-text">
-            This page is under construction
+    <!-- Top 5 players-->
+<div class="content-container text-center-height">
+    <div class="card">
+        <div class="dropdown-container">
+            <label for="positionDropdown">Top players last 5 weeks:</label>
+            <select id="positionDropdown">
+                <option value="goalkeepers">Goalkeepers</option>
+                <option value="defenders">Defenders</option>
+                <option value="midfielders" selected>Midfielders</option>
+                <option value="forwards">Forwards</option>
+            </select>
         </div>
-        <div class="placeholder-subtext">
-            Keep checking for new updates soon!
+        <div id="playerCarousel" class="carousel slide" data-bs-interval="false">
+            <div class="carousel-indicators" id="carouselIndicators"></div>
+            <div class="carousel-inner" id="carouselInner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#playerCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#playerCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
         </div>
     </div>
 </div>
+
+<script src="{{ url_for('static', filename='scripts/chartUtils.js') }}" type="module"></script>
+<script src="{{ url_for('static', filename='scripts/utils.js') }}" type="module"></script>
+<script src="{{ url_for('static', filename='scripts/netTransfersChart.js') }}" type="module"></script>
+<script src="{{ url_for('static', filename='scripts/relativeOwnershipChart.js') }}" type="module"></script>
+<script src="{{ url_for('static', filename='scripts/topPlayersChart.js') }}" type="module"></script>
+<script src="{{ url_for('static', filename='scripts/home.js') }}" type="module"></script>
 
 {% endblock %}

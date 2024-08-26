@@ -1,4 +1,5 @@
 ﻿from datetime import datetime
+from re import M
 from flask import render_template, request, jsonify, send_from_directory, abort
 from . import app
 import os
@@ -7,7 +8,8 @@ from .dataModels import (
     get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers,
-    get_player_ownership, get_top_10_net_transfers_in, get_top_10_net_transfers_out
+    get_player_ownership, get_top_10_net_transfers_in, get_top_10_net_transfers_out,
+    next_5_fixtures, fetch_player_summary
 )
 
 # Set up logging
@@ -282,3 +284,25 @@ def compare_players_route():
     id2 = request.args.get('id2', type=int)
     players_data = get_comparison_stats(id1, id2)
     return jsonify(players_data)
+
+@app.route('/get_next_5_fixtures')
+def get_player_next_5_fixtures():
+    logger.info("Request for get_next_5_fixtures")
+    try:
+        player_id = request.args.get('id')
+        fixtures = next_5_fixtures(player_id)
+        return jsonify(fixtures)
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        return str(e), 500
+
+@app.route('/get_player_summary')
+def get_player_summary():
+    logger.info("Request for get_player_summary")
+    try:
+        player_id = request.args.get('id')
+        player_summary_result = fetch_player_summary(player_id)
+        return jsonify(player_summary_result)
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        return str(e), 500
