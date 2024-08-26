@@ -509,8 +509,17 @@ def fetch_player_summary(player_id):
             logger.warning(f"Player with ID {player_id} not found in FPL data.")
             return {"error": "Player not found."}, 404
 
+        position = player['element_type']
+
+        element_types = {
+            1: 'Goalkeeper',
+            2: 'Defender',
+            3: 'Midfielder',
+            4: 'Forward'
+        }
+
         # Calculate averages
-        valid_players = [p for p in elements if p['minutes'] > 0]
+        valid_players = [p for p in elements if p['minutes'] > 0 and p['element_type'] == position]
         if not valid_players:
             logger.warning(f"No valid players with minutes found.")
             return {"error": "No valid player data found."}, 500
@@ -524,15 +533,20 @@ def fetch_player_summary(player_id):
         if not team:
             logger.warning(f"Team for player ID {player_id} not found.")
             team_name = "Unknown"
-            shirt_image = "/static/content/Tshirts/default-shirt.svg"
+            shirt_image = '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg'
         else:
             team_name = team['name']
-            shirt_image = f"/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg"
+            shirt_image = player_shirts[team['id']]
 
         # Create player summary
         player_summary = {
             'id': player_id,
             'name': player['web_name'],
+            'minutes': player['minutes']/generateCurrentGameweek(),
+            'value': float(player['now_cost']/10),
+            'name': player['web_name'],
+            'position': position,
+            'position_name': element_types[position],
             'team_name': team_name,
             'shirtImage': shirt_image,
             'metrics': [
