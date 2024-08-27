@@ -3,28 +3,44 @@
   "WorkspaceRootPath": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\dataModels.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\dataModels.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\runserver.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:runserver.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\dataModels.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\dataModels.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\home.js||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\scripts\\home.js||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\sqlFunction.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\sqlFunction.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\run_update.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\run_update.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.env||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:.env||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\venv\\pyvenv.cfg||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:venv\\pyvenv.cfg||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\layout.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
@@ -35,20 +51,12 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\content\\home.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\sqlFunction.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\sqlFunction.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\style.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\content\\style.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\chartUtils.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\scripts\\chartUtils.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\run_update.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\run_update.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\utils.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
@@ -103,10 +111,6 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\content\\logo.svg||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.env||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:.env||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.webmanifest||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:.webmanifest||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
@@ -138,11 +142,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 10,
               "Title": "layout.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\layout.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\layout.html",
@@ -156,13 +160,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "dataModels.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\dataModels.py",
               "RelativeDocumentMoniker": "FPL_site\\dataModels.py",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\dataModels.py",
               "RelativeToolTip": "FPL_site\\dataModels.py",
-              "ViewState": "AgIAAE0BAAAAAAAAAADwv3ABAAAWAAAAAAAAAA==",
+              "ViewState": "AgIAALABAAAAAAAAAAAswL0BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-08-16T11:37:29.151Z",
               "IsPinned": true,
@@ -170,7 +174,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 3,
               "Title": "home.js",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\home.js",
               "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\home.js",
@@ -179,11 +183,12 @@
               "ViewState": "AgIAAD8AAAAAAAAAAAAowEwAAABuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
               "WhenOpened": "2024-08-05T15:44:53.272Z",
-              "IsPinned": true
+              "IsPinned": true,
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "runserver.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\runserver.py",
               "RelativeDocumentMoniker": "runserver.py",
@@ -197,79 +202,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "sqlFunction.py",
-              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\sqlFunction.py",
-              "RelativeDocumentMoniker": "FPL_site\\sqlFunction.py",
-              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\sqlFunction.py",
-              "RelativeToolTip": "FPL_site\\sqlFunction.py",
-              "ViewState": "AgIAAMYAAAAAAAAAAAAqwNEAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-07-27T13:58:55.128Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "views.py",
-              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\views.py",
-              "RelativeDocumentMoniker": "FPL_site\\views.py",
-              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\views.py",
-              "RelativeToolTip": "FPL_site\\views.py",
-              "ViewState": "AgIAACIAAAAAAAAAAAAAADIAAAAWAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-08-11T17:44:07.216Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "home.html",
-              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html",
-              "RelativeDocumentMoniker": "FPL_site\\templates\\home.html",
-              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html",
-              "RelativeToolTip": "FPL_site\\templates\\home.html",
-              "ViewState": "AgIAAAkAAAAAAAAAAAAAACkAAAA0AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2024-07-29T12:58:54.396Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "compare.js",
-              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\compare.js",
-              "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\compare.js",
-              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\compare.js",
-              "RelativeToolTip": "FPL_site\\static\\scripts\\compare.js",
-              "ViewState": "AgIAAAAAAAAAAAAAAIBJwA4AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2024-07-29T19:10:39.88Z"
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 9,
-              "Title": "style.css",
-              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\style.css",
-              "RelativeDocumentMoniker": "FPL_site\\static\\content\\style.css",
-              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\style.css",
-              "RelativeToolTip": "FPL_site\\static\\content\\style.css",
-              "ViewState": "AgIAAKsCAAAAAAAAAIBJwB8AAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2024-08-07T20:12:39.924Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "utils.js",
-              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\utils.js",
-              "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\utils.js",
-              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\utils.js",
-              "RelativeToolTip": "FPL_site\\static\\scripts\\utils.js",
-              "ViewState": "AgIAAAAAAAAAAAAAAAA+wAEAAAAoAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2024-08-10T13:31:09.06Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
               "Title": "players.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\players.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\players.html",
@@ -277,23 +210,64 @@
               "RelativeToolTip": "FPL_site\\templates\\players.html",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAABQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2024-07-27T18:12:32.8Z"
+              "WhenOpened": "2024-07-27T18:12:32.8Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 4,
+              "Title": "sqlFunction.py",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\sqlFunction.py",
+              "RelativeDocumentMoniker": "FPL_site\\sqlFunction.py",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\sqlFunction.py",
+              "RelativeToolTip": "FPL_site\\sqlFunction.py",
+              "ViewState": "AgIAAJIAAAAAAAAAAAAuwKYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2024-07-27T13:58:55.128Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "style.css",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\style.css",
+              "RelativeDocumentMoniker": "FPL_site\\static\\content\\style.css",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\style.css",
+              "RelativeToolTip": "FPL_site\\static\\content\\style.css",
+              "ViewState": "AgIAAKgCAAAAAAAAAIBZwB8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2024-08-07T20:12:39.924Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "compare.js",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\compare.js",
+              "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\compare.js",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\compare.js",
+              "RelativeToolTip": "FPL_site\\static\\scripts\\compare.js",
+              "ViewState": "AgIAAAAAAAAAAAAAAIBJwA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-07-29T19:10:39.88Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
               "Title": "home.css",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\home.css",
               "RelativeDocumentMoniker": "FPL_site\\static\\content\\home.css",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\home.css",
               "RelativeToolTip": "FPL_site\\static\\content\\home.css",
-              "ViewState": "AgIAAO0AAAAAAAAAAIBJwAABAAAXAAAAAAAAAA==",
+              "ViewState": "AgIAAOoAAAAAAAAAAIBZwAABAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2024-08-10T13:33:42.66Z"
+              "WhenOpened": "2024-08-10T13:33:42.66Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 13,
               "Title": "chartUtils.js",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\chartUtils.js",
               "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\chartUtils.js",
@@ -301,11 +275,12 @@
               "RelativeToolTip": "FPL_site\\static\\scripts\\chartUtils.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2024-08-10T13:30:13.644Z"
+              "WhenOpened": "2024-08-10T13:30:13.644Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 5,
               "Title": "run_update.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\run_update.py",
               "RelativeDocumentMoniker": "FPL_site\\run_update.py",
@@ -313,11 +288,77 @@
               "RelativeToolTip": "FPL_site\\run_update.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-08-05T12:34:37.901Z"
+              "WhenOpened": "2024-08-05T12:34:37.901Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 2,
+              "Title": "views.py",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\views.py",
+              "RelativeDocumentMoniker": "FPL_site\\views.py",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\views.py",
+              "RelativeToolTip": "FPL_site\\views.py",
+              "ViewState": "AgIAABgBAAAAAAAAAAAswCgBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2024-08-11T17:44:07.216Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "utils.js",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\utils.js",
+              "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\utils.js",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\utils.js",
+              "RelativeToolTip": "FPL_site\\static\\scripts\\utils.js",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAqwAEAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2024-08-10T13:31:09.06Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "home.html",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html",
+              "RelativeDocumentMoniker": "FPL_site\\templates\\home.html",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html",
+              "RelativeToolTip": "FPL_site\\templates\\home.html",
+              "ViewState": "AgIAAAYAAAAAAAAAAIBJwCkAAAA0AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2024-07-29T12:58:54.396Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": ".env",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.env",
+              "RelativeDocumentMoniker": ".env",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.env",
+              "RelativeToolTip": ".env",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-07-30T11:31:09.496Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "pyvenv.cfg",
+              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\venv\\pyvenv.cfg",
+              "RelativeDocumentMoniker": "venv\\pyvenv.cfg",
+              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\venv\\pyvenv.cfg",
+              "RelativeToolTip": "venv\\pyvenv.cfg",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-08-27T13:50:25.904Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
               "Title": "__init__.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\__init__.py",
               "RelativeDocumentMoniker": "FPL_site\\__init__.py",
@@ -325,23 +366,25 @@
               "RelativeToolTip": "FPL_site\\__init__.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-07-27T14:02:38.23Z"
+              "WhenOpened": "2024-07-27T14:02:38.23Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 16,
               "Title": "team.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\team.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\team.html",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\team.html",
               "RelativeToolTip": "FPL_site\\templates\\team.html",
-              "ViewState": "AgIAAAMAAAAAAAAAAABRwAcAAAAKAAAAAAAAAA==",
+              "ViewState": "AgIAAAEAAAAAAAAAAIBZwAcAAAAKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2024-07-29T12:58:57.582Z"
+              "WhenOpened": "2024-07-29T12:58:57.582Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 17,
               "Title": "netTransfersChart.js",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\netTransfersChart.js",
               "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\netTransfersChart.js",
@@ -349,11 +392,12 @@
               "RelativeToolTip": "FPL_site\\static\\scripts\\netTransfersChart.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2024-08-10T13:28:20.835Z"
+              "WhenOpened": "2024-08-10T13:28:20.835Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 19,
               "Title": "topPlayersChart.js",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\topPlayersChart.js",
               "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\topPlayersChart.js",
@@ -361,11 +405,12 @@
               "RelativeToolTip": "FPL_site\\static\\scripts\\topPlayersChart.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAADIAAAAmAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2024-08-10T13:29:31.715Z"
+              "WhenOpened": "2024-08-10T13:29:31.715Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 20,
               "Title": "package.json",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\package.json",
               "RelativeDocumentMoniker": "package.json",
@@ -373,11 +418,12 @@
               "RelativeToolTip": "package.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2024-08-12T11:46:11.195Z"
+              "WhenOpened": "2024-08-12T11:46:11.195Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 21,
               "Title": "relativeOwnershipChart.js",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\relativeOwnershipChart.js",
               "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\relativeOwnershipChart.js",
@@ -385,11 +431,12 @@
               "RelativeToolTip": "FPL_site\\static\\scripts\\relativeOwnershipChart.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2024-08-10T13:28:38.754Z"
+              "WhenOpened": "2024-08-10T13:28:38.754Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 22,
               "Title": "compare.css",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\compare.css",
               "RelativeDocumentMoniker": "FPL_site\\static\\content\\compare.css",
@@ -397,11 +444,12 @@
               "RelativeToolTip": "FPL_site\\static\\content\\compare.css",
               "ViewState": "AgIAAFgAAAAAAAAAAAAswH0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2024-08-10T13:36:08.542Z"
+              "WhenOpened": "2024-08-10T13:36:08.542Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 25,
               "Title": "config.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\config.py",
               "RelativeDocumentMoniker": "FPL_site\\config.py",
@@ -409,11 +457,12 @@
               "RelativeToolTip": "FPL_site\\config.py",
               "ViewState": "AgIAAAAAAAAAAAAAAIBJwBYAAAAYAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-07-27T14:45:43.544Z"
+              "WhenOpened": "2024-07-27T14:45:43.544Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 24,
               "Title": "compare.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\compare.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\compare.html",
@@ -421,11 +470,12 @@
               "RelativeToolTip": "FPL_site\\templates\\compare.html",
               "ViewState": "AgIAAAAAAAAAAAAAAIBpwBoAAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2024-07-29T10:38:35.68Z"
+              "WhenOpened": "2024-07-29T10:38:35.68Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
+              "DocumentIndex": 29,
               "Title": "Procfile",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\Procfile",
               "RelativeDocumentMoniker": "Procfile",
@@ -433,11 +483,12 @@
               "RelativeToolTip": "Procfile",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAbAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2024-07-27T15:01:46.509Z"
+              "WhenOpened": "2024-07-27T15:01:46.509Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 23,
               "Title": "contact.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\contact.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\contact.html",
@@ -445,23 +496,12 @@
               "RelativeToolTip": "FPL_site\\templates\\contact.html",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2024-07-29T12:58:53.761Z"
+              "WhenOpened": "2024-07-29T12:58:53.761Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
-              "Title": ".env",
-              "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.env",
-              "RelativeDocumentMoniker": ".env",
-              "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.env",
-              "RelativeToolTip": ".env",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2024-07-30T11:31:09.496Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 26,
               "Title": "logo.svg",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\logo.svg",
               "RelativeDocumentMoniker": "FPL_site\\static\\content\\logo.svg",
@@ -469,11 +509,12 @@
               "RelativeToolTip": "FPL_site\\static\\content\\logo.svg",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAgASURBVFhHxVZ7UFTnFf/de3f37oNd3qw8BFQeFhGrgo3BigarMQn5wxLMpNqGVDJJnNFOx5namSbtNDOdtA5tjUVbxmYmTEvTpjjNjJqpNdOHGmjIBERBHvKShwu7cHeBZd\u002B7PffuvbDASpqZzvTHHL7Hfvec33fO953v4P\u002BKUCjEyN2oaGpqOk/Nq\u002BFRGPTNina1viwXjh49\u002Bpr0wzJ8HoHQoUOH5NEXR39/P8bGRjE5aYXb7e4iEpvknxbAyu3nIryTIILB1SSAQGBRTCYTbLYpVFZWiioKLl682Ckpi8B/TYAoEAG5GwnfIFhXHVjhm2As28BaywDHOfi9XsTHx0vERVRVVYmkCurq6paQ\u002BAIekDsSiIz7LtjZarCWrwJ9P0Gw/wb8tjwEhCRwA29BNfgteOfnJc8oEEn4fL6C3xDkKajkNioU9iOCC58NCxiecoJXu1CRfgmJ\u002BCX8VjIwocNI7M/AxmwH46VDFeBg4IeQbDkOf7IHiYkJaGhogMfjgZe8kpOTA4vF8jKpPUniXvUQvvOHppA3bSu6yZA51YTi9U7s0X4fnPOvQJcL12dr8A/vc7AKDDatTURVaR5STDzmpqdhsBzDbHI9GF4DwW6Hy\u002BWCTqeD2bwGjY2NqKmpSSUTlkeGIPv01W0fjqkwzPLY/EQBXvhyD/YZq6Gy/wVoc\u002BPvKY3ozH8dzJYdmNtajGZBhZ9evovOMQf0cfFgDOngVCoYDAZkZGQgNzdXavV6veJZrfgvKgHROMOGvptfUY6S7Smo5N9FJvMGMNyC4G0Vfpf0RzRzuzFvSoY\u002B0YSszDioN2bjfswanL/ejZ5xK4KaLWBYRb3oaFHCIVVCK2IFATJupiWvvfDSE0/vyOJxIHQRJua3QE8zArfVeNN2ATduJ8Jy5yGEzmF4HU5oSHdKoh6xaQl4YExD/T8HMaXaB7VO3KQSZdFouL8qAfr1pacObinfnsbH7Qk2Qs80Avduwn9XhZsZl1D9bBUufHs3Th/IR9kaHSZvdSAwPUOu5pCQoIUmOR7DLh5/apunEKhlm\u002BErrNh9JIHs713OSk\u002BNLXtsa1r2TnwEI9dAV\u002BwGAvdU6C64gl07n0R6gl5Sajbp8GRhGg6VZMHZPwrO54cxRo3YODVmU9fik4FpjE7PSXoX7YU7jyTAMMzOXSWZOcVsF9aozgKDHyHUyeDXvlrkbaIEI3sz4nuU5iRh3jYN1uuHljZsMKhhICJzQRVa\u002ByblVSIiPorAkjzAq9mi3esC6fnMm8DYZaADuLbxV7jXXoTvvNdGhoOScXEH4V2ERNK0ixC5m9jRdniOgU6rgl1jRK9lRia71HikB5YQSIpBxi5VI8/MXKV7DnyadQrjOS\u002BipFBHXzFL1ITNEyjR\u002BfwhuAMMyAlEhINKw8EdE4MJx4i4YgGK3aghoEn2xc3dm7X\u002B9xncn4WVyUV73utg9TqwtDuW3MtFiHi\u002B1JxoENDQ72rS5CW9QT\u002BxCPiJF0PEAqJmWb/USIgkIEeVJoW34x2OG0M64ZKJ6wEailvBpBWRcQ4f//5jSUFIzOvUkf6CchjEsaQw3A9GzBWuTcDJp4rEoYwQeF6Lc\u002BfO4cSJE\u002BtoYkgKgbj7kOUbz2tU/xJTHz4w/wgOYx5MlEgCriBoo/jFkWKwFO/weqkhLHQkPGp\u002B5XgRSghYhrMeZgTB65wxeK7qj8BKD8uMJwAfOZOPNaD3YfhALTeizEUzvnR\u002BEZEhkDzgGz6coeZbc9Xjfk/tUJnFlsFs1M37odOo6TGhBLPejD\u002B3DuN0RRFUMmWlmrPNufCD91pgd3phpNMfDAQRp1cjPV6P/VuzUZiZtLBWIRdJQFLHBWzFcDnBOoJTjZ2bPgxNCsNWuw/2eR9c/iCMmclwxujx8ysddLUcCFD8Z90\u002B3Oq14K0PPoMuKxOZz5QjoWI/Yp/dDyFjPWbmPSigFzIM0WAUVxDCZyBoN9ORhXcaLcmtf2tqS8xPWa81JnJqNoahc5oQo0HGjlwIfRacvzmIeWEGDMdCF2\u002BC7ks59BCYQfQxPevD5JAVGwa78MrhUvqSrm4Uuys8EHQ5Q6DbMyvgQcpAq5Xz\u002B870X2\u002B5\u002BnDIhpFpLybnfBA8dO2yUpFatgXrni5F6tceQ0xxIQLpGXCEWIzYPBjoHIOx\u002Bw6q9xXBHGcgzUt3rthdQcA55WoTE4pWD56G3pL6Yx3klh8bb/8b/PA47ltc6J/yYozOhdXHwEaOs1MymKDqZ0Rwo29kFo67vcgf78DJ/fnYvoEe1GWGwzYX5xRIBF7e\u002B\u002BDToBu39JnYSzUDpT1wo3VHOg\u002Bke7E3gYO5vR2aO70QukbR12NDR78DPfemMNU\u002BCO8nd5Dc3oIytYA3qkpRujFNVLkMouFIQot98YqDivVQwIPm3BysO3gQ1V8/irwf1uArvoC\u002BvKL8GTxOceZpgWpaQKwwCWawH3FTD5FD9eG2FB7P79yAysfzEWvQSEojEWFLgopSaHNzM65du0avHewLmfA5CjE1cSSxJGIp695z9uzYK8ePE/cQldRKdRu5E7kjYZklQjS3a7U61NbW4tSpU1ImlG818D6lAxIryX2SAZJxnuo5luOotFaUKCQUiGNFxDVhEdeL5Xj49QynZUWWY4FANCgfqNVqaDQaEqp4NPyC8LwuqojVr06njyrLsRCCaKivrz9PJF5dvoPI8fK5aP3IVsTExMSVM2fOHKOuZVUCMsTKUjwbUhn9P4KbxA7A/R/p8uJkqR8S6QAAAABJRU5ErkJggg==",
-              "WhenOpened": "2024-07-29T12:59:01.873Z"
+              "WhenOpened": "2024-07-29T12:59:01.873Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 28,
               "Title": "requirements.txt",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\requirements.txt",
               "RelativeDocumentMoniker": "requirements.txt",
@@ -481,11 +522,12 @@
               "RelativeToolTip": "requirements.txt",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAACIAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
-              "WhenOpened": "2024-07-27T13:49:42.99Z"
+              "WhenOpened": "2024-07-27T13:49:42.99Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 27,
               "Title": ".webmanifest",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\.webmanifest",
               "RelativeDocumentMoniker": ".webmanifest",
@@ -493,11 +535,12 @@
               "RelativeToolTip": ".webmanifest",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2024-07-30T14:47:48.463Z"
+              "WhenOpened": "2024-07-30T14:47:48.463Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 29,
+              "DocumentIndex": 30,
               "Title": "about.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\about.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\about.html",
@@ -505,23 +548,25 @@
               "RelativeToolTip": "FPL_site\\templates\\about.html",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2024-07-29T12:58:58.923Z"
+              "WhenOpened": "2024-07-29T12:58:58.923Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 31,
+              "DocumentIndex": 32,
               "Title": "genericMethods.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\genericMethods.py",
               "RelativeDocumentMoniker": "FPL_site\\genericMethods.py",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\genericMethods.py",
               "RelativeToolTip": "FPL_site\\genericMethods.py",
-              "ViewState": "AgIAABsAAAAAAAAAACBzwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAABgAAAAAAAAAAFB2wAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-07-27T14:09:21.991Z"
+              "WhenOpened": "2024-07-27T14:09:21.991Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 30,
+              "DocumentIndex": 31,
               "Title": "runtime.txt",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\runtime.txt",
               "RelativeDocumentMoniker": "runtime.txt",
@@ -529,7 +574,8 @@
               "RelativeToolTip": "runtime.txt",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
-              "WhenOpened": "2024-07-27T15:01:49.521Z"
+              "WhenOpened": "2024-07-27T15:01:49.521Z",
+              "EditorCaption": ""
             }
           ]
         }

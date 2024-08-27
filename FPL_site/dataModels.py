@@ -70,6 +70,7 @@ def generateCurrentGameweek():
 
 
 def get_players():
+    gw = generateCurrentGameweek() if generateCurrentGameweek() != 0 else 1
     dbConnect = connect_db()
     if dbConnect is None:
         logger.error("Failed to connect to the database.")
@@ -77,7 +78,7 @@ def get_players():
 
     try:
         cursor = dbConnect.cursor(dictionary=True)
-        query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements WHERE year_start = {season_start}"
+        query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements WHERE year_start = {season_start} AND gameweek = {gw}"
         logger.info(f"Executing query: {query}")
         cursor.execute(query)
         players = cursor.fetchall()
@@ -327,18 +328,8 @@ def get_player_ownership():
     for player in playerData:
         currentOwnership[player['id']] = {'web_name': player['web_name'], 'selected': player['selected_by_percent']}
 
-    print(f"Current Ownership: {currentOwnership}")
-
-    # Execute SQL query to get players and their respective teams
     try:
-        query = f'''
-        SELECT web_name, selected_by_percent, id
-        FROM {db}.bootstrapstatic_elements 
-        WHERE year_start = {season_start} AND gameweek = {currentGW - 1} AND selected_by_percent >= 3
-        ORDER BY 
-	        selected_by_percent 
-        DESC 
-        '''
+        query = (f'SELECT web_name, selected_by_percent, id FROM {db}.bootstrapstatic_elements WHERE year_start = {season_start} AND gameweek = {currentGW - 1} AND selected_by_percent >= 3 ORDER BY selected_by_percent DESC')
         cursor.execute(query)
 
         # Fetch all results from the executed query
@@ -346,23 +337,12 @@ def get_player_ownership():
     except:
         print(f"Issue running query on {db}: Query={query}")
 
-    print(f"PlayersNow: {playersNow}")
-
-
     netOwnership = {p['id']: ((float(currentOwnership[p['id']]['selected']) - p['selected_by_percent'])/float(currentOwnership[p['id']]['selected'])) for p in playersNow}
-    print(f"Net Ownership: {netOwnership}")
-    
     bottom5Relative = dict(sorted(netOwnership.items(), key=lambda item: item[1])[:5])
-    print(f"Bottom 5 Ownership: {bottom5Relative}")
-    
     top5Relative = dict(sorted(netOwnership.items(), key=lambda item: item[1], reverse=True)[:5])
-    print(f"Top 5 Ownership: {top5Relative}")
-
     top10difference = {**top5Relative, **bottom5Relative}
-    print(f"Top 10 Difference: {top10difference}")
 
     oldOwnership = {p['id']: p['selected_by_percent'] for p in playersNow if p['id'] in list(top10difference.keys())}
-    print(f"Old Ownership: {oldOwnership}")
 
 
     labels = list()
@@ -440,17 +420,17 @@ def next_5_fixtures(player_id):
 
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
-
-    query = f'SELECT t.name as "team", t.short_name as "team_short", p.team AS "team_id", CONCAT(p.first_name, " ", p.second_name) AS "Full_name", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id={player_id};'
-    cursor.execute(query)
-    player_info = cursor.fetchone()
-
+    gw = generateCurrentGameweek()
+    
     # Always ensure you fetch all results or close the cursor before executing another query
     query = f'SELECT id, short_name FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
     cursor.execute(query)
     teams = cursor.fetchall()  # Fetch all team information
 
-    gw = generateCurrentGameweek()
+    query = f'SELECT t.name as "team", t.short_name as "team_short", p.team AS "team_id", CONCAT(p.first_name, " ", p.second_name) AS "Full_name", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id={player_id} and gameweek={gw};'
+    cursor.execute(query)
+    player_info = cursor.fetchone()
+
     i = gw + 1
 
     fixtures = list()

@@ -137,7 +137,7 @@ def updateEventTables(user, password, database, host):
                 
         elementsKept = dict()
         for item in element:
-            if item in ['gameweek','id','minutes','goals_scored','assists','clean_sheets','goals_conceded','own_goals','penalties_saved','penalties_missed','yellow_cards','red_cards','saves','bonus','bps','influence','creativity','threat','ict_index','starts','expected_goals','expected_assists','expected_goal_involvements','expected_goals_conceded','total_points','in_dreamteam','fixture','minutes_points','minutes_value','assists_points','assists_value','goals_scored_points','goals_scored_value','bonus_points','bonus_value','goals_conceded_points','goals_conceded_value','saves_points','saves_value','yellow_cards_points','yellow_cards_value','clean_sheets_points','clean_sheets_value','red_cards_points','red_cards_value','year_start']:
+            if item in ['gameweek','id','minutes','goals_scored','assists','clean_sheets','goals_conceded','own_goals','penalties_saved','penalties_missed','yellow_cards','red_cards','saves','bonus','bps','influence','creativity','threat','ict_index','starts','expected_goals','expected_assists','expected_goal_involvements','expected_goals_conceded','total_points','in_dreamteam','fixture','minutes_points','minutes_value','assists_points','assists_value','goals_scored_points','goals_scored_value','bonus_points','bonus_value','goals_conceded_points','goals_conceded_value','saves_points','saves_value','yellow_cards_points','yellow_cards_value','clean_sheets_points','clean_sheets_value','red_cards_points','red_cards_value','year_start', 'gameweek']:
                 if not isinstance(element[item], (list, dict)):
                     valueType = str(type(element[item])).replace("<class ","").replace(">","").replace("'","").replace(" ","")
                     if valueType == "NoneType":
@@ -152,6 +152,7 @@ def updateEventTables(user, password, database, host):
                     elementsKept[item] = value
 
         elementsKept['year_start'] = season_start
+        elementsKept['gameweek'] = currentGameweek
 
         columns = ','.join(f"`{str(x).replace('/', '_')}`" for x in elementsKept.keys())
         values = ','.join(f"'{str(x).replace('/', '_')}'" for x in elementsKept.values())
@@ -189,7 +190,8 @@ def updateElementsummaryTablesBatch(user, password, database, host):
             continue
 
         for table in currentElement:
-            if table not in ["fixtures", "history", "history_past"]:
+            # TODO: Fix the history error
+            if table not in ["fixtures"]:
                 continue
             
             for element in currentElement[table]:
@@ -378,8 +380,8 @@ def updateAllTables():
     updateBootstrapStaticTables(user, password, db, host)
     updateFixturesTables(user, password, db, host)
     # FIX THESE TWO
-    updateEventTables(user, password, db, host)
     updateElementsummaryTablesBatch(user, password, db, host)
+    updateEventTables(user, password, db, host)
 
 print("Project root:", project_root)
 print("FPL_site directory:", fpl_site_dir)
