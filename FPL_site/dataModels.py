@@ -326,27 +326,33 @@ def get_player_ownership():
     cursor.execute(f'''
     SELECT web_name, selected_by_percent, id
     FROM {db}.bootstrapstatic_elements 
-    WHERE year_start = {season_start} AND gameweek = {currentGW}
+    WHERE year_start = {season_start} AND gameweek = {currentGW - 1} AND selected_by_percent >= 3
     ORDER BY 
 	    selected_by_percent 
     DESC 
-    LIMIT 10;
     ''')
 
     # Fetch all results from the executed query
     playersNow = cursor.fetchall()
+
+    netOwnership = {p['id']: ((float(currentOwnership[p['id']]['selected']) - p['selected_by_percent'])/float(currentOwnership[p['id']]['selected'])) for p in playersNow}
+    bottom5Relative = dict(sorted(netOwnership.items(), key=lambda item: item[1])[:5])
+    top5Relative = dict(sorted(netOwnership.items(), key=lambda item: item[1], reverse=True)[:5])
+
+    top10difference = {**top5Relative, **bottom5Relative}
+    oldOwnership = {p['id']: p['selected_by_percent'] for p in playersNow if p['id'] in list(top10difference.keys())}
 
     labels = list()
     oldValues = list()
     newValues = list()
     ids = list()
 
-    for player in playersNow:
-        labels.append(player['web_name'])
-        oldValues.append(player['selected_by_percent'])
-        ids.append(player['id'])
+    for player in top10difference:
+        labels.append(currentOwnership[player]['web_name'])
+        oldValues.append(oldOwnership[player])
+        ids.append(player)
         if currentGW >= 1:
-            currentPlayer = currentOwnership[player['id']]
+            currentPlayer = currentOwnership[player]
             newValues.append(float(currentPlayer['selected']))
         else:
             newValues.append(0)
@@ -527,6 +533,10 @@ def fetch_player_summary(player_id):
         average_goals = round(sum(p['goals_scored'] for p in valid_players) / len(valid_players), 2)
         average_assists = round(sum(p['assists'] for p in valid_players) / len(valid_players), 2)
         average_form = round(sum(float(p['form']) for p in valid_players) / len(valid_players), 2)
+        average_influence = round(sum(float(p['influence']) for p in valid_players) / len(valid_players), 2)
+        average_creativity = round(sum(float(p['creativity']) for p in valid_players) / len(valid_players), 2)
+        average_threat = round(sum(float(p['threat']) for p in valid_players) / len(valid_players), 2)
+        average_ep_next = round(sum(float(p['ep_next']) for p in valid_players) / len(valid_players), 2)
 
         # Get team info
         team = next((t for t in teams if t['id'] == player['team']), None)
@@ -553,6 +563,12 @@ def fetch_player_summary(player_id):
                 {'title': 'Goals', 'value': player['goals_scored'], 'averageValue': average_goals},
                 {'title': 'Assists', 'value': player['assists'], 'averageValue': average_assists},
                 {'title': 'Form', 'value': float(player['form']), 'averageValue': average_form},
+
+                {'title': 'Influence', 'value': player['influence'], 'averageValue': average_influence},
+                {'title': 'Creativity', 'value': player['creativity'], 'averageValue': average_creativity},
+                {'title': 'Threat', 'value': player['threat'], 'averageValue': average_threat},
+                
+                {'title': 'Est. points next game', 'value': player['ep_next'], 'averageValue': average_ep_next},
             ]
         }
 

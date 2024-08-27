@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 console.log("Chart Data:", data);
 
-                if (data.labels && data.labels.length > 0 && data.values) {
+                if (data.labels && data.labels.length > 0 && (data.values || (data.oldValues && data.newValues))) {
                     let sortedData, labels, values, formattedValues;
 
                     if (chartId === 'net-transfers-in') {
