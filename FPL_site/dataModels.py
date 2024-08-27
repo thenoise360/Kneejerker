@@ -327,6 +327,8 @@ def get_player_ownership():
     for player in playerData:
         currentOwnership[player['id']] = {'web_name': player['web_name'], 'selected': player['selected_by_percent']}
 
+    print(f"Current Ownership: {currentOwnership}")
+
     # Execute SQL query to get players and their respective teams
     try:
         query = f'''
@@ -344,12 +346,24 @@ def get_player_ownership():
     except:
         print(f"Issue running query on {db}: Query={query}")
 
+    print(f"PlayersNow: {playersNow}")
+
+
     netOwnership = {p['id']: ((float(currentOwnership[p['id']]['selected']) - p['selected_by_percent'])/float(currentOwnership[p['id']]['selected'])) for p in playersNow}
+    print(f"Net Ownership: {netOwnership}")
+    
     bottom5Relative = dict(sorted(netOwnership.items(), key=lambda item: item[1])[:5])
+    print(f"Bottom 5 Ownership: {bottom5Relative}")
+    
     top5Relative = dict(sorted(netOwnership.items(), key=lambda item: item[1], reverse=True)[:5])
+    print(f"Top 5 Ownership: {top5Relative}")
 
     top10difference = {**top5Relative, **bottom5Relative}
+    print(f"Top 10 Difference: {top10difference}")
+
     oldOwnership = {p['id']: p['selected_by_percent'] for p in playersNow if p['id'] in list(top10difference.keys())}
+    print(f"Old Ownership: {oldOwnership}")
+
 
     labels = list()
     oldValues = list()
