@@ -7,24 +7,28 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:runserver.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\home.js||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\scripts\\home.js||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\dataModels.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\dataModels.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\views.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\layout.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\layout.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\home.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\home.js||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\scripts\\home.js||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\layout.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\layout.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\home.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
@@ -41,10 +45,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\chartUtils.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\static\\scripts\\chartUtils.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:FPL_site\\templates\\players.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\run_update.py||{8B382828-6202-11D1-8870-0000F87579D2}",
@@ -142,7 +142,7 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "layout.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\layout.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\layout.html",
@@ -156,13 +156,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "dataModels.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\dataModels.py",
               "RelativeDocumentMoniker": "FPL_site\\dataModels.py",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\dataModels.py",
               "RelativeToolTip": "FPL_site\\dataModels.py",
-              "ViewState": "AgIAAEQBAAAAoIf0O7Phv24BAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAEEBAAAAAAAAAAAswFgBAAA8AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-08-16T11:37:29.151Z",
               "IsPinned": true,
@@ -170,7 +170,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
               "Title": "home.js",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\home.js",
               "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\home.js",
@@ -190,7 +190,7 @@
               "RelativeDocumentMoniker": "runserver.py",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\runserver.py",
               "RelativeToolTip": "runserver.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-08-16T12:12:16.69Z",
               "IsPinned": true,
@@ -198,7 +198,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "sqlFunction.py",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\sqlFunction.py",
               "RelativeDocumentMoniker": "FPL_site\\sqlFunction.py",
@@ -224,13 +224,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 2,
               "Title": "home.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\home.html",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\home.html",
               "RelativeToolTip": "FPL_site\\templates\\home.html",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACgAAABCAAAAAAAAAA==",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAACkAAAA0AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
               "WhenOpened": "2024-07-29T12:58:54.396Z",
               "EditorCaption": ""
@@ -249,7 +249,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
               "Title": "style.css",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\style.css",
               "RelativeDocumentMoniker": "FPL_site\\static\\content\\style.css",
@@ -273,19 +273,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 4,
               "Title": "players.html",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\players.html",
               "RelativeDocumentMoniker": "FPL_site\\templates\\players.html",
               "ToolTip": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\templates\\players.html",
               "RelativeToolTip": "FPL_site\\templates\\players.html",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAWAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAABQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2024-07-27T18:12:32.8Z"
+              "WhenOpened": "2024-07-27T18:12:32.8Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "home.css",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\content\\home.css",
               "RelativeDocumentMoniker": "FPL_site\\static\\content\\home.css",
@@ -293,12 +294,11 @@
               "RelativeToolTip": "FPL_site\\static\\content\\home.css",
               "ViewState": "AgIAAO0AAAAAAAAAAIBJwAABAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2024-08-10T13:33:42.66Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-08-10T13:33:42.66Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 10,
               "Title": "chartUtils.js",
               "DocumentMoniker": "C:\\Users\\JackBegley\\source\\repos\\FPL_site\\FPL_site\\static\\scripts\\chartUtils.js",
               "RelativeDocumentMoniker": "FPL_site\\static\\scripts\\chartUtils.js",

@@ -314,7 +314,12 @@ def get_player_ownership():
     if currentGW == None:
         currentGW = 1
 
-    playerData = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').json()['elements']
+    response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
+    if response.status_code != 200:
+       logger.error(f"Failed to fetch data from FPL API. Status Code: {response.status_code}")
+       return {"error": "Failed to fetch data from external API."}, 502
+        
+    playerData = response.json()['elements']
     playersNetTransfers = {}
 
     currentOwnership = dict()
@@ -323,17 +328,21 @@ def get_player_ownership():
         currentOwnership[player['id']] = {'web_name': player['web_name'], 'selected': player['selected_by_percent']}
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'''
-    SELECT web_name, selected_by_percent, id
-    FROM {db}.bootstrapstatic_elements 
-    WHERE year_start = {season_start} AND gameweek = {currentGW - 1} AND selected_by_percent >= 3
-    ORDER BY 
-	    selected_by_percent 
-    DESC 
-    ''')
+    try:
+        query = f'''
+        SELECT web_name, selected_by_percent, id
+        FROM {db}.bootstrapstatic_elements 
+        WHERE year_start = {season_start} AND gameweek = {currentGW - 1} AND selected_by_percent >= 3
+        ORDER BY 
+	        selected_by_percent 
+        DESC 
+        '''
+        cursor.execute(query)
 
-    # Fetch all results from the executed query
-    playersNow = cursor.fetchall()
+        # Fetch all results from the executed query
+        playersNow = cursor.fetchall()
+    except:
+        print(f"Issue running query on {db}: Query={query}")
 
     netOwnership = {p['id']: ((float(currentOwnership[p['id']]['selected']) - p['selected_by_percent'])/float(currentOwnership[p['id']]['selected'])) for p in playersNow}
     bottom5Relative = dict(sorted(netOwnership.items(), key=lambda item: item[1])[:5])
