@@ -555,7 +555,7 @@ def fetch_player_summary(player_id):
         player_summary = {
             'id': player_id,
             'name': player['web_name'],
-            'minutes': player['minutes']/generateCurrentGameweek(),
+            'minutes': round(player['minutes']/generateCurrentGameweek(), 2),
             'value': float(player['now_cost']/10),
             'name': player['web_name'],
             'position': position,
