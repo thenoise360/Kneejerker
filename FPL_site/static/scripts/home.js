@@ -224,6 +224,15 @@ document.addEventListener('DOMContentLoaded', function () {
     
         // Update player name, shirt, and team
         document.getElementById('player-summary-name').textContent = player.name || 'Unknown';
+
+        document.getElementById('chance-next-round').textContent = player.news || 'Unknown';
+
+        var element = document.getElementById('chance-next-round');
+        element.className = '';
+        element.classList.add("chance-next-round-" + player.chance_of_playing);
+        element.style.display = '';
+
+
         document.getElementById('player-value').textContent = "\u00A3" + player.value || '£-.-';
         document.getElementById('minutes').textContent = player.minutes || '-';
         document.getElementById('position-name').textContent = player.position_name || 'Position';

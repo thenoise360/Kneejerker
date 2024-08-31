@@ -333,6 +333,7 @@ canvas {
     display:flex;
     min-height: 280px;
     justify-content: space-around;
+    padding: 0px !important;
 }
 
 .fixture-details {
@@ -408,8 +409,65 @@ canvas {
     align-items: center;
 }
 
+.chance-next-round-0 {
+    background-color: #FF3B30;
+    color: var(--black-10);
+    display: flex !important;
+    width: -webkit-fill-available;
+    padding: 8px 16px;
+    justify-content: center;
+    font-weight: 500;
+}
+
+.chance-next-round-25 {
+    background-color: #FF621F;
+    color: var(--black-80);
+    display: flex !important;
+    width: -webkit-fill-available;
+    padding: 8px 16px;
+    font-weight: 500;
+    justify-content: center;
+}
+
+.chance-next-round-50 {
+    background-color: #FF930F;
+    color: var(--black-80);
+    display: flex !important;
+    width: -webkit-fill-available;
+    padding: 8px 16px;
+    font-weight: 500;
+    justify-content: center;
+}
+
+.chance-next-round-75 {
+    background-color: #FFCC00;
+    color: var(--black-80);
+    display: flex !important;
+    width: -webkit-fill-available;
+    padding: 8px 16px;
+    font-weight: 500;
+    justify-content: center;
+}
+
+.chance-next-round-null {
+    background-color: #fff;
+    color: var(--black-10);
+    justify-content: center;
+    display: none !important;
+}
+
 .carousel {
     width: -webkit-fill-available !important;
+}
+
+.player-summary {
+    margin: 1% 1%;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 48%;
+    min-height: 400px;
 }
 
 .player-summary-area {

@@ -540,6 +540,7 @@ def fetch_player_summary(player_id):
         average_creativity = round(sum(float(p['creativity']) for p in valid_players) / len(valid_players), 2)
         average_threat = round(sum(float(p['threat']) for p in valid_players) / len(valid_players), 2)
         average_ep_next = round(sum(float(p['ep_next']) for p in valid_players) / len(valid_players), 2)
+        average_points = round(sum(float(p['total_points']) for p in valid_players) / len(valid_players), 2)
 
         # Get team info
         team = next((t for t in teams if t['id'] == player['team']), None)
@@ -558,6 +559,8 @@ def fetch_player_summary(player_id):
             'minutes': round(player['minutes']/generateCurrentGameweek(), 2),
             'value': float(player['now_cost']/10),
             'name': player['web_name'],
+            'chance_of_playing': player['chance_of_playing_next_round'],
+            'news': player['news'],
             'position': position,
             'position_name': element_types[position],
             'team_name': team_name,
@@ -572,6 +575,7 @@ def fetch_player_summary(player_id):
                 {'title': 'Threat', 'value': player['threat'], 'averageValue': average_threat},
                 
                 {'title': 'Est. points next game', 'value': player['ep_next'], 'averageValue': average_ep_next},
+                {'title': 'Points', 'value': player['total_points'], 'averageValue': average_points},
             ]
         }
 
@@ -581,3 +585,21 @@ def fetch_player_summary(player_id):
     except Exception as e:
         logger.exception(f"An unexpected error occurred while processing player ID {player_id}: {str(e)}")
         return {"error": "An unexpected error occurred."}, 500
+
+def player_alternates(player_id):
+    player = fetch_player_summary(player_id)
+    
+    # Connect to the database
+    dbConnect = connect_db()
+    cursor = dbConnect.cursor(dictionary=True)
+
+    currentGW = generateCurrentGameweek()
+
+    costLow = player['value'] - 1
+    costHigh = player['value'] + 1
+
+    cursor.execute(f'SELECT id, team, web_name, total_points FROM {db}.bootstrapstatic_elements where element_type = {player['position']} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW} ORDER BY form DESC LIMIT 5')
+
+    players = cursor.fetchall()
+
+    return players
