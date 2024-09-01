@@ -586,20 +586,30 @@ def fetch_player_summary(player_id):
         logger.exception(f"An unexpected error occurred while processing player ID {player_id}: {str(e)}")
         return {"error": "An unexpected error occurred."}, 500
 
-def player_alternates(player_id):
-    player = fetch_player_summary(player_id)
+def get_player_alternates(player_id):
+    player = fetch_player_summary(player_id)[0]
     
     # Connect to the database
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
 
-    currentGW = generateCurrentGameweek()
+    currentGW = generateCurrentGameweek() - 1
 
-    costLow = player['value'] - 1
-    costHigh = player['value'] + 1
+    costLow = (player['value'] - 1) * 10
+    costHigh = (player['value'] + 1) * 10
+    position = player['position']
 
-    cursor.execute(f'SELECT id, team, web_name, total_points FROM {db}.bootstrapstatic_elements where element_type = {player['position']} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW} ORDER BY form DESC LIMIT 5')
+    query = f'SELECT id, team, web_name, total_points, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 5'
+
+    cursor.execute(query)
 
     players = cursor.fetchall()
 
-    return players
+    for player in players:
+        player['shirt'] = player_shirts[player['team']]
+
+    if not players:
+        return "No players within 1m of this player"
+
+    else:
+        return players
