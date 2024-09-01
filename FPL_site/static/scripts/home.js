@@ -66,8 +66,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-
-
     function fetchChartData(url, chartId) {
         fetch(url)
             .then(response => response.json())
@@ -135,8 +133,30 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => console.error('Error fetching chart data:', error));
     }
 
+    function alternativePlayers(playerID) {
+        fetch(`/api/get_player_alternates'?id=${playerID}`)
+            .then(response => response.json())
+            .then(players => {
+                players.forEach((player, index) => {
+                    // Update player name
+                    const nameElement = document.getElementById(`name-${index + 1}`);
+                    if (nameElement) {
+                        nameElement.textContent = player.web_name;
+                    }
+
+                    // Update player shirt image
+                    const shirtElement = document.querySelectorAll('.team-shirts .coat-hanger img')[index];
+                    if (shirtElement) {
+                        shirtElement.src = player.shirt;
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching alternative players:', error));
+    }
+
 
     function selectPlayer(playerId) {
+        console.log(`/get_player_alternates?id=${playerId}`);
         Promise.all([
             fetch(`/get_player_summary?id=${playerId}`).then(response => {
                 if (!response.ok) {
@@ -149,54 +169,90 @@ document.addEventListener('DOMContentLoaded', function () {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
+            }),
+            // Trigger the alternative players fetch
+            fetch(`/get_player_alternates?id=${playerId}`).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
             })
         ])
-        .then(([playerDataResponse, fixtures]) => {
-            if (Array.isArray(playerDataResponse) && playerDataResponse.length > 0) {
-                const playerData = playerDataResponse[0]; // Extract the player data from the array
-                console.log("Received player data:", playerData);
-    
-                if (!playerData || !playerData.metrics || !Array.isArray(playerData.metrics)) {
-                    console.error("Invalid player data received:", playerData);
+            .then(([playerDataResponse, fixtures, alternativePlayers]) => {
+                if (Array.isArray(playerDataResponse) && playerDataResponse.length > 0) {
+                    const playerData = playerDataResponse[0]; // Extract the player data from the array
+                    console.log("Received player data:", playerData);
+
+                    if (!playerData || !playerData.metrics || !Array.isArray(playerData.metrics)) {
+                        console.error("Invalid player data received:", playerData);
+                    } else {
+                        playerData.fixtures = fixtures; // Ensure fixtures are correctly added to playerData
+                        populatePlayerSummary(playerData);
+                        updateFixtureDetails(playerData);
+                    }
                 } else {
-                    playerData.fixtures = fixtures; // Ensure fixtures are correctly added to playerData
-                    populatePlayerSummary(playerData);
-                    updateFixtureDetails(playerData);
+                    console.error("Unexpected response format:", playerDataResponse);
                 }
-            } else {
-                console.error("Unexpected response format:", playerDataResponse);
-            }
-        })
-        .catch(error => console.error('Error fetching player data:', error));
+
+                // Update the alternative players' information
+                alternativePlayers.forEach((player, index) => {
+                    const nameElement = document.getElementById(`name-${index + 1}`);
+                    if (nameElement) {
+                        nameElement.textContent = player.web_name;
+                    }
+
+                    const shirtElement = document.querySelectorAll('.alternatives-shirt')[index + 1];
+                    if (shirtElement) {
+                        shirtElement.src = player.shirt;
+                    }
+                    const teamNames = document.querySelectorAll('.alt-player-team-name')[index + 1];
+                    if (teamNames) {
+                        teamNames.textContent = player.team_name;
+                    }
+
+                    const value = document.querySelectorAll('.alt-player-value')[index + 1];
+                    if (value) {
+                        value.textContent = "\u00A3" + (player.now_cost/10);
+                    }
+
+                    const form = document.querySelectorAll('.alt-player-form')[index + 1];
+                    if (form) {
+                        form.textContent = player.form;
+                    }
+
+                });
+            })
+            .catch(error => console.error('Error fetching player data or alternative players:', error));
     }
-    
+
+
     function populatePlayerSummary(player) {
         const carouselIndicators = document.getElementById('carouselIndicators');
         const summaryCarouselInner = document.getElementById('summaryCarouselInner');
-    
+
         if (!carouselIndicators || !summaryCarouselInner) {
             console.error("Carousel elements not found in the DOM.");
             return;
         }
-    
+
         if (!player || !player.metrics || !Array.isArray(player.metrics)) {
             console.error("Invalid player data provided.");
             return;
         }
-    
+
         const metricGroups = [];
         const metricsPerGroup = 3;
-    
+
         // Split metrics into groups of 3
         for (let i = 0; i < player.metrics.length; i += metricsPerGroup) {
             metricGroups.push(player.metrics.slice(i, i + metricsPerGroup));
         }
-    
+
         // Generate carousel indicators
         carouselIndicators.innerHTML = metricGroups.map((_, index) => `
             <button type="button" data-bs-target="#summaryCarousel" data-bs-slide-to="${index}" ${index === 0 ? 'class="active" aria-current="true"' : ''} aria-label="Slide ${index + 1}"></button>
         `).join('');
-    
+
         // Generate carousel items
         summaryCarouselInner.innerHTML = metricGroups.map((group, groupIndex) => `
             <div class="carousel-item ${groupIndex === 0 ? 'active' : ''}">
@@ -211,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             </div>
         `).join('');
-    
+
         // Reinitialize the carousel
         const myCarousel = document.querySelector('#summaryCarousel');
         if (myCarousel) {
@@ -221,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             new bootstrap.Carousel(myCarousel);  // Reinitialize the carousel
         }
-    
+
         // Update player name, shirt, and team
         document.getElementById('player-summary-name').textContent = player.name || 'Unknown';
 
@@ -239,19 +295,19 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('.coat-hanger .shirt').src = player.shirtImage || '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
         document.querySelector('.coat-hanger .player-team-name').textContent = player.team_name || '-';
     }
-    
+
     function updateFixtureDetails(player) {
         if (!player.fixtures || !Array.isArray(player.fixtures)) {
             console.error("Invalid fixtures data provided.");
             return;
         }
-    
+
         player.fixtures.forEach((fixture, index) => {
             const fixtureElement = document.getElementById(`fixture-${index + 1}`);
             if (fixtureElement) {
                 fixtureElement.className = `difficulty-${fixture.difficulty}`;
                 fixtureElement.textContent = fixture.teamName;
-    
+
                 const shirtElement = document.querySelector(`.team-shirts .coat-hanger:nth-child(${index + 1}) .shirt`);
                 if (shirtElement) {
                     shirtElement.src = fixture.shirtImage;
@@ -259,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         shirtElement.classList.add('no-fixture')
                     }
                 }
-    
+
                 const venueElement = document.querySelector(`.venue-row .venue:nth-child(${index + 1})`);
                 if (venueElement) {
                     venueElement.textContent = fixture.homeOrAway;
@@ -268,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-    
+
     function initializeCharts() {
         fetchChartData('/api/net-transfers-in', 'net-transfers-in');
         fetchChartData('/api/net-transfers-out', 'net-transfers-out');

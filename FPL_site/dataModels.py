@@ -483,7 +483,7 @@ def get_teams(player_id):
     cursor = dbConnect.cursor(dictionary=True)
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT t.name AS "Team" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id = {player_id}')
+    cursor.execute(f'SELECT t.name AS "Team" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id = {player_id} and gameweek = {generateCurrentGameweek()}')
 
     # Fetch all results from the executed query
     teams = cursor.fetchall()
@@ -586,9 +586,9 @@ def fetch_player_summary(player_id):
         logger.exception(f"An unexpected error occurred while processing player ID {player_id}: {str(e)}")
         return {"error": "An unexpected error occurred."}, 500
 
-def get_player_alternates(player_id):
+def get_alternative_players(player_id):
     player = fetch_player_summary(player_id)[0]
-    
+
     # Connect to the database
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
@@ -599,7 +599,7 @@ def get_player_alternates(player_id):
     costHigh = (player['value'] + 1) * 10
     position = player['position']
 
-    query = f'SELECT id, team, web_name, total_points, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 5'
+    query = f'SELECT id, team, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 4'
 
     cursor.execute(query)
 
@@ -607,6 +607,7 @@ def get_player_alternates(player_id):
 
     for player in players:
         player['shirt'] = player_shirts[player['team']]
+        player['team_name'] = get_teams(player['id'])[0]['Team']
 
     if not players:
         return "No players within 1m of this player"

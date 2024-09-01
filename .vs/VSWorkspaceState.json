@@ -12,6 +12,6 @@
     "\\venv\\Lib\\site-packages\\mysql\\connector\\aio",
     "\\venv\\Lib\\site-packages\\mysql\\connector\\aio\\plugins"
   ],
-  "SelectedNode": "\\FPL_site\\dataModels.py",
+  "SelectedNode": "\\runserver.py",
   "PreviewInSolutionExplorer": false
 }
