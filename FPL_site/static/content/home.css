@@ -346,8 +346,8 @@ canvas {
     max-width: 50px;
 }
 
-.no-fixture{
-        opacity: 0;
+.no-fixture {
+    opacity: 0;
 }
 
 .fixture-heading {
@@ -506,7 +506,77 @@ canvas {
 }
 
 
-.venue-row{
+/*CONSIDER DELETEING*/
+.alternatives {
+    display: flex;
+    direction: row;
+    width: -webkit-fill-available;
+}
+
+.alternatives-details {
+    width: -webkit-fill-available;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.alternatives-card {
+    min-height: 200px;
+    justify-content: space-around;
+
+}
+
+.alt-player-form {
+    display: flex;
+    justify-content: center;
+    width: -webkit-fill-available;
+}
+
+.alt-player-value {
+    display: flex;
+    justify-content: center;
+    width: -webkit-fill-available;
+}
+
+.alternatives-heading {
+    display: flex;
+    color: var(--black-40);
+    width: -webkit-fill-available;
+    justify-content: center;
+    margin: 8px;
+}
+
+.alt-player-team-name {
+    color: var(--black-60);
+    font-size: 14px;
+    font-weight: 300;
+    display: flex;
+    justify-content: center;
+}
+
+.alt-player {
+    display: flex;
+    color: var(--black-80);
+    padding: 4px 8px;
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+.alternative-player {
+    width: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.alternatives-shirt {
+    max-width: 50px;
+}
+
+/*END CONSIDERATION*/
+
+
+.venue-row {
     display: flex;
 }
 

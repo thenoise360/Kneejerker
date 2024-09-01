@@ -9,7 +9,7 @@ from .dataModels import (
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers,
     get_player_ownership, get_top_10_net_transfers_in, get_top_10_net_transfers_out,
-    next_5_fixtures, fetch_player_summary
+    next_5_fixtures, fetch_player_summary, get_alternative_players
 )
 
 # Set up logging
@@ -306,3 +306,16 @@ def get_player_summary():
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         return str(e), 500
+
+
+@app.route('/get_player_alternates')
+def get_player_alternates():
+    logger.info("Request for get_player_alternates")
+    try:
+        player_id = request.args.get('id')
+        player_summary_result = get_alternative_players(player_id)
+        return jsonify(player_summary_result)
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        return str(e), 500
+
