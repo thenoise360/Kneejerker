@@ -2,6 +2,50 @@ import { renderBarChart } from './chartUtils.js';
 import { updateLastUpdatedTime, formatNumber, formatOwnership, isUserActive, callUpdateEndpoint, truncateLabel } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
+    const overlay = document.getElementById('dictionary-overlay');
+    const dictionaryText = document.querySelector('.dictionary-content');  // Make sure this is correct
+
+    // Show the overlay if the URL is 'www.kneejerker.co.uk', 'heroku', or 'localhost'
+    const currentURL = window.location.href;
+    if (currentURL.includes('kneejerker.co.uk') || currentURL.includes('heroku') || currentURL.includes('localhost')) {
+        overlay.style.display = 'flex';  // Show the overlay initially
+    }
+
+    let overlayVisibleTime = 0;
+    const minimumOverlayDuration = 4000;
+
+    function showOverlay() {
+        overlay.classList.remove('fade-out');
+        overlay.style.display = 'flex';
+
+        dictionaryText.style.opacity = '0';
+
+        setTimeout(() => {
+            dictionaryText.style.opacity = '1';
+        }, 100);
+
+        overlayVisibleTime = Date.now();
+    }
+
+    function hideOverlay() {
+        const elapsedTime = Date.now() - overlayVisibleTime;
+        const remainingTime = minimumOverlayDuration - elapsedTime;
+
+        setTimeout(() => {
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+                overlay.style.display = 'none'; 
+                overlay.classList.remove('fade-out');  
+            }, 500); 
+        }, remainingTime > 0 ? remainingTime : 0);
+    }
+
+    showOverlay();
+
+    setTimeout(() => {
+        hideOverlay();
+    }, minimumOverlayDuration);
+
     const pills = document.querySelectorAll('.pill');
     const charts = document.querySelectorAll('.chart');
     const lastUpdatedTime = document.getElementById('last-updated-time');
@@ -64,6 +108,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 seriesIndex: 0,
             });
         });
+    }
+
+    function debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            const context = this;
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(context, args), delay);
+        };
     }
 
     function fetchChartData(url, chartId) {
@@ -133,29 +186,68 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => console.error('Error fetching chart data:', error));
     }
 
-    function alternativePlayers(playerID) {
-        fetch(`/api/get_player_alternates'?id=${playerID}`)
-            .then(response => response.json())
-            .then(players => {
-                players.forEach((player, index) => {
-                    // Update player name
-                    const nameElement = document.getElementById(`name-${index + 1}`);
-                    if (nameElement) {
-                        nameElement.textContent = player.web_name;
-                    }
+    // Create a debounced version of selectPlayer with a 2-second delay
+    const debouncedSelectPlayer = debounce(selectPlayer, 2000);
 
-                    // Update player shirt image
-                    const shirtElement = document.querySelectorAll('.team-shirts .coat-hanger img')[index];
-                    if (shirtElement) {
-                        shirtElement.src = player.shirt;
-                    }
-                });
-            })
-            .catch(error => console.error('Error fetching alternative players:', error));
+    function updateAlternativePlayers(players) {
+        players.forEach((player, index) => {
+            // Select the entire player container by ID
+            const playerContainer = document.getElementById(`name-${index + 1}`);
+
+            // Add event listener to select the player on click (on the whole container)
+            playerContainer.addEventListener('click', function () {
+                debouncedSelectPlayer(player.id);  // Use the debounced version of selectPlayer
+            });
+
+            // Update player name inside the container
+            const nameElement = document.querySelectorAll('.alt-player')[index];
+            if (nameElement) {
+                nameElement.textContent = player.web_name;
+            }
+
+            // Update player shirt image
+            const shirtElement = document.querySelectorAll('.alternatives-shirt')[index];
+            if (shirtElement) {
+                shirtElement.src = player.shirt;
+            }
+
+            // Update team name
+            const teamNames = document.querySelectorAll('.alt-player-team-name')[index];
+            if (teamNames) {
+                teamNames.textContent = player.team_name;
+            }
+
+            // Update player value
+            const value = document.querySelectorAll('.alt-player-value')[index];
+            if (value) {
+                value.textContent = "\u00A3" + (player.now_cost / 10);
+            }
+
+            // Update player form
+            const form = document.querySelectorAll('.alt-player-form')[index];
+            if (form) {
+                form.textContent = player.form;
+            }
+        });
     }
 
-
+    function alternativePlayers(playerID) {
+        showLoader();  // Show loader when the query starts
+        fetch(`/api/get_player_alternates?id=${playerID}`)
+            .then(response => response.json())
+            .then(players => {
+                updateAlternativePlayers(players);  // Update the players
+            })
+            .finally(() => {
+                hideLoader();  // Hide loader once the update is complete
+            })
+            .catch(error => {
+                console.error('Error fetching alternative players:', error);
+                hideLoader();  // Ensure the loader is hidden in case of error
+            });
+    }
     function selectPlayer(playerId) {
+        showLoader();  // Show loader when the query starts
         console.log(`/get_player_alternates?id=${playerId}`);
         Promise.all([
             fetch(`/get_player_summary?id=${playerId}`).then(response => {
@@ -170,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 return response.json();
             }),
-            // Trigger the alternative players fetch
             fetch(`/get_player_alternates?id=${playerId}`).then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -194,37 +285,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.error("Unexpected response format:", playerDataResponse);
                 }
 
-                // Update the alternative players' information
-                alternativePlayers.forEach((player, index) => {
-                    const nameElement = document.getElementById(`name-${index + 1}`);
-                    if (nameElement) {
-                        nameElement.textContent = player.web_name;
-                    }
-
-                    const shirtElement = document.querySelectorAll('.alternatives-shirt')[index + 1];
-                    if (shirtElement) {
-                        shirtElement.src = player.shirt;
-                    }
-                    const teamNames = document.querySelectorAll('.alt-player-team-name')[index + 1];
-                    if (teamNames) {
-                        teamNames.textContent = player.team_name;
-                    }
-
-                    const value = document.querySelectorAll('.alt-player-value')[index + 1];
-                    if (value) {
-                        value.textContent = "\u00A3" + (player.now_cost/10);
-                    }
-
-                    const form = document.querySelectorAll('.alt-player-form')[index + 1];
-                    if (form) {
-                        form.textContent = player.form;
-                    }
-
-                });
+                updateAlternativePlayers(alternativePlayers);  // Update the alternatives
             })
-            .catch(error => console.error('Error fetching player data or alternative players:', error));
+            .finally(() => {
+                hideLoader();  // Hide loader once the update is complete
+            })
+            .catch(error => {
+                console.error('Error fetching player data or alternative players:', error);
+                hideLoader();  // Ensure the loader is hidden in case of error
+            });
     }
-
 
     function populatePlayerSummary(player) {
         const carouselIndicators = document.getElementById('carouselIndicators');
