@@ -515,9 +515,9 @@ canvas {
 
 .alternatives-details {
     width: -webkit-fill-available;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    justify-items: center;
 }
 
 .alternatives-card {

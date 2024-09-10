@@ -599,7 +599,7 @@ def get_alternative_players(player_id):
     costHigh = (player['value'] + 1) * 10
     position = player['position']
 
-    query = f'SELECT id, team, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 4'
+    query = f'SELECT id, team, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 6'
 
     cursor.execute(query)
 
