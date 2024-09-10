@@ -2,6 +2,50 @@ import { renderBarChart } from './chartUtils.js';
 import { updateLastUpdatedTime, formatNumber, formatOwnership, isUserActive, callUpdateEndpoint, truncateLabel } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
+    const overlay = document.getElementById('dictionary-overlay');
+    const dictionaryText = document.querySelector('.dictionary-content');  // Make sure this is correct
+
+    // Show the overlay if the URL is 'www.kneejerker.co.uk', 'heroku', or 'localhost'
+    const currentURL = window.location.href;
+    if (currentURL.includes('kneejerker.co.uk') || currentURL.includes('heroku') || currentURL.includes('localhost')) {
+        overlay.style.display = 'flex';  // Show the overlay initially
+    }
+
+    let overlayVisibleTime = 0;
+    const minimumOverlayDuration = 4000;
+
+    function showOverlay() {
+        overlay.classList.remove('fade-out');
+        overlay.style.display = 'flex';
+
+        dictionaryText.style.opacity = '0';
+
+        setTimeout(() => {
+            dictionaryText.style.opacity = '1';
+        }, 100);
+
+        overlayVisibleTime = Date.now();
+    }
+
+    function hideOverlay() {
+        const elapsedTime = Date.now() - overlayVisibleTime;
+        const remainingTime = minimumOverlayDuration - elapsedTime;
+
+        setTimeout(() => {
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+                overlay.style.display = 'none'; 
+                overlay.classList.remove('fade-out');  
+            }, 500); 
+        }, remainingTime > 0 ? remainingTime : 0);
+    }
+
+    showOverlay();
+
+    setTimeout(() => {
+        hideOverlay();
+    }, minimumOverlayDuration);
+
     const pills = document.querySelectorAll('.pill');
     const charts = document.querySelectorAll('.chart');
     const lastUpdatedTime = document.getElementById('last-updated-time');
@@ -64,16 +108,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 seriesIndex: 0,
             });
         });
-    }
-
-    // Function to show the loader
-    function showLoader() {
-        document.getElementById('loader').style.display = 'flex';
-    }
-
-    // Function to hide the loader
-    function hideLoader() {
-        document.getElementById('loader').style.display = 'none';
     }
 
     function debounce(func, delay) {

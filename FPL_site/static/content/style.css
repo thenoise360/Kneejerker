@@ -380,6 +380,82 @@ a {
     color: var(--primary-color);
 }
 
+
+/* Definition load page */
+
+.dictionary-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fffcf7;
+    z-index: 10000; /* Ensure it's on top */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    padding: 20px
+}
+
+hr{
+    width: 50%;
+}
+
+.dictionary-content {
+    text-align: center;
+    font-family: "Times New Roman", Times, serif;
+}
+
+    .dictionary-content h1 {
+        font-size: 4rem;
+        margin: 0;
+        font-weight: normal;
+    }
+
+.phonetics {
+    font-style: italic;
+    font-size: 1rem;
+    color: #555;
+}
+
+separator {
+    margin: 1rem 0;
+    color: inherit;
+    border: 0;
+    border-top: var(--bs-border-width) solid;
+    width: 50%;
+}
+
+.definition {
+    text-align: left;
+    font-size: 1rem;
+    color: var(--black-70);
+}
+
+/* Add transition for smooth fade-out */
+#dictionary-text {
+    opacity: 0; /* Initially hidden */
+    transition: opacity 0.5s ease-in-out; /* Fade-in effect for 0.5 seconds */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+}
+
+#dictionary-overlay {
+    opacity: 1; /* Initially visible */
+    transition: opacity 0.5s ease-in-out; /* Fade-out effect for 0.5 seconds */
+}
+
+.fade-in {
+    opacity: 1 !important;
+}
+
+.fade-out {
+    opacity: 0 !important;
+}
 /* ============================================================================================================= */
 
 /* PLAYERS.HTML */
