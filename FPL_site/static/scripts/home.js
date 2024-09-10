@@ -2,6 +2,23 @@ import { renderBarChart } from './chartUtils.js';
 import { updateLastUpdatedTime, formatNumber, formatOwnership, isUserActive, truncateLabel } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
+
+    // Function to show the loader
+    function showLoader() {
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.style.display = 'flex';  // Show the loader (assuming flexbox layout)
+        }
+    }
+
+    // Function to hide the loader
+    function hideLoader() {
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.style.display = 'none';  // Hide the loader
+        }
+    }
+
     const overlay = document.getElementById('dictionary-overlay');
     const dictionaryText = document.querySelector('.dictionary-content');  // Make sure this is correct
 
