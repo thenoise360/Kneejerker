@@ -1,5 +1,5 @@
 import { renderBarChart } from './chartUtils.js';
-import { updateLastUpdatedTime, formatNumber, formatOwnership, isUserActive, callUpdateEndpoint, truncateLabel } from './utils.js';
+import { updateLastUpdatedTime, formatNumber, formatOwnership, isUserActive, truncateLabel } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const overlay = document.getElementById('dictionary-overlay');
