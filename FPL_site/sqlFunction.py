@@ -270,8 +270,13 @@ def updateBootstrapStaticTables(user, password, database, host):
                 if generateCurrentGameweek() == None:
                     currentGameweek = 1
                 else:
-                    currentGameweek = generateCurrentGameweek()
-                elementsKept['gameweek'] = currentGameweek
+                    currentGameweek = generateCurrentGameweek()       
+                tempHold = dict()
+                for item in elementsKept:
+                    if item not in ['region']:
+                        tempHold[item] = elementsKept[item]
+                tempHold['gameweek'] = currentGameweek
+                elementsKept = tempHold
 
             if table == 'events':
                 tempHold = dict()
