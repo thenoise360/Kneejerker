@@ -1,524 +1,376 @@
 import pandas as pd
+import os
 import mysql.connector
+from sqlalchemy import create_engine
+import pymysql
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from scipy.optimize import linprog
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+from pulp import LpProblem, LpVariable, LpMaximize, LpInteger, lpSum, LpStatus
 import seaborn as sns
+import json
+import requests
+import unicodedata
+import logging
 
-# MySQL connection configuration
-config = {
-    'user': 'jackbegley',
-    'password': 'Athome19369*',
-    'host': 'localhost',
-}
+# Setup logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Database configuration
+FLASK_ENV = 'development'
+HOST = 'localhost'
+USER = 'jackbegley'
+PASSWORD = 'Athome19369*'
+DB = 'fpl'
+
+season_start = 2024
 
 # Fetch data from MySQL
 def fetch_mysql_data(query, database):
-    connection = mysql.connector.connect(**config, database=database)
-    df = pd.read_sql(query, connection)
-    connection.close()
+    logging.info(f"Fetching data from {database} with query: {query}")
+    engine = create_engine(f'mysql+pymysql://{USER}:{PASSWORD}@{HOST}/{database}')
+    df = pd.read_sql(query, engine)
+    logging.info(f"Fetched {len(df)} rows from {database}.")
     return df
 
-# Fetch events data
-events_query = "SELECT * FROM 2023_2024_events.elements;"
-events_df = fetch_mysql_data(events_query, '2023_2024_events')
+# Get current gameweek from API
+def get_current_gameweek():
+    """Fetch current gameweek using the Fantasy Premier League API."""
+    logging.info("Fetching current gameweek from the API.")
+    response = requests.get('https://fantasy.premierleague.com/api/entry/1/')
+    if response.status_code == 200:
+        todays_data = response.json()
+        current_gameweek = todays_data.get('current_event', None)
+        logging.info(f"Current gameweek is: {current_gameweek}")
+        return current_gameweek
+    else:
+        logging.error(f"Failed to fetch gameweek, status code: {response.status_code}")
+        raise Exception(f"Failed to fetch gameweek, status code: {response.status_code}")
 
-# Fetch fixtures data
-fixtures_query = "SELECT * FROM 2023_2024_elementsummary.fixtures;"
-fixtures_df = fetch_mysql_data(fixtures_query, '2023_2024_elementsummary')
+# Clean player names (remove unicode characters)
+def clean_player_names(players_df):
+    """Normalize player names by removing special characters."""
+    logging.info("Cleaning player names.")
+    players_df['second_name'] = players_df['second_name'].apply(
+        lambda x: unicodedata.normalize('NFKD', x).encode('ascii', 'ignore').decode('utf-8')
+    )
+    return players_df
 
-# Aggregate fixture difficulty by player
-fixture_difficulty = fixtures_df.groupby('id').agg({
-    'difficulty': 'mean'  # Use mean difficulty as a feature
-}).reset_index()
+# Prepare data
+def prepare_data():
+    """Fetch and prepare data for the model."""
+    logging.info("Preparing data by fetching events, fixtures, and player data.")
+    current_gw = get_current_gameweek()
 
-# Fetch player data with 'element_type' column included
-players_query = "SELECT id, second_name, element_type, now_cost FROM 2023_2024_bootstrapstatic.elements;"
-players_df = fetch_mysql_data(players_query, '2023_2024_bootstrapstatic')
+    # Fetch events, fixtures, and player data
+    events_query = f"SELECT * FROM {DB}.events_elements;"
+    events_df = fetch_mysql_data(events_query, DB)
 
-# Adjust player costs
-players_df['now_cost'] = players_df['now_cost'] / 10
+    fixtures_query = f"SELECT * FROM {DB}.elementsummary_fixtures;"
+    fixtures_df = fetch_mysql_data(fixtures_query, DB)
 
-# Diagnostic check after fetching data
-print("Events DataFrame columns:", events_df.columns)
-print("Fixtures DataFrame columns:", fixtures_df.columns)
-print("Players DataFrame columns:", players_df.columns)
+    # Fetch player data including element_type
+    players_query = (f"SELECT id, first_name, second_name, web_name, element_type, now_cost, minutes, chance_of_playing_next_round,"
+                 f"goals_scored, assists, clean_sheets, goals_conceded, own_goals, penalties_saved, "
+                 f"penalties_missed, yellow_cards, red_cards, saves, bonus, bps, influence, creativity, "
+                 f"threat, ict_index, starts, expected_goals, expected_assists, expected_goal_involvements, "
+                 f"expected_goals_conceded, total_points, in_dreamteam "
+                 f"FROM {DB}.bootstrapstatic_elements "
+                 f"WHERE Year_start = {season_start} AND gameweek = {current_gw - 1};")
+    
+    players_df = fetch_mysql_data(players_query, f'{DB}')
+    
+    logging.info(f"Player data contains {players_df.shape[1]} columns and {players_df.shape[0]} rows.")
+    
+    # Calculate average minutes per game and filter players with at least 15-minute average
+    players_df['avg_minutes'] = players_df['minutes'] / (current_gw - 1)  # Assuming we want average until the last gameweek
+    players_df = players_df[(players_df['avg_minutes'] >= 15) & (players_df['chance_of_playing_next_round'] >= 50)]
+    logging.info(f"Filtered players with at least 15-minute average per game and chance of playing >= 50%. Remaining players: {len(players_df)}")
 
-# Check for missing data
-print("\nMissing data after fetching:")
-print(players_df.isnull().sum())
+    # Adjust player costs
+    players_df['now_cost'] = players_df['now_cost'] / 10
 
-# Check data types
-print("\nData types after fetching:")
-print(players_df.dtypes)
+    return events_df, fixtures_df, players_df
 
-# Ensure unique player IDs
-print("\nUnique player IDs after fetching:")
-print(players_df['id'].nunique(), len(players_df))
+# Adjust the training and predicting function to return the feature importance
+def train_and_predict(df_train, df_predict, players_df):
+    logging.info("Training Random Forest model for performance prediction.")
+    
+    features = ['minutes', 'goals_scored', 'assists', 'clean_sheets', 'goals_conceded', 
+                'own_goals', 'penalties_saved', 'penalties_missed', 'yellow_cards', 
+                'red_cards', 'saves', 'bonus', 'bps', 'influence', 'creativity', 
+                'threat', 'ict_index', 'starts', 'expected_goals', 'expected_assists', 
+                'expected_goal_involvements', 'expected_goals_conceded', 'total_points', 
+                'in_dreamteam', 'year_start', 'gameweek']
 
-# Check for missing 'gameweek' column
-if 'gameweek' not in events_df.columns:
-    raise KeyError("The 'gameweek' column is missing from the events dataframe.")
+    # Ensure all required columns are present in both train and predict data
+    for col in features:
+        if col not in df_train.columns:
+            df_train[col] = 0
+        if col not in df_predict.columns:
+            df_predict[col] = 0
 
-# Fetch historical events data (for training)
-historical_events_query_2021 = "SELECT * FROM 2021_2022_events.elements;"
-historical_events_df_2021 = fetch_mysql_data(historical_events_query_2021, '2021_2022_events')
+    logging.info(f"Missing columns in training data: {set(features) - set(df_train.columns)}")
+    logging.info(f"Missing columns in prediction data: {set(features) - set(df_predict.columns)}")
 
-historical_events_query_2022 = "SELECT * FROM 2022_2023_events.elements;"
-historical_events_df_2022 = fetch_mysql_data(historical_events_query_2022, '2022_2023_events')
+    # Before training, ensure 'element_type', 'now_cost', 'first_name', and 'second_name' exist in df_predict
+    df_predict = pd.merge(df_predict, players_df[['id', 'element_type', 'now_cost', 'first_name', 'second_name']], on='id', how='left')
 
-historical_events_df = pd.concat([historical_events_df_2021, historical_events_df_2022], ignore_index=True)
+    # Retain non-feature columns before transformation
+    non_feature_columns_train = df_train[['id', 'element_type', 'now_cost', 'first_name', 'second_name']].copy()
+    non_feature_columns_predict = df_predict[['id', 'element_type', 'now_cost', 'first_name', 'second_name']].copy()
 
-# Define a function to predict future performance using a machine learning model
-def train_and_predict(df_train, df_predict):
-    features = ['minutes', 'goals_scored', 'assists', 'clean_sheets', 'goals_conceded',
-                'penalties_saved', 'yellow_cards', 'red_cards', 'saves', 'bonus', 'bps',
-                'influence', 'creativity', 'threat', 'ict_index', 'expected_goals',
-                'expected_assists', 'expected_goal_involvements', 'expected_goals_conceded']
-
-    # Ensure the necessary columns are present in both dataframes
-    missing_features_train = set(features) - set(df_train.columns)
-    missing_features_predict = set(features) - set(df_predict.columns)
-
-    if missing_features_train:
-        raise KeyError(f"Train DataFrame is missing features: {missing_features_train}")
-    if missing_features_predict:
-        raise KeyError(f"Predict DataFrame is missing features: {missing_features_predict}")
-
-    # Ensure numeric conversion
+    # Ensure all features are numeric
     df_train[features] = df_train[features].apply(pd.to_numeric, errors='coerce')
     df_predict[features] = df_predict[features].apply(pd.to_numeric, errors='coerce')
 
-    # Impute missing values
+    # Impute missing values (mean imputation)
     imputer = SimpleImputer(strategy='mean')
     df_train_imputed = imputer.fit_transform(df_train[features])
     df_predict_imputed = imputer.transform(df_predict[features])
 
-    # Normalize features
+    # Scale the data
     scaler = StandardScaler()
-    df_train_imputed = scaler.fit_transform(df_train_imputed)
-    df_predict_imputed = scaler.transform(df_predict_imputed)
+    df_train_scaled = scaler.fit_transform(df_train_imputed)
+    df_predict_scaled = scaler.transform(df_predict_imputed)
 
-    # Ensure target does not contain NaN values
+    # Define the target variable
     target = df_train['total_points'].fillna(0)
 
-    # Train the model
+    # Train the RandomForestRegressor
     model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(df_train_imputed, target)
+    model.fit(df_train_scaled, target)
 
-    # Predict the performance
-    df_predict['predicted_performance'] = model.predict(df_predict_imputed)
-    return df_predict
+    # Get feature importance
+    feature_importance = model.feature_importances_
+    importance_df = pd.DataFrame({'Feature': features, 'Importance': feature_importance}).sort_values(by='Importance', ascending=False)
 
+    logging.info("Feature importance:\n%s", importance_df)
+
+    # Predict future performance
+    predicted_performance = model.predict(df_predict_scaled)
+
+    # Re-attach non-feature columns
+    df_predict_final = pd.concat([non_feature_columns_predict.reset_index(drop=True), 
+                                  pd.DataFrame(predicted_performance, columns=['predicted_performance'])], axis=1)
+
+    logging.info("Prediction completed.")
+
+     # Re-attach non-feature columns
+    df_predict_final = pd.concat([
+        non_feature_columns_predict.reset_index(drop=True),
+        pd.DataFrame(predicted_performance, columns=['predicted_performance']),
+        df_predict[['total_points']].reset_index(drop=True)  # Include 'total_points' from df_predict
+    ], axis=1)
+
+    logging.info("Prediction completed.")
+    return df_predict_final, importance_df
+
+# Check if there are enough players to meet team formation constraints
 def check_sufficient_players(players_df):
-    gks = players_df[players_df['element_type'] == 1]
-    defs = players_df[players_df['element_type'] == 2]
-    mids = players_df[players_df['element_type'] == 3]
-    fwds = players_df[players_df['element_type'] == 4]
-    
-    if len(gks) < 2 or len(defs) < 5 or len(mids) < 5 or len(fwds) < 3:
-        print(f"Not enough players to meet the constraints: GKs: {len(gks)}, DEFs: {len(defs)}, MIDs: {len(mids)}, FWDs: {len(fwds)}")
-        return False
-    return True
+    """Check if there are enough players to meet team formation constraints."""
+    logging.info("Checking if there are enough players to meet team formation constraints.")
+    position_counts = players_df.groupby('element_type').size()
+    sufficient = all([
+        position_counts.get(1, 0) >= 2,
+        position_counts.get(2, 0) >= 5,
+        position_counts.get(3, 0) >= 5,
+        position_counts.get(4, 0) >= 3,
+    ])
+    if sufficient:
+        logging.info("Sufficient players found for each position.")
+    else:
+        logging.warning("Not enough players found to meet team formation constraints.")
+    return sufficient
 
-# Function to get optimal team for a given gameweek
-def get_optimal_team(current_gameweek, budget=90):
+def aggregate_gameweek_data(events_df, current_gameweek):
+    """Aggregate player stats for training and next five weeks prediction."""
     current_events = events_df[events_df['gameweek'] <= current_gameweek]
     next_five_weeks_events = events_df[(events_df['gameweek'] > current_gameweek) & (events_df['gameweek'] <= current_gameweek + 5)]
 
     current_agg = current_events.groupby('id').agg({
-        'minutes': 'sum',
-        'goals_scored': 'sum',
-        'assists': 'sum',
-        'clean_sheets': 'sum',
-        'goals_conceded': 'sum',
-        'penalties_saved': 'sum',
-        'yellow_cards': 'sum',
-        'red_cards': 'sum',
-        'saves': 'sum',
-        'bonus': 'sum',
-        'bps': 'sum',
-        'influence': 'sum',
-        'creativity': 'sum',
-        'threat': 'sum',
-        'ict_index': 'sum',
-        'expected_goals': 'sum',
-        'expected_assists': 'sum',
-        'expected_goal_involvements': 'sum',
-        'expected_goals_conceded': 'sum',
-        'total_points': 'sum'
+        'minutes': 'sum', 'goals_scored': 'sum', 'assists': 'sum', 'clean_sheets': 'sum',
+        'goals_conceded': 'sum', 'own_goals': 'sum', 'penalties_saved': 'sum', 'penalties_missed': 'sum',
+        'yellow_cards': 'sum', 'red_cards': 'sum', 'saves': 'sum', 'bonus': 'sum', 'bps': 'sum',
+        'influence': 'sum', 'creativity': 'sum', 'threat': 'sum', 'ict_index': 'sum',
+        'expected_goals': 'sum', 'expected_assists': 'sum', 'expected_goal_involvements': 'sum',
+        'expected_goals_conceded': 'sum', 'total_points': 'sum', 'in_dreamteam': 'sum',
+        'gameweek': 'max', 'year_start': 'max'
     }).reset_index()
 
     next_five_weeks_agg = next_five_weeks_events.groupby('id').agg({
-        'minutes': 'sum',
-        'goals_scored': 'sum',
-        'assists': 'sum',
-        'clean_sheets': 'sum',
-        'goals_conceded': 'sum',
-        'penalties_saved': 'sum',
-        'yellow_cards': 'sum',
-        'red_cards': 'sum',
-        'saves': 'sum',
-        'bonus': 'sum',
-        'bps': 'sum',
-        'influence': 'sum',
-        'creativity': 'sum',
-        'threat': 'sum',
-        'ict_index': 'sum',
-        'expected_goals': 'sum',
-        'expected_assists': 'sum',
-        'expected_goal_involvements': 'sum',
-        'expected_goals_conceded': 'sum',
-        'total_points': 'sum'
+        'minutes': 'sum', 'goals_scored': 'sum', 'assists': 'sum', 'clean_sheets': 'sum',
+        'goals_conceded': 'sum', 'own_goals': 'sum', 'penalties_saved': 'sum', 'penalties_missed': 'sum',
+        'yellow_cards': 'sum', 'red_cards': 'sum', 'saves': 'sum', 'bonus': 'sum', 'bps': 'sum',
+        'influence': 'sum', 'creativity': 'sum', 'threat': 'sum', 'ict_index': 'sum',
+        'expected_goals': 'sum', 'expected_assists': 'sum', 'expected_goal_involvements': 'sum',
+        'expected_goals_conceded': 'sum', 'total_points': 'sum', 'in_dreamteam': 'sum',
+        'gameweek': 'max', 'year_start': 'max'
     }).reset_index()
 
-    current_merged = pd.merge(current_agg, players_df[['id', 'element_type', 'now_cost']], on='id', how='left')
-    current_merged = pd.merge(current_merged, fixture_difficulty, on='id', how='left')
+    return current_agg, next_five_weeks_agg
 
-    predicted_df = train_and_predict(current_merged, next_five_weeks_agg)
-    predicted_df = pd.merge(predicted_df, next_five_weeks_events[['id', 'total_points']], on='id', how='left', suffixes=('', '_actual'))
-    predicted_df = pd.merge(predicted_df, players_df[['id', 'second_name', 'element_type', 'now_cost']], on='id', how='left')
+def optimize_team(players_df, budget):
+    logging.info(f"Optimizing team selection within a budget of {budget}.")
 
-    # Filter out players not in the current season
-    current_season_players = players_df['id'].unique()
-    predicted_df = predicted_df[predicted_df['id'].isin(current_season_players)]
+    # Ensure sufficient players for each position
+    if not check_sufficient_players(players_df):
+        logging.warning("Not enough players to meet team constraints.")
+        return pd.DataFrame(columns=players_df.columns)
 
-    # Final diagnostic check before optimization
-    print("\nMissing data before optimization:")
-    print(predicted_df.isnull().sum())
+    # Clean NaN or infinity values in 'now_cost'
+    if players_df['now_cost'].isnull().any() or np.isinf(players_df['now_cost']).any():
+        logging.warning("Found NaN or inf values in now_cost. Replacing with median value.")
+        players_df['now_cost'] = players_df['now_cost'].replace([np.inf, -np.inf], np.nan)
+        players_df['now_cost'].fillna(players_df['now_cost'].median(), inplace=True)
 
-    print("\nData types before optimization:")
-    print(predicted_df.dtypes)
+    # Initialize the optimization problem
+    prob = LpProblem("FPL_Team_Selection", LpMaximize)
 
-    print("\nRange of values before optimization:")
-    print(predicted_df.describe())
+    # Create decision variables
+    player_vars = LpVariable.dicts("player", players_df.index, cat=LpInteger, lowBound=0, upBound=1)
 
-    print("\nUnique player IDs before optimization:")
-    print(predicted_df['id'].nunique(), len(predicted_df))
+    # Objective function: maximize total predicted points while minimizing unused budget
+    # You can use a weighted combination of points and unused budget to penalize leaving money on the table.
+    total_predicted_points = lpSum(players_df.loc[i, 'predicted_performance'] * player_vars[i] for i in players_df.index)
+    total_cost = lpSum(players_df.loc[i, 'now_cost'] * player_vars[i] for i in players_df.index)
+    unused_budget_penalty = (budget - total_cost) * 18  # IMPORTANT!! Do not adjust weight as this has been optimized.
+
+    # Adjust the objective to maximize points and minimize unused budget
+    prob += total_predicted_points - unused_budget_penalty
+
+    # Budget constraint
+    prob += total_cost <= budget
+
+    # Positional constraints
+    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 1) == 2  # GK
+    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 2) == 5  # DEF
+    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 3) == 5  # MID
+    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 4) == 3  # FWD
+
+    # Total squad size constraint (15 players in total)
+    prob += lpSum(player_vars[i] for i in players_df.index) == 15
+
+    # Solve the problem
+    prob.solve()
+
+    # Check if the solution is optimal
+    if LpStatus[prob.status] == 'Optimal':
+        logging.info("Optimization successful.")
+        selected_indices = [i for i in players_df.index if player_vars[i].varValue == 1]
+        return players_df.loc[selected_indices]
+    else:
+        logging.error(f"Optimization failed: {LpStatus[prob.status]}")
+        return pd.DataFrame(columns=players_df.columns)
+
+
+def get_optimal_team(current_gameweek, budget=100):
+    """Get optimal team for the specified gameweek."""
+    logging.info(f"Fetching data and optimizing team for gameweek {current_gameweek}.")
+    events_df, fixtures_df, players_df = prepare_data()
+
+    # Use the helper function to aggregate data
+    current_agg, next_five_weeks_agg = aggregate_gameweek_data(events_df, current_gameweek)
+
+    # Merge current_agg with players_df to retain critical columns
+    current_merged = pd.merge(current_agg, players_df[['id', 'element_type', 'now_cost', 'second_name', 'first_name']], on='id', how='left')
+
+    # Perform predictions and get feature importance
+    predicted_df, feature_importance_df = train_and_predict(current_merged, next_five_weeks_agg, players_df)
+
+    # Verify that 'element_type' and 'second_name' are present in predicted_df
+    if 'element_type' not in predicted_df.columns or 'second_name' not in predicted_df.columns:
+        logging.error("'element_type' or 'second_name' column is missing in predicted_df.")
+        raise KeyError("'element_type' or 'second_name' column is required but missing in predicted_df.")
+    else:
+        logging.info("'element_type' and 'second_name' are present in predicted_df after merging.")
 
     # Proceed with optimization
     optimal_team = optimize_team(predicted_df, budget)
     if optimal_team.empty:
-        print("No optimal team could be selected due to constraints.")
+        logging.warning("No optimal team could be selected due to constraints.")
     else:
         print_optimal_team_layout(optimal_team)
         
-    print(optimal_team[['second_name', 'element_type', 'now_cost', 'predicted_performance']])
     return optimal_team
 
-
-def check_feasibility(players_df, budget):
-    # Check if players_df is not empty
-    if players_df.empty:
-        return "The players dataframe is empty."
-
-    # Check if there are enough players in each position
-    positions = [1, 2, 3, 4]
-    position_counts = {pos: players_df[players_df['element_type'] == pos].shape[0] for pos in positions}
-    
-    required_counts = {1: 2, 2: 5, 3: 5, 4: 3}
-    
-    for pos, count in required_counts.items():
-        if position_counts[pos] < count:
-            return f"Not enough players in position {pos}: Required {count}, Found {position_counts[pos]}"
-    
-    # Check if there are players with costs within the budget
-    if (players_df['now_cost'] > budget).all():
-        return "No players are within the budget."
-    
-    # Group players by position and sort by cost
-    gk_players = players_df[players_df['element_type'] == 1].sort_values(by='now_cost')
-    def_players = players_df[players_df['element_type'] == 2].sort_values(by='now_cost')
-    mid_players = players_df[players_df['element_type'] == 3].sort_values(by='now_cost')
-    fwd_players = players_df[players_df['element_type'] == 4].sort_values(by='now_cost')
-
-    # Select the minimum cost players for each position
-    min_cost_gk = gk_players.head(2)
-    min_cost_def = def_players.head(5)
-    min_cost_mid = mid_players.head(5)
-    min_cost_fwd = fwd_players.head(3)
-
-    min_cost_gk_sum = min_cost_gk['now_cost'].sum()
-    min_cost_def_sum = min_cost_def['now_cost'].sum()
-    min_cost_mid_sum = min_cost_mid['now_cost'].sum()
-    min_cost_fwd_sum = min_cost_fwd['now_cost'].sum()
-
-    # Calculate the total minimum cost
-    total_min_cost = min_cost_gk_sum + min_cost_def_sum + min_cost_mid_sum + min_cost_fwd_sum
-
-    # Check if the total minimum cost is within the budget
-    feasible = total_min_cost <= budget
-
-    min_cost_players = pd.concat([min_cost_gk, min_cost_def, min_cost_mid, min_cost_fwd])
-
-    return {
-        'position_counts': position_counts,
-        'min_cost_gk': min_cost_gk_sum,
-        'min_cost_def': min_cost_def_sum,
-        'min_cost_mid': min_cost_mid_sum,
-        'min_cost_fwd': min_cost_fwd_sum,
-        'total_min_cost': total_min_cost,
-        'feasible': feasible,
-        'min_cost_players': min_cost_players[['second_name', 'element_type', 'now_cost']]
-    }
-
-def optimize_team(players_df, budget):
-    if not check_sufficient_players(players_df):
-        return pd.DataFrame(columns=players_df.columns)
-
-    # Temporarily increase budget to see if it resolves the infeasibility
-    budget += 10  # Increase budget by 10 units as an example
-
-    # Remove duplicates
-    players_df = players_df.drop_duplicates(subset=['id'])
-
-    # Objective function: maximize predicted performance
-    c = -players_df['predicted_performance'].values
-
-    # Positional constraints
-    GK_constraint = (players_df['element_type'] == 1).astype(int).values
-    DEF_constraint = (players_df['element_type'] == 2).astype(int).values
-    MID_constraint = (players_df['element_type'] == 3).astype(int).values
-    FWD_constraint = (players_df['element_type'] == 4).astype(int).values
-
-    # Bounds: Each player can be either selected (1) or not selected (0)
-    bounds = [(0, 1) for _ in range(len(players_df))]
-
-    # Constraints: total cost must be less than or equal to budget and positional constraints
-    A_eq = np.array([
-        players_df['now_cost'].values, 
-        GK_constraint, 
-        DEF_constraint, 
-        MID_constraint, 
-        FWD_constraint
-    ])
-    b_eq = np.array([budget, 2, 5, 5, 3])
-
-    print("Objective function coefficients (c):", c)
-    print("Cost constraints (A_eq[0]):", A_eq[0])
-    print("Goalkeeper constraints (A_eq[1]):", A_eq[1])
-    print("Defender constraints (A_eq[2]):", A_eq[2])
-    print("Midfielder constraints (A_eq[3]):", A_eq[3])
-    print("Forward constraints (A_eq[4]):", A_eq[4])
-    print("Bounds:", bounds)
-    print("b_eq:", b_eq)
-
-    # Solve the linear programming problem
-    result = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method='highs')
-
-    if result.success:
-        # Get the selected players
-        selected_indices = [i for i, x in enumerate(result.x) if x > 0.5]
-        selected_players = players_df.iloc[selected_indices]
-    else:
-        print("Optimization did not find a solution. Reason:", result.message)
-        selected_players = pd.DataFrame(columns=players_df.columns)
-
-    return selected_players
-
-# Print teams in console
+# Print optimal team layout
 def print_optimal_team_layout(df):
-    if df.empty:
-        print("No optimal team could be selected.")
-        return
-
+    logging.info("Printing the optimal team layout.")
     df = df.drop_duplicates(subset=['id'])
-    gks = df[df['element_type'] == 1]['second_name'].tolist()
-    defs = df[df['element_type'] == 2]['second_name'].tolist()
-    mids = df[df['element_type'] == 3]['second_name'].tolist()
-    fwds = df[df['element_type'] == 4]['second_name'].tolist()
+    gks = df[df['element_type'] == 1][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
+    defs = df[df['element_type'] == 2][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
+    mids = df[df['element_type'] == 3][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
+    fwds = df[df['element_type'] == 4][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
 
-    print("\nList of Goalkeepers:", gks)
-    print("List of Defenders:", defs)
-    print("List of Midfielders:", mids)
-    print("List of Forwards:", fwds)
-
-    # Ensure lists have correct number of players
-    if len(gks) < 2:
-        print(f"Expected 2 goalkeepers, but got {len(gks)}. Adding placeholders.")
-        gks.extend(['None'] * (2 - len(gks)))
-    if len(defs) < 5:
-        print(f"Expected 5 defenders, but got {len(defs)}. Adding placeholders.")
-        defs.extend(['None'] * (5 - len(defs)))
-    if len(mids) < 5:
-        print(f"Expected 5 midfielders, but got {len(mids)}. Adding placeholders.")
-        mids.extend(['None'] * (5 - len(mids)))
-    if len(fwds) < 3:
-        print(f"Expected 3 forwards, but got {len(fwds)}. Adding placeholders.")
-        fwds.extend(['None'] * (3 - len(fwds)))
-
-    print("\nGoalkeepers:        {}        {}".format(gks[0], gks[1]))
-    print("\nDefenders:    {}    {}    {}    {}    {}".format(defs[0], defs[1], defs[2], defs[3], defs[4]))
-    print("\nMidfielders:    {}    {}    {}    {}    {}".format(mids[0], mids[1], mids[2], mids[3], mids[4]))
-    print("\nForwards:      {}      {}      {}".format(fwds[0], fwds[1], fwds[2]))
+    # Print formatted output
+    print("\nGoalkeepers:        {}        {}".format(gks[0], gks[1] if len(gks) > 1 else 'None'))
+    print("\nDefenders:    {}    {}    {}    {}    {}".format(*defs[:5], *['None']*(5-len(defs))))
+    print("\nMidfielders:    {}    {}    {}    {}    {}".format(*mids[:5], *['None']*(5-len(mids))))
+    print("\nForwards:      {}      {}      {}".format(*fwds[:3], *['None']*(3-len(fwds))))
 
     total_value = df['now_cost'].sum()
-    print("\n               Total Value: {:.1f}\n".format(total_value))
+    print("\nTotal Value: {:.1f}".format(total_value))
 
-def evaluate_model_by_week(events_df, players_df, initial_budget=100):
-    gameweeks = sorted(events_df['gameweek'].unique())
-    results = []
-    predicted_all_weeks = []
-    actual_all_weeks = []
+    logging.info(f"Total team value: {total_value}")
 
-    for current_week in gameweeks[:-1]:
-        next_week = current_week + 1
+def export_all_players_to_csv(players_df, file_name="all_players.csv"):
+    logging.info(f"Exporting all players to {file_name}.")
+    
+    # Calculate points per million if not already done
+    if 'points_per_million' not in players_df.columns:
+        players_df['points_per_million'] = players_df['predicted_performance'] / players_df['now_cost']
 
-        current_events = events_df[events_df['gameweek'] <= current_week]
-        next_five_weeks_events = events_df[(events_df['gameweek'] > current_week) & (events_df['gameweek'] <= current_week + 5)]
+    # Select relevant columns
+    columns_to_export = ['first_name', 'second_name', 'now_cost', 'total_points','points_per_million']
 
-        current_agg = current_events.groupby('id').agg({
-            'minutes': 'sum',
-            'goals_scored': 'sum',
-            'assists': 'sum',
-            'clean_sheets': 'sum',
-            'goals_conceded': 'sum',
-            'penalties_saved': 'sum',
-            'yellow_cards': 'sum',
-            'red_cards': 'sum',
-            'saves': 'sum',
-            'bonus': 'sum',
-            'bps': 'sum',
-            'influence': 'sum',
-            'creativity': 'sum',
-            'threat': 'sum',
-            'ict_index': 'sum',
-            'expected_goals': 'sum',
-            'expected_assists': 'sum',
-            'expected_goal_involvements': 'sum',
-            'expected_goals_conceded': 'sum',
-            'total_points': 'sum'
-        }).reset_index()
+    # Check if the required columns exist in the DataFrame
+    missing_columns = [col for col in columns_to_export if col not in players_df.columns]
+    if missing_columns:
+        logging.error(f"Missing columns for export: {missing_columns}")
+        raise KeyError(f"Missing columns for export: {missing_columns}")
 
-        next_five_weeks_agg = next_five_weeks_events.groupby('id').agg({
-            'minutes': 'sum',
-            'goals_scored': 'sum',
-            'assists': 'sum',
-            'clean_sheets': 'sum',
-            'goals_conceded': 'sum',
-            'penalties_saved': 'sum',
-            'yellow_cards': 'sum',
-            'red_cards': 'sum',
-            'saves': 'sum',
-            'bonus': 'sum',
-            'bps': 'sum',
-            'influence': 'sum',
-            'creativity': 'sum',
-            'threat': 'sum',
-            'ict_index': 'sum',
-            'expected_goals': 'sum',
-            'expected_assists': 'sum',
-            'expected_goal_involvements': 'sum',
-            'expected_goals_conceded': 'sum',
-            'total_points': 'sum'
-        }).reset_index()
+    # Sort players by points_per_million in descending order
+    sorted_players_df = players_df[columns_to_export].sort_values(by='points_per_million', ascending=False)
 
-        # Merge dataframes for training and prediction
-        current_merged = pd.merge(current_agg, players_df[['id', 'element_type', 'now_cost']], on='id', how='left')
-        current_merged = pd.merge(current_merged, fixture_difficulty, on='id', how='left')
+    # Export the sorted DataFrame to CSV
+    sorted_players_df.to_csv(file_name, index=False)
+    logging.info(f"All players exported to {file_name} in descending order by points_per_million.")
 
-        predicted_df = train_and_predict(current_merged, next_five_weeks_agg)
-        predicted_df = pd.merge(predicted_df, next_five_weeks_events[['id', 'total_points']], on='id', how='left', suffixes=('', '_actual'))
-        predicted_df = pd.merge(predicted_df, players_df[['id', 'second_name', 'element_type', 'now_cost']], on='id', how='left')
-        print("\nPredicted DataFrame after merging 'element_type' and 'now_cost':")
-        print(predicted_df[['id', 'second_name', 'element_type', 'now_cost', 'predicted_performance']].head())
+def main():
+    """Main workflow for fetching data, training the model, and optimizing team."""
+    logging.info("Starting the FPL optimization process.")
+    current_gameweek = get_current_gameweek()
 
-        top_predicted = predicted_df.loc[predicted_df['predicted_performance'].idxmax()]
-        bottom_predicted = predicted_df.loc[predicted_df['predicted_performance'].idxmin()]
-        top_actual = predicted_df.loc[predicted_df['total_points'].idxmax()]
-        bottom_actual = predicted_df.loc[predicted_df['total_points'].idxmin()]
+    # Fetch data and aggregate
+    events_df, fixtures_df, players_df = prepare_data()
+    current_agg, next_five_weeks_agg = aggregate_gameweek_data(events_df, current_gameweek)
 
-        results.append({
-            'Type': 'Top player - predicted',
-            'Player Name': top_predicted['second_name'],
-            'Week': next_week,
-            'Result': top_predicted['predicted_performance'],
-            'Other Result': top_predicted['total_points']
-        })
-        results.append({
-            'Type': 'Bottom player - predicted',
-            'Player Name': bottom_predicted['second_name'],
-            'Week': next_week,
-            'Result': bottom_predicted['predicted_performance'],
-            'Other Result': bottom_predicted['total_points']
-        })
-        results.append({
-            'Type': 'Top player - Actual',
-            'Player Name': top_actual['second_name'],
-            'Week': next_week,
-            'Result': top_actual['total_points'],
-            'Other Result': top_actual['predicted_performance']
-        })
-        results.append({
-            'Type': 'Bottom player - Actual',
-            'Player Name': bottom_actual['second_name'],
-            'Week': next_week,
-            'Result': bottom_actual['total_points'],
-            'Other Result': bottom_actual['predicted_performance']
-        })
+    # Merge the data for predictions
+    current_merged = pd.merge(current_agg, players_df[['id', 'element_type', 'now_cost', 'second_name', 'first_name']], on='id', how='left')
 
-        # Collect predicted and actual points for box plot
-        predicted_all_weeks.append(predicted_df['predicted_performance'].tolist())
-        actual_all_weeks.append(predicted_df['total_points'].tolist())
+    # Get optimal team for the current gameweek
+    optimal_team = get_optimal_team(current_gameweek, budget=100)
 
-    return pd.DataFrame(results), predicted_all_weeks, actual_all_weeks, gameweeks
+    # Save and display results
+    if not optimal_team.empty:
+        optimal_team.to_csv('optimal_team.csv', index=False)
+        logging.info("Optimal team saved to 'optimal_team.csv'.")
+        print_optimal_team_layout(optimal_team)
+    else:
+        logging.warning("No optimal team was selected.")
 
-def plot_box_plots(predicted_all_weeks, actual_all_weeks, gameweeks):
-    data = []
+    # Run predictions and export all players after predicted performance has been calculated
+    predicted_df, _ = train_and_predict(current_merged, next_five_weeks_agg, players_df)
 
-    for i, week in enumerate(gameweeks[:-1]):
-        predicted = predicted_all_weeks[i]
-        actual = actual_all_weeks[i]
-        for pred in predicted:
-            data.append((week, pred, 'Predicted'))
-        for act in actual:
-            data.append((week, act, 'Actual'))
+    # Export all players to CSV sorted by points_per_million
+    export_all_players_to_csv(predicted_df, file_name="all_players.csv")
 
-    df = pd.DataFrame(data, columns=['Week', 'Points', 'Type'])
-
-    plt.figure(figsize=(14, 8))
-    sns.boxplot(x='Week', y='Points', hue='Type', data=df)
-    plt.title('Box Plot of Predicted and Actual Points by Week')
-    plt.axhline(y=df[df['Type'] == 'Actual']['Points'].median(), color='blue', linestyle='--', label='Actual Median')
-    plt.axhline(y=df[df['Type'] == 'Predicted']['Points'].median(), color='red', linestyle='--', label='Predicted Median')
-    plt.legend()
-    plt.show()
-
-feasibility_report = check_feasibility(players_df, 100)
-print(feasibility_report)
-
-# Evaluate the model week by week and generate the results table
-results_df, predicted_all_weeks, actual_all_weeks, gameweeks = evaluate_model_by_week(events_df, players_df)
-
-# Display the results in the console
-print(results_df.to_string(index=False))
-
-# Optionally, save the results to a CSV file
-results_df.to_csv('predicted_vs_actual_results.csv', index=False)
-
-# Plot the box plots
-plot_box_plots(predicted_all_weeks, actual_all_weeks, gameweeks)
-
-print("Evaluation completed")
-
-# Get optimal team for a specified gameweek
-current_gameweek = 10  # Example: change to desired gameweek
-optimal_team = get_optimal_team(current_gameweek)
-
-# Print detailed player performance
-print("\nDetailed Player Performance:")
-for index, player in optimal_team.iterrows():
-    player_id = player['id']
-    predicted_points = player['predicted_performance']
-    actual_points = player['total_points']
-    print(f"Player: {player['second_name']} | Predicted Points: {predicted_points:.2f} | Actual Points: {actual_points}")
-
-# Save the processed data
-optimal_team_data = optimal_team[['second_name', 'element_type', 'predicted_performance', 'now_cost']]
-optimal_team_data.to_csv('optimal_team.csv', index=False)
-
-print_optimal_team_layout(optimal_team)
-
+if __name__ == "__main__":
+    main()
+    logging.info("Process completed.")
+    print("")
