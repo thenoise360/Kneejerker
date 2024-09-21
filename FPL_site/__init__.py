@@ -7,7 +7,7 @@ app = Flask(__name__)
 # Use the current configuration
 config = current_config
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqldb://{config.USER}:{config.PASSWORD}@{config.HOST}/{config.DATABASE}"
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.USER}:{config.PASSWORD}@{config.HOST}/{config.DATABASE}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
 
 db = SQLAlchemy(app)
