@@ -10,12 +10,13 @@ from scipy.optimize import linprog
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
-from pulp import LpProblem, LpVariable, LpMaximize, LpInteger, lpSum, LpStatus
+from pulp import LpProblem, LpVariable, LpMaximize, LpInteger, lpSum, LpStatus, LpBinary
 import seaborn as sns
 import json
 import requests
 import unicodedata
 import logging
+from sklearn.model_selection import GridSearchCV
 
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -96,10 +97,9 @@ def prepare_data():
 
     return events_df, fixtures_df, players_df
 
-# Adjust the training and predicting function to return the feature importance
 def train_and_predict(df_train, df_predict, players_df):
-    logging.info("Training Random Forest model for performance prediction.")
-    
+    logging.info("Training models for each position.")
+
     features = ['minutes', 'goals_scored', 'assists', 'clean_sheets', 'goals_conceded', 
                 'own_goals', 'penalties_saved', 'penalties_missed', 'yellow_cards', 
                 'red_cards', 'saves', 'bonus', 'bps', 'influence', 'creativity', 
@@ -117,11 +117,15 @@ def train_and_predict(df_train, df_predict, players_df):
     logging.info(f"Missing columns in training data: {set(features) - set(df_train.columns)}")
     logging.info(f"Missing columns in prediction data: {set(features) - set(df_predict.columns)}")
 
-    # Before training, ensure 'element_type', 'now_cost', 'first_name', and 'second_name' exist in df_predict
+    # Merge to ensure all necessary columns are present
     df_predict = pd.merge(df_predict, players_df[['id', 'element_type', 'now_cost', 'first_name', 'second_name']], on='id', how='left')
 
+    # Drop any rows with NaN 'element_type' after merge
+    initial_predict_length = len(df_predict)
+    df_predict = df_predict.dropna(subset=['element_type'])
+    logging.info(f"Dropped {initial_predict_length - len(df_predict)} players with NaN 'element_type'.")
+
     # Retain non-feature columns before transformation
-    non_feature_columns_train = df_train[['id', 'element_type', 'now_cost', 'first_name', 'second_name']].copy()
     non_feature_columns_predict = df_predict[['id', 'element_type', 'now_cost', 'first_name', 'second_name']].copy()
 
     # Ensure all features are numeric
@@ -138,36 +142,105 @@ def train_and_predict(df_train, df_predict, players_df):
     df_train_scaled = scaler.fit_transform(df_train_imputed)
     df_predict_scaled = scaler.transform(df_predict_imputed)
 
-    # Define the target variable
-    target = df_train['total_points'].fillna(0)
+    # Add the 'element_type' column back to the scaled data for model training per position
+    df_train_scaled = pd.DataFrame(df_train_scaled, columns=features)
+    df_train_scaled['element_type'] = df_train['element_type'].values
 
-    # Train the RandomForestRegressor
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(df_train_scaled, target)
+    df_predict_scaled = pd.DataFrame(df_predict_scaled, columns=features)
+    df_predict_scaled['element_type'] = df_predict['element_type'].values
 
-    # Get feature importance
-    feature_importance = model.feature_importances_
-    importance_df = pd.DataFrame({'Feature': features, 'Importance': feature_importance}).sort_values(by='Importance', ascending=False)
+    # Initialize an empty DataFrame to collect predictions
+    df_predictions = pd.DataFrame()
+    importance_dfs = []
 
-    logging.info("Feature importance:\n%s", importance_df)
+    # Loop over each position (element_type)
+    for position in df_train['element_type'].unique():
+        logging.info(f"Training model for position: {position}")
 
-    # Predict future performance
-    predicted_performance = model.predict(df_predict_scaled)
+        # Filter data for the current position
+        X_train_pos = df_train_scaled[df_train_scaled['element_type'] == position][features]
+        y_train_pos = df_train[df_train['element_type'] == position]['total_points'].fillna(0)
 
-    # Re-attach non-feature columns
-    df_predict_final = pd.concat([non_feature_columns_predict.reset_index(drop=True), 
-                                  pd.DataFrame(predicted_performance, columns=['predicted_performance'])], axis=1)
+        X_predict_pos = df_predict_scaled[df_predict_scaled['element_type'] == position][features]
+        predict_indices = df_predict_scaled[df_predict_scaled['element_type'] == position].index
 
-    logging.info("Prediction completed.")
+        # Check the number of samples
+        n_samples = X_train_pos.shape[0]
+        logging.info(f"Number of training samples for position {position}: {n_samples}")
 
-     # Re-attach non-feature columns
-    df_predict_final = pd.concat([
-        non_feature_columns_predict.reset_index(drop=True),
-        pd.DataFrame(predicted_performance, columns=['predicted_performance']),
-        df_predict[['total_points']].reset_index(drop=True)  # Include 'total_points' from df_predict
-    ], axis=1)
+        if n_samples == 0:
+            logging.warning(f"No training samples for position {position}. Skipping.")
+            continue
 
-    logging.info("Prediction completed.")
+        elif n_samples == 1:
+            logging.warning(f"Only one training sample for position {position}. Training without cross-validation.")
+            # Train without cross-validation
+            rf = RandomForestRegressor(random_state=42, n_estimators=100)
+            rf.fit(X_train_pos, y_train_pos)
+
+            # Get feature importance
+            feature_importance = rf.feature_importances_
+            importance_df = pd.DataFrame({'Feature': features, 'Importance': feature_importance})
+            importance_df['Position'] = position
+            importance_dfs.append(importance_df)
+
+            # Predict future performance
+            predicted_performance = rf.predict(X_predict_pos)
+
+        else:
+            # Adjust cv parameter
+            cv_splits = min(3, n_samples)
+            logging.info(f"Using cv={cv_splits} for position {position}")
+
+            # Train the model with hyperparameter tuning
+            rf = RandomForestRegressor(random_state=42)
+            param_grid = {
+                'n_estimators': [100, 200],
+                'max_depth': [None, 10, 20],
+                'min_samples_split': [2, 5]
+            }
+            grid_search = GridSearchCV(
+                estimator=rf,
+                param_grid=param_grid,
+                cv=cv_splits,
+                scoring='neg_mean_squared_error',
+                n_jobs=-1
+            )
+            grid_search.fit(X_train_pos, y_train_pos)
+
+            best_model = grid_search.best_estimator_
+
+            # Get feature importance
+            feature_importance = best_model.feature_importances_
+            importance_df = pd.DataFrame({'Feature': features, 'Importance': feature_importance})
+            importance_df['Position'] = position
+            importance_dfs.append(importance_df)
+
+            # Predict future performance
+            predicted_performance = best_model.predict(X_predict_pos)
+
+        # Collect predictions
+        # In the train_and_predict function, ensure 'total_points' is included
+        position_predictions = pd.DataFrame({
+            'id': df_predict.iloc[predict_indices]['id'].values,
+            'predicted_performance': predicted_performance,
+            'element_type': position,
+            'total_points': df_predict.iloc[predict_indices]['total_points'].values  # Ensure this exists
+        })
+
+
+        df_predictions = pd.concat([df_predictions, position_predictions], ignore_index=True)
+
+    # Merge predictions with player info
+    df_predict_final = pd.merge(df_predictions, non_feature_columns_predict, on=['id', 'element_type'], how='left')
+
+    # Collect all feature importance data
+    if importance_dfs:
+        importance_df = pd.concat(importance_dfs, ignore_index=True)
+    else:
+        importance_df = pd.DataFrame()
+
+    logging.info("Prediction completed for all positions.")
     return df_predict_final, importance_df
 
 # Check if there are enough players to meet team formation constraints
@@ -214,46 +287,72 @@ def aggregate_gameweek_data(events_df, current_gameweek):
 
     return current_agg, next_five_weeks_agg
 
+from pulp import LpProblem, LpMaximize, lpSum, LpVariable, LpStatus, LpBinary
+
 def optimize_team(players_df, budget):
-    logging.info(f"Optimizing team selection within a budget of {budget}.")
+    logging.info(f"Optimizing team selection within a budget of {budget}M.")
 
     # Ensure sufficient players for each position
     if not check_sufficient_players(players_df):
         logging.warning("Not enough players to meet team constraints.")
         return pd.DataFrame(columns=players_df.columns)
 
-    # Clean NaN or infinity values in 'now_cost'
-    if players_df['now_cost'].isnull().any() or np.isinf(players_df['now_cost']).any():
-        logging.warning("Found NaN or inf values in now_cost. Replacing with median value.")
-        players_df['now_cost'] = players_df['now_cost'].replace([np.inf, -np.inf], np.nan)
-        players_df['now_cost'].fillna(players_df['now_cost'].median(), inplace=True)
+    # Clean NaN or infinity values in 'now_cost' and 'predicted_performance'
+    players_df['now_cost'] = players_df['now_cost'].replace([np.inf, -np.inf], np.nan).fillna(players_df['now_cost'].median())
+    players_df['predicted_performance'] = players_df['predicted_performance'].replace([np.inf, -np.inf], np.nan).fillna(players_df['predicted_performance'].median())
 
     # Initialize the optimization problem
     prob = LpProblem("FPL_Team_Selection", LpMaximize)
 
-    # Create decision variables
-    player_vars = LpVariable.dicts("player", players_df.index, cat=LpInteger, lowBound=0, upBound=1)
+    # Create binary decision variables for squad selection (x_i) and starters (y_i)
+    player_vars = LpVariable.dicts("player", players_df.index, cat=LpBinary)
+    starter_vars = LpVariable.dicts("starter", players_df.index, cat=LpBinary)
 
-    # Objective function: maximize total predicted points while minimizing unused budget
-    # You can use a weighted combination of points and unused budget to penalize leaving money on the table.
-    total_predicted_points = lpSum(players_df.loc[i, 'predicted_performance'] * player_vars[i] for i in players_df.index)
+    # Objective function: maximize total predicted points of starters + alpha * budget used by starters
+    alpha = 10  # Increased weight for budget utilization
+
+    total_starter_points = lpSum(players_df.loc[i, 'predicted_performance'] * starter_vars[i] for i in players_df.index)
+    total_starter_cost = lpSum(players_df.loc[i, 'now_cost'] * starter_vars[i] for i in players_df.index)
+
+    # The objective aims to maximize the points from starters and encourage higher budget usage by starters
+    prob += total_starter_points + alpha * total_starter_cost, "Total_Starter_Points_and_Cost"
+
+    # Budget constraint: total cost of all selected players must not exceed the budget
     total_cost = lpSum(players_df.loc[i, 'now_cost'] * player_vars[i] for i in players_df.index)
-    unused_budget_penalty = (budget - total_cost) * 18  # IMPORTANT!! Do not adjust weight as this has been optimized.
+    prob += (total_cost <= budget), "TotalBudget"
 
-    # Adjust the objective to maximize points and minimize unused budget
-    prob += total_predicted_points - unused_budget_penalty
+    # Starter selection constraints
+    prob += (lpSum(starter_vars[i] for i in players_df.index) == 11), "TotalStarters"
 
-    # Budget constraint
-    prob += total_cost <= budget
+    # Ensure starters are part of the squad
+    for i in players_df.index:
+        prob += (starter_vars[i] <= player_vars[i]), f"StarterInSquad_{i}"
 
-    # Positional constraints
-    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 1) == 2  # GK
-    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 2) == 5  # DEF
-    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 3) == 5  # MID
-    prob += lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == 4) == 3  # FWD
+    # Positional constraints for the entire squad
+    positions = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}
+    squad_position_limits = {1: 2, 2: 5, 3: 5, 4: 3}
+
+    for pos, name in positions.items():
+        count = lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == pos)
+        prob += (count == squad_position_limits[pos]), f"Squad_Position_{name}_Constraint"
+
+    # Positional constraints for starters
+    starter_position_constraints = {
+        1: 1,  # Exactly 1 Goalkeeper
+        2: 3,  # At least 3 Defenders
+        3: 3,  # At least 3 Midfielders
+        4: 1   # At least 1 Forward
+    }
+
+    for pos, min_count in starter_position_constraints.items():
+        count = lpSum(starter_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == pos)
+        if pos == 1:
+            prob += (count == min_count), f"Starter_Position_{positions[pos]}_Constraint"
+        else:
+            prob += (count >= min_count), f"Starter_Position_{positions[pos]}_Constraint"
 
     # Total squad size constraint (15 players in total)
-    prob += lpSum(player_vars[i] for i in players_df.index) == 15
+    prob += (lpSum(player_vars[i] for i in players_df.index) == 15), "TotalSquadSize"
 
     # Solve the problem
     prob.solve()
@@ -262,11 +361,15 @@ def optimize_team(players_df, budget):
     if LpStatus[prob.status] == 'Optimal':
         logging.info("Optimization successful.")
         selected_indices = [i for i in players_df.index if player_vars[i].varValue == 1]
+        starter_indices = [i for i in players_df.index if starter_vars[i].varValue == 1]
+
+        # Mark starters in the DataFrame
+        players_df['is_starter'] = players_df.index.isin(starter_indices)
+
         return players_df.loc[selected_indices]
     else:
         logging.error(f"Optimization failed: {LpStatus[prob.status]}")
         return pd.DataFrame(columns=players_df.columns)
-
 
 def get_optimal_team(current_gameweek, budget=100):
     """Get optimal team for the specified gameweek."""
@@ -295,38 +398,75 @@ def get_optimal_team(current_gameweek, budget=100):
         logging.warning("No optimal team could be selected due to constraints.")
     else:
         print_optimal_team_layout(optimal_team)
-        
+
     return optimal_team
 
 # Print optimal team layout
 def print_optimal_team_layout(df):
     logging.info("Printing the optimal team layout.")
-    df = df.drop_duplicates(subset=['id'])
-    gks = df[df['element_type'] == 1][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
-    defs = df[df['element_type'] == 2][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
-    mids = df[df['element_type'] == 3][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
-    fwds = df[df['element_type'] == 4][['first_name', 'second_name']].apply(lambda x: ' '.join(x), axis=1).tolist()
+
+    # Ensure 'is_starter' column exists
+    if 'is_starter' not in df.columns:
+        logging.warning("'is_starter' column not found. Assuming all are starters.")
+        df['is_starter'] = True
+
+    # Separate starters and bench
+    starters = df[df['is_starter'] == True]
+    bench = df[df['is_starter'] == False]
+
+    # Format player names with predicted performance
+    def format_names(sub_df):
+        if sub_df.empty:
+            return []
+        # Fill NaN in 'first_name' and 'second_name' to prevent errors
+        sub_df = sub_df[['first_name', 'second_name', 'predicted_performance']].fillna({'first_name': '', 'second_name': '', 'predicted_performance': 0})
+        return sub_df.apply(lambda x: f"{x['first_name']} {x['second_name']} (Predicted: {x['predicted_performance']:.1f})", axis=1).tolist()
+
+    # Get lists of players per position with predicted scores
+    gks_starters = format_names(starters[starters['element_type'] == 1])
+    defs_starters = format_names(starters[starters['element_type'] == 2])
+    mids_starters = format_names(starters[starters['element_type'] == 3])
+    fwds_starters = format_names(starters[starters['element_type'] == 4])
+
+    gks_bench = format_names(bench[bench['element_type'] == 1])
+    defs_bench = format_names(bench[bench['element_type'] == 2])
+    mids_bench = format_names(bench[bench['element_type'] == 3])
+    fwds_bench = format_names(bench[bench['element_type'] == 4])
 
     # Print formatted output
-    print("\nGoalkeepers:        {}        {}".format(gks[0], gks[1] if len(gks) > 1 else 'None'))
-    print("\nDefenders:    {}    {}    {}    {}    {}".format(*defs[:5], *['None']*(5-len(defs))))
-    print("\nMidfielders:    {}    {}    {}    {}    {}".format(*mids[:5], *['None']*(5-len(mids))))
-    print("\nForwards:      {}      {}      {}".format(*fwds[:3], *['None']*(3-len(fwds))))
+    print("\n--- Optimal Team Layout ---\n")
+
+    print("Starters:")
+    print("Goalkeepers:        {}".format(', '.join(gks_starters) if gks_starters else 'None'))
+    print("Defenders:          {}".format(', '.join(defs_starters) if defs_starters else 'None'))
+    print("Midfielders:        {}".format(', '.join(mids_starters) if mids_starters else 'None'))
+    print("Forwards:           {}".format(', '.join(fwds_starters) if fwds_starters else 'None'))
+
+    print("\nBench:")
+    print("Goalkeepers:        {}".format(', '.join(gks_bench) if gks_bench else 'None'))
+    print("Defenders:          {}".format(', '.join(defs_bench) if defs_bench else 'None'))
+    print("Midfielders:        {}".format(', '.join(mids_bench) if mids_bench else 'None'))
+    print("Forwards:           {}".format(', '.join(fwds_bench) if fwds_bench else 'None'))
 
     total_value = df['now_cost'].sum()
-    print("\nTotal Value: {:.1f}".format(total_value))
+    print("\nTotal Value: {:.1f}M".format(total_value))
 
-    logging.info(f"Total team value: {total_value}")
+    logging.info(f"Total team value: {total_value}M")
+
 
 def export_all_players_to_csv(players_df, file_name="all_players.csv"):
     logging.info(f"Exporting all players to {file_name}.")
-    
+
     # Calculate points per million if not already done
     if 'points_per_million' not in players_df.columns:
-        players_df['points_per_million'] = players_df['predicted_performance'] / players_df['now_cost']
+        if 'predicted_performance' in players_df.columns and 'now_cost' in players_df.columns:
+            players_df['points_per_million'] = players_df['predicted_performance'] / players_df['now_cost']
+        else:
+            logging.error("Cannot calculate 'points_per_million' as 'predicted_performance' or 'now_cost' is missing.")
+            raise KeyError("Missing 'predicted_performance' or 'now_cost' column.")
 
     # Select relevant columns
-    columns_to_export = ['first_name', 'second_name', 'now_cost', 'total_points','points_per_million']
+    columns_to_export = ['first_name', 'second_name', 'now_cost', 'predicted_performance', 'total_points', 'points_per_million']
 
     # Check if the required columns exist in the DataFrame
     missing_columns = [col for col in columns_to_export if col not in players_df.columns]
