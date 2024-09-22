@@ -133,6 +133,20 @@ body {
         background: var(--secondary-color);
     }
 
+.primary-text{
+    color: var(--black-80) !important; 
+    font-size: 32px;
+    font-weight: 300;
+    margin: 8px 30px 8px 8px;
+}
+
+.secondary-text{
+    color: var(--black-60);
+    font-size: 16px;
+    font-weight: 300;
+    margin: 8px 16px 8px 8px;
+}
+
 /* Nav CCS*/
 
 /* Navbar Toggler*/
@@ -326,7 +340,7 @@ a {
         align-content: center;
         align-items: center;
         flex-wrap: wrap;
-        color: var(--white)
+        color: var(--white);
         min-width: -webkit-fill-available;
     }
 
@@ -441,7 +455,6 @@ separator {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-}
 }
 
 #dictionary-overlay {
@@ -729,7 +742,6 @@ separator {
     align-items: center;
     padding: 10px 0;
 }
-}
 
     .metric-row .metric {
         flex: 1;
@@ -825,11 +837,11 @@ separator {
 }
 
 /* Compare Button Styles */
-#compareButton {
+.button-primary {
     border: 1px solid var(--secondary-color);
     border-radius: 5px;
     padding: 10px 20px;
-    color: #FFF;
+    color: var(--black-80);
     background-color: var(--secondary-color);
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -837,8 +849,9 @@ separator {
     font-size: 16px;
 }
 
-    #compareButton:hover {
-        background-color: rgba(55, 0, 60, 0.2);
+    .button-primary:hover {
+        background-color: var(--white);
         color: var(--secondary-color);
+        border: 2px solid var(--secondary-color);
     }
 

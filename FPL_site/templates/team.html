@@ -3,15 +3,39 @@
 {% endif %}
 
 {% block content %}
-<div class="player-container">
-    <div class="holding-page">
-        <img src="\static\content\HoldingPages\not-built-yet.png" class="placeholder-image" />
-        <div class="placeholder-text">
-            This page doesn't exist
+<div class="container">
+    <div class="text-containers">
+        <div class="primary-text">What is most important to you?</div>
+        <div class="secondary-text">This will weight the team optimisation.</div>
+    </div>
+    <div class="sliders">
+        <div class="slider-wrapper">
+            <div class="slider-label">
+                <div><span>Total points scored</span></div>
+                <span class="slider-label-value">33%</span>
+            </div>
+            <input type="range" class="form-range slider" min="0" max="100" value="33">
         </div>
-        <div class="placeholder-subtext">
-            And it won't be built for a while so sucks to be you.
+
+        <div class="slider-wrapper">
+            <div class="slider-label">
+                <span>Form</span>
+                <span class="slider-label-value">34%</span>
+            </div>
+            <input type="range" class="form-range slider" min="0" max="100" value="34">
+        </div>
+
+        <div class="slider-wrapper">
+            <div class="slider-label">
+                <span>Minutes played</span>
+                <span class="slider-label-value">33%</span>
+            </div>
+            <input type="range" class="form-range slider" min="0" max="100" value="33">
         </div>
     </div>
+    <button id="submit-btn" class="btn button-primary mt-3" disabled>Submit</button>
 </div>
+
+<script src="{{ url_for('static', filename='scripts/sum100Sliders.js') }}"></script>
+
 {% endblock %}
