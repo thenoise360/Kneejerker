@@ -1,0 +1,17 @@
+{% if not is_ajax %}
+{% extends 'layout.html' %}
+{% endif %}
+
+{% block content %}
+<div class="player-container">
+    <div class="holding-page">
+        <img src="\static\content\HoldingPages\not-built-yet.png" class="placeholder-image" />
+        <div class="placeholder-text">
+            Oh no! There's been an error
+        </div>
+        <div class="placeholder-subtext">
+            It's not ideal but we're looking into it.
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,7 +3,14 @@
 {% endif %}
 
 {% block content %}
-<div class="container">
+<div id="loading-overlay" style="display: none;">
+    <div class="loading-container">
+        <img src="/static/images/loading.gif" alt="Loading..." />
+        <p id="loading-text">This may take 1-2 minutes to process. Please don't leave the page.</p>
+    </div>
+</div>
+
+<div id="data-capture" class="container">
     <div class="text-containers">
         <div class="primary-text">What is most important to you?</div>
         <div class="secondary-text">This will weight the team optimisation.</div>
@@ -36,6 +43,10 @@
     <button id="submit-btn" class="btn button-primary mt-3" disabled>Submit</button>
 </div>
 
+<div id="team-locations" style="display: none;">Team here.</div>
+
+
 <script src="{{ url_for('static', filename='scripts/sum100Sliders.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/team.js') }}"></script>
 
 {% endblock %}

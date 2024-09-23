@@ -21,11 +21,7 @@ from sklearn.model_selection import GridSearchCV
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-weights = {
-    'total_points': 0.5,
-    'form': 0.4,
-    'minutes': 0.1
-}
+budget=100
 
 # Database configuration
 FLASK_ENV = 'development'
@@ -445,6 +441,10 @@ def optimize_team(players_df, budget, weights):
     """
     logging.info(f"Optimizing team selection within a budget of {budget}M.")
 
+    total_points = int(weights[0])/100
+    form = int(weights[1])/100
+    minutes = int(weights[2])/100
+
     # Ensure sufficient players for each position
     if not check_sufficient_players(players_df):
         logging.warning("Not enough players to meet team constraints.")
@@ -462,10 +462,10 @@ def optimize_team(players_df, budget, weights):
 
     # Calculate weighted_score based on user-defined weights
     # Normalize weights to sum to 1
-    total_weight = weights['total_points'] + weights['form'] + weights['minutes']
-    w_total_points = weights['total_points'] / total_weight
-    w_form = weights['form'] / total_weight
-    w_minutes = weights['minutes'] / total_weight
+    total_weight = total_points + form + minutes
+    w_total_points = total_points / total_weight
+    w_form = form / total_weight
+    w_minutes = minutes / total_weight
 
     # Compute weighted_score
     players_df['weighted_score'] = (
@@ -556,7 +556,7 @@ def optimize_team(players_df, budget, weights):
         logging.error(f"Optimization failed: {LpStatus[prob.status]}")
         return pd.DataFrame(columns=players_df.columns)
 
-def get_optimal_team(current_gameweek, budget=100):
+def get_optimal_team(current_gameweek, budget, weights):
     """Get optimal team for the specified gameweek."""
     logging.info(f"Fetching data and optimizing team for gameweek {current_gameweek}.")
     events_df, fixtures_df, players_df = prepare_data()
@@ -668,7 +668,7 @@ def export_all_players_to_csv(players_df, file_name="all_players.csv"):
     sorted_players_df.to_csv(file_name, index=False)
     logging.info(f"All players exported to {file_name} in descending order by points_per_million.")
 
-def main():
+def team_optimization(weights):
     """Main workflow for fetching data, training the model, and optimizing team."""
     logging.info("Starting the FPL optimization process.")
     current_gameweek = get_current_gameweek()
@@ -681,7 +681,7 @@ def main():
     current_merged = pd.merge(current_agg, players_df[['id', 'element_type', 'now_cost', 'second_name', 'first_name']], on='id', how='left')
 
     # Get optimal team for the current gameweek
-    optimal_team = get_optimal_team(current_gameweek, budget=100)
+    optimal_team = get_optimal_team(current_gameweek, budget, weights)
 
     # Save and display results
     if not optimal_team.empty:
@@ -697,7 +697,6 @@ def main():
     # Export all players to CSV sorted by points_per_million
     export_all_players_to_csv(predicted_df, file_name="all_players.csv")
 
-if __name__ == "__main__":
-    main()
-    logging.info("Process completed.")
-    print("")
+    optimal_team_dicts = optimal_team.to_dict(orient='records') 
+
+    return True, optimal_team_dicts
