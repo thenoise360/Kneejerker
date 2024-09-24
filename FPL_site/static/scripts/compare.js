@@ -15,30 +15,30 @@ function formatNumberWithCommas(number) {
 
 // Team to T-shirt image mapping
 const teamTshirts = {
-    1: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', // Arsenal
-    2: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Aston Villa
-    3: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', // Bournemouth
-    4: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', // Brentford
-    5: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', // Brighton
-    6: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Burnley
-    7: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', // Chelsea
-    8: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', // Crystal Palace
-    9: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', // Everton
-    10: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Fulham
-    99: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', // Ipswich Town
-    99: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Leeds
-    99: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', // Leicester
-    11: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Liverpool
-    12: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', // Luton
-    13: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', // Man City
-    14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Man Utd
-    15: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', // Newcastle
-    16: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Nottingham Forest
-    17: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', // Sheffield Utd
-    99: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', // Southampton
-    18: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Spurs
-    19: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // West Ham
-    20: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', // Wolves
+    3: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', // Arsenal
+    7: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Aston Villa
+    91: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', // Bournemouth
+    94: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', // Brentford
+    36: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', // Brighton
+    90: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // Burnley
+    8: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', // Chelsea
+    31: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', // Crystal Palace
+    11: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', // Everton
+    54: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Fulham
+    40: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', // Ipswich Town
+    2: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Leeds
+    13: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', // Leicester
+    14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Liverpool
+    102: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', // Luton
+    43: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', // Man City
+    1: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Man Utd
+    4: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', // Newcastle
+    17: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', // Nottingham Forest
+    49: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', // Sheffield Utd
+    20: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', // Southampton
+    6: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', // Spurs
+    21: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', // West Ham
+    39: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', // Wolves
     'Unknown': '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', // Default for unknown teams
 };
 

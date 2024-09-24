@@ -81,7 +81,7 @@ def prepare_data():
         f"goals_scored, assists, clean_sheets, goals_conceded, own_goals, penalties_saved, "
         f"penalties_missed, yellow_cards, red_cards, saves, bonus, bps, influence, creativity, "
         f"threat, ict_index, starts, expected_goals, expected_assists, expected_goal_involvements, "
-        f"expected_goals_conceded, total_points, in_dreamteam, team "
+        f"expected_goals_conceded, total_points, in_dreamteam, team_code, team "
         f"FROM {DB}.bootstrapstatic_elements "
         f"WHERE Year_start = {season_start} AND gameweek = {current_gw - 1};"
     )
@@ -567,7 +567,7 @@ def get_optimal_team(current_gameweek, budget, weights):
     # Merge current_agg with players_df to retain critical columns, including 'form'
     current_merged = pd.merge(
         current_agg,
-        players_df[['id', 'element_type', 'now_cost', 'second_name', 'first_name', 'form']],
+        players_df[['id', 'element_type', 'now_cost', 'second_name', 'first_name', 'form', 'web_name', 'team_code']],
         on='id',
         how='left'
     )
@@ -586,6 +586,7 @@ def get_optimal_team(current_gameweek, budget, weights):
 
     # Proceed with optimization
     optimal_team = optimize_team(predicted_df, budget, weights)
+
     return optimal_team
 
 # Print optimal team layout
@@ -695,8 +696,25 @@ def team_optimization(weights):
     predicted_df, _ = train_and_predict(current_merged, next_five_weeks_agg, players_df)
 
     # Export all players to CSV sorted by points_per_million
-    export_all_players_to_csv(predicted_df, file_name="all_players.csv")
-
     optimal_team_dicts = optimal_team.to_dict(orient='records') 
+    players_df_dicts = players_df.to_dict(orient='records')
 
-    return True, optimal_team_dicts
+    players_final = []
+
+    for player in optimal_team_dicts:
+        matching_player = next((i for i in players_df_dicts if i['id'] == player['id']), None)
+
+        if matching_player:
+            # Create a new dictionary for each player in the final team
+            player_final = {
+                "web_name": matching_player["web_name"],    
+                "team_code": matching_player["team_code"],
+                "element_type": matching_player["element_type"],
+                "predicted_performance": player['predicted_performance'],
+                "is_starter": player['is_starter'],
+                "now_cost": player['now_cost']
+            }
+
+            players_final.append(player_final)
+
+    return True, players_final

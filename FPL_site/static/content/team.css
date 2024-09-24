@@ -74,3 +74,67 @@
 .slider:focus {
     outline: none;
 }
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Pitch Layout */
+
+.pitch-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    background-image: url('/static/images/pitch.png');  /* Set the pitch background */
+    background-size: cover;
+    background-position: center;
+    width: 100%;
+    gap: 10px; /* Add space between rows */
+}
+
+.players-container {
+    display: flex;
+    gap: 50px;
+    width: -webkit-fill-available;
+    flex-direction: column;
+}
+
+.players-row {
+    display: flex;
+    justify-content: space-around;  /* Distribute players evenly */
+    width: 100%;
+    gap: 15px; /* Add space between players */
+    flex-wrap: wrap;
+}
+
+.player-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px;
+}
+
+.player-price {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.player-shirt {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 5px;
+}
+
+.player-info {
+    text-align: center;
+}
+
+.bench-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}

@@ -5,8 +5,8 @@
 {% block content %}
 <div id="loading-overlay" style="display: none;">
     <div class="loading-container">
-        <img src="/static/images/loading.gif" alt="Loading..." />
-        <p id="loading-text">This may take 1-2 minutes to process. Please don't leave the page.</p>
+        <img class="team-loader" src="\static\content\images\loader.gif" alt="Loading..." />
+        <p id="loading-text" class="secondary-text" style="text-align: center">This may take 1-2 minutes to process. Please don't leave the page.</p>
     </div>
 </div>
 
@@ -43,10 +43,22 @@
     <button id="submit-btn" class="btn button-primary mt-3" disabled>Submit</button>
 </div>
 
-<div id="team-locations" style="display: none;">Team here.</div>
+<div id="team-locations" style="display: none;">
+    <div class="pitch-container">
+        <div class="players-container" id="players-container">
+            <!-- Player cards will be inserted here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Bench container -->
+    <div class="bench-container" id="bench-container">
+        <!-- Bench players will be inserted here by JavaScript -->
+    </div>
+</div>
 
 
 <script src="{{ url_for('static', filename='scripts/sum100Sliders.js') }}"></script>
 <script src="{{ url_for('static', filename='scripts/team.js') }}"></script>
 
 {% endblock %}
+ 

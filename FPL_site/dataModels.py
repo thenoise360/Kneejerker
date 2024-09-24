@@ -7,31 +7,31 @@ import json
 import logging
 
 player_shirts = {
-        1: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', # Arsenal
-        2: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Aston Villa
-        3: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', # Bournemouth
-        4: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', # Brentford
-        5: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', # Brighton
-        99: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Burnley
-        6: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', # Chelsea
-        7: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', # Crystal Palace
-        8: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Everton
-        9: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Fulham
-        10: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', # Ipswich Town
-        99: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Leeds
-        11: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Leicester
-        12: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Liverpool
-        99: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', # Luton
-        13: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', # Man City
-        14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Man Utd
-        15: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', # Newcastle
-        16: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Nottingham Forest
-        99: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Sheffield Utd
-        17: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', # Southampton
-        18: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Spurs
-        19: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # West Ham
-        20: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', # Wolves
-        1000: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Default for unknown teams
+    3: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', # Arsenal
+    7: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Aston Villa
+    91: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', # Bournemouth
+    94: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', # Brentford
+    36: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', # Brighton
+    90: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Burnley
+    8: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', # Chelsea
+    31: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', # Crystal Palace
+    11: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Everton
+    54: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Fulham
+    40: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', # Ipswich Town
+    2: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Leeds
+    13: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Leicester
+    14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Liverpool
+    102: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', # Luton
+    43: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', # Man City
+    1: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Man Utd
+    4: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', # Newcastle
+    17: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Nottingham Forest
+    49: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Sheffield Utd
+    20: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', # Southampton
+    6: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Spurs
+    21: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # West Ham
+    39: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', # Wolves
+    'Unknown': '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Default
 };
 
 # Configure logging
@@ -96,7 +96,7 @@ def get_players_by_team():
     cursor = dbConnect.cursor(dictionary=True)
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start}')
+    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.code AS "code", p.first_name AS "First_name", p.second_name AS "Surname",  p.web_name AS "web_name",  p.team_code AS "team_code", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start}')
 
     # Fetch all results from the executed query
     players = cursor.fetchall()
@@ -109,16 +109,20 @@ def get_players_by_team():
     for entry in players:
         team_name = entry['Team']
         full_name = f"{entry['First_name']} {entry['Surname']}"
+        web_name = entry['web_name']
         player_id = entry['ID']
         team_id = entry['team_id']
+        team_code = entry['team_code']
     
         if team_name not in teams_dict:
             teams_dict[team_name] = {}
     
         teams_dict[team_name][full_name] = {
             'full_name': full_name, 
+            'web_name': web_name, 
             'id': player_id, 
-            'team': team_id
+            'team': team_id,
+            'team_code': team_code
         }
 
     # Sort the dictionary by player names within each team
@@ -462,9 +466,14 @@ def next_5_fixtures(player_id):
     gw = generateCurrentGameweek()
     
     # Always ensure you fetch all results or close the cursor before executing another query
-    query = f'SELECT id, short_name FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
+    query = f'SELECT id, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
     cursor.execute(query)
     teams = cursor.fetchall()  # Fetch all team information
+
+    team_id_to_code = dict()
+    
+    for team in teams:
+        team_id_to_code[team['id']] = team['code']
 
     query = f'SELECT t.name as "team", t.short_name as "team_short", p.team AS "team_id", CONCAT(p.first_name, " ", p.second_name) AS "Full_name", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id={player_id} and gameweek={gw};'
     cursor.execute(query)
@@ -485,11 +494,11 @@ def next_5_fixtures(player_id):
         if difficulty_info['team_a'] == player_info['team_id']:
             venue = 'Away'
             opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_h'])
-            opponent_id = difficulty_info['team_h']
+            opponent_id = team_id_to_code[difficulty_info['team_h']]
         elif difficulty_info['team_h'] == player_info['team_id']:
             venue = 'Home'
             opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_a'])
-            opponent_id = difficulty_info['team_a']
+            opponent_id = team_id_to_code[difficulty_info['team_a']]
         else:
             venue = 'blank'
             opponent = '-'
@@ -522,7 +531,7 @@ def get_teams(player_id):
     cursor = dbConnect.cursor(dictionary=True)
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT t.name AS "Team" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id = {player_id} and gameweek = {generateCurrentGameweek()}')
+    cursor.execute(f'SELECT t.name AS "Team", t.code AS "Team_code" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id = {player_id} and gameweek = {generateCurrentGameweek()}')
 
     # Fetch all results from the executed query
     teams = cursor.fetchall()
@@ -582,14 +591,14 @@ def fetch_player_summary(player_id):
         average_points = round(sum(float(p['total_points']) for p in valid_players) / len(valid_players), 2)
 
         # Get team info
-        team = next((t for t in teams if t['id'] == player['team']), None)
+        team = next((t for t in teams if t['code'] == player['team_code']), None)
         if not team:
             logger.warning(f"Team for player ID {player_id} not found.")
             team_name = "Unknown"
             shirt_image = '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg'
         else:
             team_name = team['name']
-            shirt_image = player_shirts[team['id']]
+            shirt_image = player_shirts[team['code']]
 
         # Create player summary
         player_summary = {
@@ -638,14 +647,14 @@ def get_alternative_players(player_id):
     costHigh = (player['value'] + 1) * 10
     position = player['position']
 
-    query = f'SELECT id, team, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 6'
+    query = f'SELECT id, team, team_code, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 6'
 
     cursor.execute(query)
 
     players = cursor.fetchall()
 
     for player in players:
-        player['shirt'] = player_shirts[player['team']]
+        player['shirt'] = player_shirts[player['team_code']]
         player['team_name'] = get_teams(player['id'])[0]['Team']
 
     if not players:

@@ -19,6 +19,14 @@
     box-sizing: border-box;
 }
 
+.team-loader {
+    display: flex;
+    width: -webkit-fill-available;
+    justify-content: center;
+    margin: 15%;
+    max-width: 400px;
+}
+
 #loader {
     position: fixed;
     top: 0;
@@ -96,7 +104,7 @@ body {
     height: 100%;
     position: absolute;
     font-family: 'Roboto Light', 'Helvetica', 'Segoe UI' Arial, sans-serif !important;
-    background-color: #f7f7f7;
+    background-color: var(--white);
     overflow-x: hidden;
 }
 
@@ -143,7 +151,7 @@ body {
 .secondary-text{
     color: var(--black-60);
     font-size: 16px;
-    font-weight: 300;
+    font-weight: 400;
     margin: 8px 16px 8px 8px;
 }
 
