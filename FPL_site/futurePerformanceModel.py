@@ -17,18 +17,22 @@ import requests
 import unicodedata
 import logging
 from sklearn.model_selection import GridSearchCV
+from FPL_site.config import current_config
 
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 budget=100
 
-# Database configuration
-FLASK_ENV = 'development'
-HOST = 'localhost'
-USER = 'jackbegley'
-PASSWORD = 'Athome19369*'
-DB = 'fpl'
+HOST = current_config.HOST
+USER = current_config.USER
+PASSWORD = current_config.PASSWORD
+DB = current_config.DATABASE
+
+season = "2023_2024"
+season_start = 2024
+
+NULL = None
 
 season_start = 2024
 
