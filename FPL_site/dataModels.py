@@ -7,31 +7,31 @@ import json
 import logging
 
 player_shirts = {
-        1: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', # Arsenal
-        2: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Aston Villa
-        3: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', # Bournemouth
-        4: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', # Brentford
-        5: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', # Brighton
-        99: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Burnley
-        6: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', # Chelsea
-        7: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', # Crystal Palace
-        8: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Everton
-        9: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Fulham
-        10: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', # Ipswich Town
-        99: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Leeds
-        11: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Leicester
-        12: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Liverpool
-        99: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', # Luton
-        13: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', # Man City
-        14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Man Utd
-        15: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', # Newcastle
-        16: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Nottingham Forest
-        99: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Sheffield Utd
-        17: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', # Southampton
-        18: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Spurs
-        19: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # West Ham
-        20: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', # Wolves
-        1000: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Default for unknown teams
+    3: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', # Arsenal
+    7: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Aston Villa
+    91: '/static/content/Tshirts/stripes-red-black-football-shirt-svgrepo-com.svg', # Bournemouth
+    94: '/static/content/Tshirts/stripes-white-red-football-shirt-svgrepo-com.svg', # Brentford
+    36: '/static/content/Tshirts/stripes-white-blue-football-shirt-svgrepo-com.svg', # Brighton
+    90: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # Burnley
+    8: '/static/content/Tshirts/plain-blue-football-shirt-svgrepo-com.svg', # Chelsea
+    31: '/static/content/Tshirts/halves-red-blue-football-shirt-svgrepo-com.svg', # Crystal Palace
+    11: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Everton
+    54: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Fulham
+    40: '/static/content/Tshirts/sleeves-blue-white-football-shirt-svgrepo-com.svg', # Ipswich Town
+    2: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Leeds
+    13: '/static/content/Tshirts/plain-navy-football-shirt-svgrepo-com.svg', # Leicester
+    14: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Liverpool
+    102: '/static/content/Tshirts/vertical-orange-black-football-shirt-svgrepo-com.svg', # Luton
+    43: '/static/content/Tshirts/plain-skyblue-football-shirt-svgrepo-com.svg', # Man City
+    1: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Man Utd
+    4: '/static/content/Tshirts/stripes-white-black-football-shirt-svgrepo-com.svg', # Newcastle
+    17: '/static/content/Tshirts/plain-red-football-shirt-svgrepo-com.svg', # Nottingham Forest
+    49: '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Sheffield Utd
+    20: '/static/content/Tshirts/sash-white-red-football-shirt-svgrepo-com.svg', # Southampton
+    6: '/static/content/Tshirts/plain-white-football-shirt-svgrepo-com.svg', # Spurs
+    21: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # West Ham
+    39: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', # Wolves
+    'Unknown': '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Default
 };
 
 # Configure logging
@@ -96,7 +96,7 @@ def get_players_by_team():
     cursor = dbConnect.cursor(dictionary=True)
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start}')
+    cursor.execute(f'SELECT t.name AS "Team", p.team AS "team_id", p.code AS "code", p.first_name AS "First_name", p.second_name AS "Surname",  p.web_name AS "web_name",  p.team_code AS "team_code", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start}')
 
     # Fetch all results from the executed query
     players = cursor.fetchall()
@@ -109,16 +109,20 @@ def get_players_by_team():
     for entry in players:
         team_name = entry['Team']
         full_name = f"{entry['First_name']} {entry['Surname']}"
+        web_name = entry['web_name']
         player_id = entry['ID']
         team_id = entry['team_id']
+        team_code = entry['team_code']
     
         if team_name not in teams_dict:
             teams_dict[team_name] = {}
     
         teams_dict[team_name][full_name] = {
             'full_name': full_name, 
+            'web_name': web_name, 
             'id': player_id, 
-            'team': team_id
+            'team': team_id,
+            'team_code': team_code
         }
 
     # Sort the dictionary by player names within each team
@@ -186,34 +190,63 @@ def get_player_index_scores():
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
     query = f'''
-    WITH PlayerTeam AS (SELECT id, team_code FROM {db}.bootstrapstatic_elements), 
+    WITH PlayerTeam AS (
+    SELECT id, team_code 
+    FROM {db}.bootstrapstatic_elements
+    ), 
     FixtureDifficulties AS (
-        SELECT f.event, f.team_h, f.team_a, f.team_h_difficulty, f.team_a_difficulty, f.team_h AS team_code, f.team_h_difficulty AS team_difficulty 
-        FROM {db}.fixtures_fixtures f WHERE f.year_start = {season_start}
+        SELECT 
+            f.event, 
+            f.team_h, 
+            f.team_a, 
+            f.team_h_difficulty, 
+            f.team_a_difficulty, 
+            f.team_h AS team_code, 
+            f.team_h_difficulty AS team_difficulty 
+        FROM {db}.fixtures_fixtures f 
+        WHERE f.year_start = {season_start}
         UNION ALL 
-        SELECT f.event, f.team_h, f.team_a, f.team_h_difficulty, f.team_a_difficulty, f.team_a AS team_code, f.team_a_difficulty AS team_difficulty 
-        FROM {db}.fixtures_fixtures f WHERE f.year_start = {season_start}
+        SELECT 
+            f.event, 
+            f.team_h, 
+            f.team_a, 
+            f.team_h_difficulty, 
+            f.team_a_difficulty, 
+            f.team_a AS team_code, 
+            f.team_a_difficulty AS team_difficulty 
+        FROM {db}.fixtures_fixtures f 
+        WHERE f.year_start = {season_start}
     ), 
     TeamIctIndexSum AS (
-        SELECT bs.team_code, SUM(e.ict_index) AS team_ict_index_sum 
+        SELECT 
+            bs.team_code, 
+            SUM(e.ict_index) AS team_ict_index_sum 
         FROM {db}.events_elements e 
         JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
-        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND e.year_start = {season_start}
+        WHERE e.Gameweek BETWEEN 0 AND 30 
+            AND e.year_start = {season_start}
         GROUP BY bs.team_code
     ), 
     PlayerIctIndexSum AS (
-        SELECT e.id, SUM(e.ict_index) AS player_ict_index_sum 
+        SELECT 
+            e.id, 
+            SUM(e.ict_index) AS player_ict_index_sum 
         FROM {db}.events_elements e 
-        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) AND e.year_start = {season_start}
+        WHERE e.Gameweek BETWEEN 0 AND 30 
+            AND e.year_start = {season_start}
         GROUP BY e.id
     ), 
     RawIndexes AS (
-        SELECT e.id, bs.team_code, 
-            ((e.goals_scored + e.assists - e.expected_goal_involvements + 1) * 
-            (SUM(e.expected_goals_conceded - e.goals_conceded + 1)) * 
-            SUM(e.total_points) * 
-            COALESCE(SUM(fd.team_difficulty), 0) * 
-            (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100) AS debug_score, 
+        SELECT 
+            e.id, 
+            bs.team_code, 
+            (
+                (e.goals_scored + e.assists - e.expected_goal_involvements + 1) * 
+                SUM(e.expected_goals_conceded - e.goals_conceded + 1) * 
+                SUM(e.total_points) * 
+                COALESCE(SUM(fd.team_difficulty), 0) * 
+                (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100
+            ) AS debug_score, 
             ((e.goals_scored + e.assists) - e.expected_goal_involvements + 1) AS sum_expected_involvement_achieved_during_period, 
             SUM(e.expected_goals_conceded - e.goals_conceded + 1) AS sum_expected_goals_conceded_achieved_during_period, 
             SUM(e.total_points) AS total_points, 
@@ -224,17 +257,23 @@ def get_player_index_scores():
         LEFT JOIN FixtureDifficulties fd ON e.Gameweek = fd.event AND bs.team_code = fd.team_code 
         JOIN TeamIctIndexSum tis ON bs.team_code = tis.team_code 
         JOIN PlayerIctIndexSum pis ON e.id = pis.id 
-        WHERE e.Gameweek IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30) 
-        GROUP BY e.id, bs.team_code, pis.player_ict_index_sum, tis.team_ict_index_sum 
+        WHERE e.Gameweek BETWEEN 0 AND 30 
+            AND e.year_start = {season_start}
+        GROUP BY e.id
         HAVING player_contribution_percentage IS NOT NULL
     ), 
     MinMaxScore AS (
-        SELECT MIN(ri.debug_score) AS min_debug_score, MAX(ri.debug_score) AS max_debug_score 
+        SELECT 
+            MIN(ri.debug_score) AS min_debug_score, 
+            MAX(ri.debug_score) AS max_debug_score 
         FROM RawIndexes ri
     ) 
-    SELECT ri.id, 
-        CASE WHEN mm.max_debug_score = mm.min_debug_score THEN 0 
-        ELSE ((ri.debug_score - mm.min_debug_score) / (mm.max_debug_score - mm.min_debug_score)) * 100 END AS "index", 
+    SELECT 
+        ri.id, 
+        CASE 
+            WHEN mm.max_debug_score = mm.min_debug_score THEN 0 
+            ELSE ((ri.debug_score - mm.min_debug_score) / (mm.max_debug_score - mm.min_debug_score)) * 100 
+        END AS "index", 
         ri.sum_expected_involvement_achieved_during_period, 
         ri.sum_expected_goals_conceded_achieved_during_period, 
         ri.total_points, 
@@ -243,8 +282,12 @@ def get_player_index_scores():
         ri.debug_score 
     FROM RawIndexes ri, MinMaxScore mm 
     WHERE ri.player_contribution_percentage IS NOT NULL 
+
     UNION ALL 
-    SELECT e.id, 0 AS "index", 
+
+    SELECT 
+        e.id, 
+        0 AS "index", 
         NULL AS sum_expected_involvement_achieved_during_period, 
         NULL AS sum_expected_goals_conceded_achieved_during_period, 
         NULL AS total_points, 
@@ -253,8 +296,8 @@ def get_player_index_scores():
         NULL AS debug_score 
     FROM {db}.events_elements e 
     WHERE e.id NOT IN (SELECT ri.id FROM RawIndexes ri);
-    '''
 
+    '''
     cursor.execute(query)
     players = cursor.fetchall()
     dbConnect.close()  # Always close the database connection
@@ -423,9 +466,14 @@ def next_5_fixtures(player_id):
     gw = generateCurrentGameweek()
     
     # Always ensure you fetch all results or close the cursor before executing another query
-    query = f'SELECT id, short_name FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
+    query = f'SELECT id, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
     cursor.execute(query)
     teams = cursor.fetchall()  # Fetch all team information
+
+    team_id_to_code = dict()
+    
+    for team in teams:
+        team_id_to_code[team['id']] = team['code']
 
     query = f'SELECT t.name as "team", t.short_name as "team_short", p.team AS "team_id", CONCAT(p.first_name, " ", p.second_name) AS "Full_name", p.id AS "ID" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id={player_id} and gameweek={gw};'
     cursor.execute(query)
@@ -446,11 +494,11 @@ def next_5_fixtures(player_id):
         if difficulty_info['team_a'] == player_info['team_id']:
             venue = 'Away'
             opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_h'])
-            opponent_id = difficulty_info['team_h']
+            opponent_id = team_id_to_code[difficulty_info['team_h']]
         elif difficulty_info['team_h'] == player_info['team_id']:
             venue = 'Home'
             opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_a'])
-            opponent_id = difficulty_info['team_a']
+            opponent_id = team_id_to_code[difficulty_info['team_a']]
         else:
             venue = 'blank'
             opponent = '-'
@@ -483,7 +531,7 @@ def get_teams(player_id):
     cursor = dbConnect.cursor(dictionary=True)
 
     # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT t.name AS "Team" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id = {player_id} and gameweek = {generateCurrentGameweek()}')
+    cursor.execute(f'SELECT t.name AS "Team", t.code AS "Team_code" FROM {db}.bootstrapstatic_elements p JOIN {db}.bootstrapstatic_teams t ON p.team = t.id WHERE p.year_start = {season_start} AND t.year_start = {season_start} and p.id = {player_id} and gameweek = {generateCurrentGameweek()}')
 
     # Fetch all results from the executed query
     teams = cursor.fetchall()
@@ -543,14 +591,14 @@ def fetch_player_summary(player_id):
         average_points = round(sum(float(p['total_points']) for p in valid_players) / len(valid_players), 2)
 
         # Get team info
-        team = next((t for t in teams if t['id'] == player['team']), None)
+        team = next((t for t in teams if t['code'] == player['team_code']), None)
         if not team:
             logger.warning(f"Team for player ID {player_id} not found.")
             team_name = "Unknown"
             shirt_image = '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg'
         else:
             team_name = team['name']
-            shirt_image = player_shirts[team['id']]
+            shirt_image = player_shirts[team['code']]
 
         # Create player summary
         player_summary = {
@@ -599,14 +647,14 @@ def get_alternative_players(player_id):
     costHigh = (player['value'] + 1) * 10
     position = player['position']
 
-    query = f'SELECT id, team, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 6'
+    query = f'SELECT id, team, team_code, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGW}  and id <> {player_id} ORDER BY form DESC LIMIT 6'
 
     cursor.execute(query)
 
     players = cursor.fetchall()
 
     for player in players:
-        player['shirt'] = player_shirts[player['team']]
+        player['shirt'] = player_shirts[player['team_code']]
         player['team_name'] = get_teams(player['id'])[0]['Team']
 
     if not players:

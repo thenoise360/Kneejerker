@@ -12,6 +12,8 @@ from .dataModels import (
     next_5_fixtures, fetch_player_summary, get_alternative_players
 )
 
+from .futurePerformanceModel import( team_optimization )
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -306,6 +308,26 @@ def get_player_summary():
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         return str(e), 500
+
+@app.route('/run-team-optimization', methods=['POST'])
+def process_data():
+    data = request.get_json()
+    slider_values = data.get('sliders', [])
+
+    # Start processing the slider values and get the optimized team
+    result, optimized_team = team_optimization(slider_values)  # Assume it returns the team and success flag
+
+    # After the processing is complete, return success or error response with team data
+    if result:
+        return jsonify(success=True, team=optimized_team)  # Include the optimized team in the response
+    else:
+        return jsonify(success=False, error="Processing failed")
+
+
+# Error handling for 500 errors
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500
 
 
 @app.route('/get_player_alternates')
