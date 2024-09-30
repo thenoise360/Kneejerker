@@ -62,7 +62,7 @@ function initializeComparePage() {
         allPlayers.forEach(player => {
             const indexScore = playerIndexScores.find(score => score.id === player.id);
             if (indexScore) {
-                player.player_index_score = indexScore.index;
+                player.player_index_score = indexScore.player_score;
             } else {
                 player.player_index_score = 'TBD';
             }
@@ -480,6 +480,7 @@ function createPlayerComparisonCard(player1, player2, team1, team2) {
                 <span class="player-score-title">Player Score</span>
                 <span class="player-score-value ${player2.player_index_score > player1.player_index_score ? 'highlight-player-score' : ''}">${player2Score}</span>
             </div>
+            <div id="average-score">Average: 22</div>
             <div class="divider"></div>
             <div class="net-transfers">
                 <div class="net-transfer">

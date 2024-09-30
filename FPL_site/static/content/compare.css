@@ -1,4 +1,3 @@
-
 /* Compare - player summary cards */
 
 .comparison-card {
@@ -10,6 +9,14 @@
     align-items: center;
     margin: 1% 1%;
     background-color: #ffffff;
+}
+
+#average-score {    
+    color: var(--black-60);
+    font-size: 14px;
+    font-weight: 300;
+    display: flex;
+    justify-content: center;
 }
 
 .player-info {

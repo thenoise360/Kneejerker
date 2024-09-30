@@ -120,6 +120,12 @@
     width: 100px;
 }
 
+.player-info {
+    display: flex;
+    justify-content: center !important;
+    width: 100%;
+}
+
 .player-price {
     font-size: 1.2em;
     font-weight: bold;
@@ -130,10 +136,6 @@
     width: 50px;
     height: 50px;
     margin-bottom: 5px;
-}
-
-.player-info {
-    text-align: center;
 }
 
 .bench-container {

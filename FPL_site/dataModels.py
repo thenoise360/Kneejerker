@@ -78,7 +78,7 @@ def get_players():
 
     try:
         cursor = dbConnect.cursor(dictionary=True)
-        query = f"SELECT id, team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements WHERE year_start = {season_start} AND gameweek = {gw}"
+        query = f"SELECT id, team_code as team, CONCAT(first_name, ' ', second_name) AS full_name FROM {db}.bootstrapstatic_elements WHERE year_start = {season_start} AND gameweek = {gw}"
         logger.info(f"Executing query: {query}")
         cursor.execute(query)
         players = cursor.fetchall()
@@ -188,118 +188,70 @@ def get_player_net_transfers(player_id):
 
 def get_player_index_scores():
     dbConnect = connect_db()
+    gameweek = generateCurrentGameweek()
     cursor = dbConnect.cursor(dictionary=True)
+    
     query = f'''
-    WITH PlayerTeam AS (
-    SELECT id, team_code 
+    WITH min_max_values AS (
+    SELECT 
+        MIN((total_points / (now_cost / 10)) * (100 - selected_by_percent)) AS min_points_per_mill_per_perc_not_selected,
+        MAX((total_points / (now_cost / 10)) * (100 - selected_by_percent)) AS max_points_per_mill_per_perc_not_selected
     FROM {db}.bootstrapstatic_elements
-    ), 
-    FixtureDifficulties AS (
-        SELECT 
-            f.event, 
-            f.team_h, 
-            f.team_a, 
-            f.team_h_difficulty, 
-            f.team_a_difficulty, 
-            f.team_h AS team_code, 
-            f.team_h_difficulty AS team_difficulty 
-        FROM {db}.fixtures_fixtures f 
-        WHERE f.year_start = {season_start}
-        UNION ALL 
-        SELECT 
-            f.event, 
-            f.team_h, 
-            f.team_a, 
-            f.team_h_difficulty, 
-            f.team_a_difficulty, 
-            f.team_a AS team_code, 
-            f.team_a_difficulty AS team_difficulty 
-        FROM {db}.fixtures_fixtures f 
-        WHERE f.year_start = {season_start}
-    ), 
-    TeamIctIndexSum AS (
-        SELECT 
-            bs.team_code, 
-            SUM(e.ict_index) AS team_ict_index_sum 
-        FROM {db}.events_elements e 
-        JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
-        WHERE e.Gameweek BETWEEN 0 AND 30 
-            AND e.year_start = {season_start}
-        GROUP BY bs.team_code
-    ), 
-    PlayerIctIndexSum AS (
-        SELECT 
-            e.id, 
-            SUM(e.ict_index) AS player_ict_index_sum 
-        FROM {db}.events_elements e 
-        WHERE e.Gameweek BETWEEN 0 AND 30 
-            AND e.year_start = {season_start}
-        GROUP BY e.id
-    ), 
-    RawIndexes AS (
-        SELECT 
-            e.id, 
-            bs.team_code, 
-            (
-                (e.goals_scored + e.assists - e.expected_goal_involvements + 1) * 
-                SUM(e.expected_goals_conceded - e.goals_conceded + 1) * 
-                SUM(e.total_points) * 
-                COALESCE(SUM(fd.team_difficulty), 0) * 
-                (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100
-            ) AS debug_score, 
-            ((e.goals_scored + e.assists) - e.expected_goal_involvements + 1) AS sum_expected_involvement_achieved_during_period, 
-            SUM(e.expected_goals_conceded - e.goals_conceded + 1) AS sum_expected_goals_conceded_achieved_during_period, 
-            SUM(e.total_points) AS total_points, 
-            COALESCE(SUM(fd.team_difficulty), 0) AS total_team_difficulty, 
-            (pis.player_ict_index_sum / tis.team_ict_index_sum) * 100 AS player_contribution_percentage 
-        FROM {db}.events_elements e 
-        JOIN {db}.bootstrapstatic_elements bs ON e.id = bs.id 
-        LEFT JOIN FixtureDifficulties fd ON e.Gameweek = fd.event AND bs.team_code = fd.team_code 
-        JOIN TeamIctIndexSum tis ON bs.team_code = tis.team_code 
-        JOIN PlayerIctIndexSum pis ON e.id = pis.id 
-        WHERE e.Gameweek BETWEEN 0 AND 30 
-            AND e.year_start = {season_start}
-        GROUP BY e.id
-        HAVING player_contribution_percentage IS NOT NULL
-    ), 
-    MinMaxScore AS (
-        SELECT 
-            MIN(ri.debug_score) AS min_debug_score, 
-            MAX(ri.debug_score) AS max_debug_score 
-        FROM RawIndexes ri
-    ) 
-    SELECT 
-        ri.id, 
-        CASE 
-            WHEN mm.max_debug_score = mm.min_debug_score THEN 0 
-            ELSE ((ri.debug_score - mm.min_debug_score) / (mm.max_debug_score - mm.min_debug_score)) * 100 
-        END AS "index", 
-        ri.sum_expected_involvement_achieved_during_period, 
-        ri.sum_expected_goals_conceded_achieved_during_period, 
-        ri.total_points, 
-        ri.total_team_difficulty, 
-        ri.player_contribution_percentage, 
-        ri.debug_score 
-    FROM RawIndexes ri, MinMaxScore mm 
-    WHERE ri.player_contribution_percentage IS NOT NULL 
+    WHERE year_start = 2024
+      AND gameweek = {gameweek}
+      AND element_type IN (1, 2, 3, 4)
+      AND total_points > 0
+    )
 
-    UNION ALL 
+    -- Main query to get the players and the mean row
+    SELECT * FROM (
+        -- Select player data and normalize the player score
+        SELECT CAST(id AS UNSIGNED) AS id, 
+            web_name, 
+            total_points, 
+            (total_points / (now_cost / 10)) AS points_per_mill,  
+            (100 - selected_by_percent) AS not_selected_by_perc, 
+            ((total_points / (now_cost / 10)) * (100 - selected_by_percent)) AS points_per_mill_per_perc_not_selected,
+            -- Normalized player score calculation
+            (((total_points / (now_cost / 10)) * (100 - selected_by_percent) - min_max.min_points_per_mill_per_perc_not_selected) /
+                (min_max.max_points_per_mill_per_perc_not_selected - min_max.min_points_per_mill_per_perc_not_selected)) * 100 AS player_score
+        FROM {db}.bootstrapstatic_elements
+        JOIN min_max_values AS min_max
+        ON 1=1 -- Cartesian join to make min and max values available for every row
+        WHERE year_start = 2024
+        AND gameweek = {gameweek}
+        AND element_type IN (1, 2, 3, 4)
+        
+        UNION ALL
 
-    SELECT 
-        e.id, 
-        0 AS "index", 
-        NULL AS sum_expected_involvement_achieved_during_period, 
-        NULL AS sum_expected_goals_conceded_achieved_during_period, 
-        NULL AS total_points, 
-        NULL AS total_team_difficulty, 
-        NULL AS player_contribution_percentage, 
-        NULL AS debug_score 
-    FROM {db}.events_elements e 
-    WHERE e.id NOT IN (SELECT ri.id FROM RawIndexes ri);
-
+        -- Select the mean values
+        SELECT AVG(id) AS id,
+            CAST('Mean' AS CHAR(255)) AS web_name,  
+            AVG(total_points) AS total_points, 
+            AVG(total_points / (now_cost / 10)) AS points_per_mill,  
+            AVG(100 - selected_by_percent) AS not_selected_by_perc, 
+            AVG((total_points / (now_cost / 10)) * (100 - selected_by_percent)) AS points_per_mill_per_perc_not_selected,
+            50 AS player_score -- No player score for the mean row
+        FROM {db}.bootstrapstatic_elements
+        WHERE year_start = 2024
+        AND gameweek = {gameweek}
+        AND element_type IN (1, 2, 3, 4)
+        AND (minutes / {gameweek}) > 45
+    ) AS combined_results
+    ORDER BY points_per_mill_per_perc_not_selected DESC;
     '''
+    
     cursor.execute(query)
     players = cursor.fetchall()
+
+    # Manually cast the 'id' to an integer if it's a Decimal
+    for player in players:
+        if player['id'] >= 0:
+            player['id'] = int(player['id'])
+        else:
+            player['id'] = 0
+            player['player_score'] = int(player['player_score'])
+
     dbConnect.close()  # Always close the database connection
     return players
 
