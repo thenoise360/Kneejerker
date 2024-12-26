@@ -1,41 +1,64 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+FPL Optimization Code - Full Version with Position-Specific Scoring
+-------------------------------------------------------------------
+Key Points:
+1) We keep columns like 'goals_scored','assists','clean_sheets','goals_conceded',
+   'own_goals','penalties_saved','penalties_missed','yellow_cards','red_cards','saves','bonus',
+   'bps','influence','creativity','threat','ict_index', etc. for predictions.
+2) We use compute_player_points(row) for position-specific scoring, but do not drop columns.
+3) compute_player_form uses a 2.0 -> 1.8 -> 1.6 -> 1.4 -> 1.2 weighting for last 5 matches.
+4) The code merges everything without discarding crucial numeric columns for the model.
+"""
+
 import pandas as pd
 import os
-import mysql.connector
 from sqlalchemy import create_engine
 import pymysql
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
-from scipy.optimize import linprog
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')
 from pulp import LpProblem, LpVariable, LpMaximize, lpSum, LpStatus, LpBinary
-import seaborn as sns
-import json
 import requests
 import unicodedata
 import logging
 import gc  # Garbage Collector
 from sklearn.model_selection import GridSearchCV
 from FPL_site.config import current_config
+import numpy as np
+from tqdm import tqdm
 
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Optimize Data Types Function
+#################################################
+#           Utility & Data Optimization         #
+#################################################
+
 def optimize_data_types(df):
-    """Optimize DataFrame memory usage by changing data types."""
+    """Optimize DataFrame memory usage by converting float64/int64 -> float32/int32."""
     float_cols = df.select_dtypes(include=['float64']).columns
-    int_cols = df.select_dtypes(include=['int64']).columns
+    int_cols   = df.select_dtypes(include=['int64']).columns
     for col in float_cols:
         df[col] = df[col].astype('float32')
     for col in int_cols:
         df[col] = df[col].astype('int32')
     return df
 
-budget = 100
+def optimize_categories(df, category_columns):
+    """Convert repetitive string/object columns to 'category' dtype."""
+    for col in category_columns:
+        if col in df.columns and df[col].dtype == 'object':
+            df[col] = df[col].astype('category')
+    return df
 
+#################################################
+#        Global Config & Constants              #
+#################################################
+
+budget = 100
 HOST = current_config.HOST
 USER = current_config.USER
 PASSWORD = current_config.PASSWORD
@@ -44,266 +67,382 @@ DB = current_config.DATABASE
 season = "2023_2024"
 season_start = 2024
 
-NULL = None
+# Weighted array for last 5 GWs: newest=2.0 => older=1.8 => 1.6 => 1.4 => 1.2
+form_weights = [2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2]
 
-# Fetch data from MySQL
-def fetch_mysql_data(query, database):
+#################################################
+#               Data Fetching                   #
+#################################################
+
+def fetch_mysql_data(query, database, chunksize=None):
+    """
+    Optionally read in chunks with a progress bar (tqdm).
+    """
     logging.info(f"Fetching data from {database} with query: {query}")
     engine = create_engine(f'mysql+pymysql://{USER}:{PASSWORD}@{HOST}/{database}')
-    df = pd.read_sql(query, engine)
+    
+    if chunksize:
+        df_list = []
+        for chunk in tqdm(pd.read_sql(query, engine, chunksize=chunksize), desc="Reading MySQL in chunks"):
+            chunk = optimize_data_types(chunk)
+            df_list.append(chunk)
+        df = pd.concat(df_list, ignore_index=True)
+    else:
+        df = pd.read_sql(query, engine)
+        df = optimize_data_types(df)
+
     logging.info(f"Fetched {len(df)} rows from {database}.")
-    # Optimize data types to save memory
-    df = optimize_data_types(df)
     return df
 
-# Get current gameweek from API
 def get_current_gameweek():
-    """Fetch current gameweek using the Fantasy Premier League API."""
-    logging.info("Fetching current gameweek from the API.")
-    response = requests.get('https://fantasy.premierleague.com/api/entry/1/')
-    if response.status_code == 200:
-        todays_data = response.json()
-        current_gameweek = todays_data.get('current_event', None)
-        logging.info(f"Current gameweek is: {current_gameweek}")
-        return current_gameweek
-    else:
-        logging.error(f"Failed to fetch gameweek, status code: {response.status_code}")
-        raise Exception(f"Failed to fetch gameweek, status code: {response.status_code}")
+    """Fetch current gameweek from the official FPL API."""
+    logging.info("Fetching current gameweek from the bootstrap-static API.")
+    try:
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
+        response.raise_for_status()
+        data = response.json()
+        events = data.get('events', [])
+        current_gw = None
+        for e in events:
+            if e.get('is_current', False):
+                current_gw = e.get('id', None)
+                break
+        if current_gw is not None:
+            logging.info(f"Current gameweek determined to be: {current_gw}")
+            return current_gw
+        else:
+            logging.error("Current gameweek not found in API response.")
+            raise ValueError("Current gameweek not found.")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed fetching current gameweek: {e}")
+        raise
 
-# Clean player names (remove unicode characters)
+#################################################
+#         Data Cleaning & Preparation           #
+#################################################
+
 def clean_player_names(players_df):
     """Normalize player names by removing special characters."""
     logging.info("Cleaning player names.")
-    players_df['second_name'] = players_df['second_name'].apply(
+    players_df.loc[:, 'second_name'] = players_df['second_name'].apply(
         lambda x: unicodedata.normalize('NFKD', x).encode('ascii', 'ignore').decode('utf-8')
+                  if isinstance(x, str) else x
     )
     return players_df
 
+def compute_player_points(row):
+    """
+    Position-specific FPL scoring for a single match event row:
+      - element_type (1=GK,2=DEF,3=MID,4=FWD)
+      - includes columns like goals_scored, assists, clean_sheets, etc.
+    """
+    pos = row.get('element_type', 0)
+    points = 0.0
+
+    # (1) Base appearance:
+    minutes_played = row.get('minutes', 0)
+    if minutes_played >= 60:
+        points += 2
+    else:
+        points += 1
+
+    # (2) Goals scored:
+    goals = row.get('goals_scored', 0)
+    if pos in [1, 2]:    # GK or DEF => 6 points
+        points += goals * 6
+    elif pos == 3:       # MID => 5
+        points += goals * 5
+    elif pos == 4:       # FWD => 4
+        points += goals * 4
+
+    # (3) Assists => +3
+    assists = row.get('assists', 0)
+    points += assists * 3
+
+    # (4) Clean sheets => GK/DEF=4, MID=1, FWD=0
+    cs = row.get('clean_sheets', 0)
+    if cs > 0:
+        if pos in [1, 2]:
+            points += 4
+        elif pos == 3:
+            points += 1
+
+    # (5) Own goals => -2
+    own_goals = row.get('own_goals', 0)
+    points += own_goals * (-2)
+
+    # (6) Penalties => saved=+5, missed=-2
+    pens_saved = row.get('penalties_saved', 0)
+    pens_missed = row.get('penalties_missed', 0)
+    points += (pens_saved * 5) + (pens_missed * -2)
+
+    # (7) Cards => yellow=-1, red=-3
+    yellows = row.get('yellow_cards', 0)
+    reds = row.get('red_cards', 0)
+    points += (yellows * -1) + (reds * -3)
+
+    # (8) Bonus => direct from 'bonus' col
+    bonus_pts = row.get('bonus', 0)
+    points += bonus_pts
+
+    # (9) GK/DEF => every 2 goals_conceded => -1
+    if pos in [1, 2]:
+        gc = row.get('goals_conceded', 0)
+        points -= (gc // 2)
+
+    return float(points)
+
+def compute_player_form(events_df, player_id, current_gameweek, num_gameweeks=10):
+    recent_events = events_df[
+        (events_df['id'] == player_id)
+        & (events_df['gameweek'] > current_gameweek - num_gameweeks)
+        & (events_df['gameweek'] <= current_gameweek)
+    ]
+    if recent_events.empty:
+        return 0.0
+
+    # Sort newest first
+    recent_events = recent_events.sort_values('gameweek', ascending=False)
+
+    # Keep at most 5 matches
+    recent_events = recent_events.head(10)
+
+    num_matches = len(recent_events)
+    chosen_weights = form_weights[:num_matches]  # e.g. [2.0,1.8,...] up to the count
+
+    recent_events.loc[:, 'weight'] = chosen_weights
+
+    # Use position-based scoring
+    recent_events.loc[:, 'points'] = recent_events.apply(compute_player_points, axis=1)
+
+    weighted_sum = (recent_events['points'] * recent_events['weight']).sum()
+    total_weight = recent_events['weight'].sum()
+    form_value = weighted_sum / total_weight if total_weight != 0 else 0.0
+    return float(form_value)
+
+
+def validate_players_df(players_df):
+    required = [
+        'id', 'first_name', 'second_name', 'element_type', 'now_cost',
+        'minutes', 'total_points', 'form', 'predicted_performance', 'team',
+        'starts'
+    ]
+    missing = [col for col in required if col not in players_df.columns]
+    if missing:
+        logging.error(f"Missing required columns in players_df: {missing}")
+        raise KeyError(f"Missing columns: {missing}")
+
+    numeric = ['now_cost','minutes','total_points','form','predicted_performance','starts']
+    for col in numeric:
+        if not pd.api.types.is_numeric_dtype(players_df[col]):
+            players_df.loc[:, col] = pd.to_numeric(players_df[col], errors='coerce').fillna(0).astype('float32')
+            logging.info(f"Converted '{col}' to numeric in players_df.")
+
 def prepare_data():
-    """Fetch and prepare data for the model."""
+    """Fetch data from MySQL, clean, filter, compute form, etc."""
     logging.info("Preparing data by fetching events, fixtures, and player data.")
     current_gw = get_current_gameweek()
 
-    # Fetch events, fixtures, and player data
+    # events
     events_query = f"SELECT * FROM {DB}.events_elements;"
     events_df = fetch_mysql_data(events_query, DB)
 
+    # fixtures
     fixtures_query = f"SELECT * FROM {DB}.elementsummary_fixtures;"
     fixtures_df = fetch_mysql_data(fixtures_query, DB)
 
-    # Fetch player data including element_type
+    # players
     players_query = (
-        f"SELECT id, first_name, second_name, web_name, element_type, now_cost, minutes, chance_of_playing_next_round, "
-        f"goals_scored, assists, clean_sheets, goals_conceded, own_goals, penalties_saved, "
-        f"penalties_missed, yellow_cards, red_cards, saves, bonus, bps, influence, creativity, "
-        f"threat, ict_index, starts, expected_goals, expected_assists, expected_goal_involvements, "
-        f"expected_goals_conceded, total_points, in_dreamteam, team_code, team "
+        f"SELECT id, first_name, second_name, web_name, element_type, now_cost, minutes, "
+        f"chance_of_playing_next_round, goals_scored, assists, clean_sheets, goals_conceded, "
+        f"own_goals, penalties_saved, penalties_missed, yellow_cards, red_cards, saves, bonus, "
+        f"bps, influence, creativity, threat, ict_index, starts, expected_goals, expected_assists, "
+        f"expected_goal_involvements, expected_goals_conceded, total_points, in_dreamteam, team_code, team "
         f"FROM {DB}.bootstrapstatic_elements "
-        f"WHERE Year_start = {season_start} AND gameweek = {current_gw - 1};"
+        f"WHERE Year_start = {season_start};"
     )
-
-    players_df = fetch_mysql_data(players_query, f'{DB}')
+    players_df = fetch_mysql_data(players_query, DB)
 
     logging.info(f"Player data contains {players_df.shape[1]} columns and {players_df.shape[0]} rows.")
-    logging.info(f"Columns in players_df: {players_df.columns.tolist()}")  # Added line
+    logging.info(f"Columns in players_df: {players_df.columns.tolist()}")
 
-    # Clean player names
+    players_df = optimize_categories(players_df, ['team'])
     players_df = clean_player_names(players_df)
 
-    # Calculate average minutes per game and filter players with at least 15-minute average
-    players_df['avg_minutes'] = players_df['minutes'] / (current_gw - 1)  # Assuming we want average until the last gameweek
-    players_df = players_df[(players_df['avg_minutes'] >= 15) & (players_df['chance_of_playing_next_round'] >= 50)]
-    logging.info(f"Filtered players with at least 15-minute average per game and chance of playing >= 50%. Remaining players: {len(players_df)}")
+    # Convert now_cost -> float then /10
+    players_df.loc[:, 'now_cost'] = pd.to_numeric(players_df['now_cost'], errors='coerce').astype('float32') / 10
+    
+    if 'chance_of_playing_next_round' in players_df.columns:
+        # Fill nulls with 100%
+        players_df['chance_of_playing_next_round'] = (
+            players_df['chance_of_playing_next_round']
+            .fillna(100)
+            .astype('float32')  # match numeric dtype
+        )
+        logging.info("Set missing 'chance_of_playing_next_round' to 100%.")
+    else:
+        logging.warning("'chance_of_playing_next_round' column not found. Cannot set missing to 100%.")
 
-    # Adjust player costs
-    players_df['now_cost'] = players_df['now_cost'] / 10
+    # If gw <= 1 => can't average
+    if current_gw <= 1:
+        players_df.loc[:, 'avg_minutes'] = players_df['minutes']
+    else:
+        players_df.loc[:, 'avg_minutes'] = players_df['minutes'] / (current_gw - 1)
 
-    # Convert relevant columns in players_df to numeric to prevent TypeError
-    player_numeric_columns = [
-        'goals_scored', 'assists', 'clean_sheets', 'goals_conceded', 'own_goals',
-        'penalties_saved', 'penalties_missed', 'yellow_cards', 'red_cards',
-        'saves', 'bonus', 'bps', 'influence', 'creativity', 'threat', 'ict_index'
+    # Filter
+    players_df = players_df[
+        (players_df['avg_minutes'] >= 15)
+        & (players_df['chance_of_playing_next_round'] >= 50)
     ]
+    logging.info(f"Filtered players... Remaining players: {len(players_df)}")
 
-    for col in player_numeric_columns:
+    numeric_cols = [
+        'goals_scored','assists','clean_sheets','goals_conceded','own_goals',
+        'penalties_saved','penalties_missed','yellow_cards','red_cards',
+        'saves','bonus','bps','influence','creativity','threat','ict_index',
+        'starts'
+    ]
+    for col in numeric_cols:
         if col in players_df.columns:
-            players_df[col] = pd.to_numeric(players_df[col], errors='coerce').fillna(0).astype('float32')
+            players_df.loc[:, col] = pd.to_numeric(players_df[col], errors='coerce').fillna(0).astype('float32')
             logging.info(f"Converted column '{col}' to numeric.")
         else:
-            logging.warning(f"Column '{col}' not found in players_df. Setting to 0.")
-            players_df[col] = 0.0
+            logging.warning(f"Column '{col}' not found in players_df; setting to 0.")
+            players_df.loc[:, col] = 0.0
 
-    # Convert relevant columns in events_df to numeric to prevent TypeError
-    event_numeric_columns = [
-        'goals_scored', 'assists', 'clean_sheets', 'goals_conceded', 'own_goals',
-        'penalties_saved', 'penalties_missed', 'yellow_cards', 'red_cards',
-        'saves', 'bonus', 'bps', 'influence', 'creativity', 'threat', 'ict_index'
+    event_numeric = [
+        'goals_scored','assists','clean_sheets','goals_conceded','own_goals',
+        'penalties_saved','penalties_missed','yellow_cards','red_cards',
+        'saves','bonus','bps','influence','creativity','threat','ict_index'
     ]
-
-    for col in event_numeric_columns:
+    for col in event_numeric:
         if col in events_df.columns:
-            events_df[col] = pd.to_numeric(events_df[col], errors='coerce').fillna(0).astype('float32')
+            events_df.loc[:, col] = pd.to_numeric(events_df[col], errors='coerce').fillna(0).astype('float32')
             logging.info(f"Converted column '{col}' in events_df to numeric.")
         else:
-            logging.warning(f"Column '{col}' not found in events_df. Setting to 0.")
-            events_df[col] = 0.0
+            logging.warning(f"Column '{col}' not found in events_df; setting to 0.")
+            events_df.loc[:, col] = 0.0
 
-    # Compute 'form' as average points over the last 5 gameweeks
-    players_df['form'] = players_df['id'].apply(lambda x: compute_player_form(events_df, x, current_gw, num_gameweeks=5))
-
+    # Compute form:
+    players_df.loc[:, 'form'] = players_df['id'].apply(
+        lambda x: compute_player_form(events_df, x, current_gw, num_gameweeks=5)
+    )
     logging.info("Computed 'form' for all players.")
 
-    # Ensure 'predicted_performance' exists
+    # Ensure predicted_performance
     if 'predicted_performance' not in players_df.columns:
-        logging.warning("'predicted_performance' column is missing. Computing based on available metrics.")
-        # Example: Simple prediction based on total_points and form
-        players_df['predicted_performance'] = players_df['total_points'] * 0.6 + players_df['form'] * 0.4
-        players_df['predicted_performance'] = pd.to_numeric(players_df['predicted_performance'], errors='coerce').fillna(0).astype('float32')
+        logging.warning("'predicted_performance' column is missing. Using simple formula.")
+        players_df.loc[:, 'predicted_performance'] = (
+            players_df['total_points']*0.6 + players_df['form']*0.4
+        ).astype('float32')
         logging.info("Computed 'predicted_performance' for all players.")
     else:
-        # Ensure it's numeric
-        players_df['predicted_performance'] = pd.to_numeric(players_df['predicted_performance'], errors='coerce').fillna(0).astype('float32')
+        players_df.loc[:, 'predicted_performance'] = pd.to_numeric(
+            players_df['predicted_performance'], errors='coerce'
+        ).fillna(0).astype('float32')
         logging.info("'predicted_performance' column converted to numeric.")
 
-    # Validate players_df
     validate_players_df(players_df)
-
     logging.info("players_df validation passed.")
 
-    # Free up memory
-    del events_df, fixtures_df
     gc.collect()
+    return players_df, events_df, fixtures_df
 
-    return players_df
+##################################################
+#           Aggregation & Training               #
+##################################################
 
-def compute_player_form(events_df, player_id, current_gameweek, num_gameweeks=5):
-    """
-    Computes the form of a player based on their performance in the last `num_gameweeks`.
-    
-    Parameters:
-        events_df (pd.DataFrame): DataFrame containing match events.
-        player_id (int): The ID of the player.
-        current_gameweek (int): The current gameweek.
-        num_gameweeks (int): Number of recent gameweeks to consider.
-    
-    Returns:
-        float: The computed form of the player.
-    """
-    # Filter events for the player and the last `num_gameweeks` gameweeks
-    recent_events = events_df[
-        (events_df['id'] == player_id) & 
-        (events_df['gameweek'] > current_gameweek - num_gameweeks) & 
-        (events_df['gameweek'] <= current_gameweek)
+def aggregate_gameweek_data(events_df, current_gameweek, players_df):
+    """Aggregate stats for training vs. next 5 GWs. Merge in 'element_type'."""
+    current_events = events_df[events_df['gameweek'] <= current_gameweek]
+    next5_events   = events_df[
+        (events_df['gameweek'] > current_gameweek) &
+        (events_df['gameweek'] <= current_gameweek+5)
     ]
 
-    if recent_events.empty:
-        logging.info(f"No recent events for player ID {player_id}. Setting form to 0.")
-        return 0.0  # No recent data, assume form is 0
+    agg_dict = {
+        'minutes':'sum','goals_scored':'sum','assists':'sum','clean_sheets':'sum','goals_conceded':'sum',
+        'own_goals':'sum','penalties_saved':'sum','penalties_missed':'sum','yellow_cards':'sum',
+        'red_cards':'sum','saves':'sum','bonus':'sum','bps':'sum','influence':'sum','creativity':'sum',
+        'threat':'sum','ict_index':'sum','expected_goals':'sum','expected_assists':'sum',
+        'expected_goal_involvements':'sum','expected_goals_conceded':'sum','total_points':'sum',
+        'in_dreamteam':'sum','gameweek':'max','year_start':'max','starts':'sum'
+    }
+    current_agg = current_events.groupby('id').agg(agg_dict).reset_index().astype({
+        'id':'int32','gameweek':'int32','year_start':'int32','starts':'int32'
+    })
+    next5_agg   = next5_events.groupby('id').agg(agg_dict).reset_index().astype({
+        'id':'int32','gameweek':'int32','year_start':'int32','starts':'int32'
+    })
 
-    # Assign weights to each gameweek (more recent gameweeks have higher weight)
-    recent_events = recent_events.sort_values('gameweek')
-    recent_events['weight'] = range(1, len(recent_events) + 1)  # 1, 2, ..., N
+    # Merge element_type if needed
+    if 'element_type' in players_df.columns:
+        current_agg = current_agg.merge(players_df[['id','element_type']], on='id', how='left')
+        next5_agg   = next5_agg.merge(players_df[['id','element_type']], on='id', how='left')
+    else:
+        logging.warning("No 'element_type' in players_df to merge.")
 
-    # Define points as a combination of relevant metrics
-    recent_events['points'] = (
-        recent_events['goals_scored'] * 6 +
-        recent_events['assists'] * 3 +
-        recent_events['clean_sheets'] * 4 +
-        recent_events['goals_conceded'] * (-1) +
-        recent_events['own_goals'] * (-2) +
-        recent_events['penalties_saved'] * 5 +
-        recent_events['penalties_missed'] * (-2) +
-        recent_events['yellow_cards'] * (-1) +
-        recent_events['red_cards'] * (-3) +
-        recent_events['saves'] * 1 +
-        recent_events['bonus'] * 1 +
-        recent_events['bps'] * 0.1 +
-        recent_events['influence'] * 0.01 +
-        recent_events['creativity'] * 0.01 +
-        recent_events['threat'] * 0.01 +
-        recent_events['ict_index'] * 0.01
-    )
-
-    # Handle any potential non-numeric 'points' values
-    recent_events['points'] = pd.to_numeric(recent_events['points'], errors='coerce').fillna(0).astype('float32')
-
-    # Compute weighted average points
-    weighted_sum = (recent_events['points'] * recent_events['weight']).sum()
-    total_weights = recent_events['weight'].sum()
-    weighted_average = weighted_sum / total_weights if total_weights != 0 else 0.0
-
-    logging.debug(f"Player ID {player_id} - Weighted Sum: {weighted_sum}, Total Weights: {total_weights}, Form: {weighted_average}")
-
-    return weighted_average
-
-def validate_players_df(players_df):
-    required_columns = [
-        'id', 'first_name', 'second_name', 'element_type', 'now_cost', 
-        'minutes', 'total_points', 'form', 'predicted_performance', 'team'
-    ]
-    missing_columns = [col for col in required_columns if col not in players_df.columns]
-    if missing_columns:
-        logging.error(f"Missing required columns in players_df: {missing_columns}")
-        raise KeyError(f"Missing required columns: {missing_columns}")
-
-    # Additional checks
-    numeric_columns = ['now_cost', 'minutes', 'total_points', 'form', 'predicted_performance']
-    for col in numeric_columns:
-        if not pd.api.types.is_numeric_dtype(players_df[col]):
-            logging.warning(f"Column '{col}' is not numeric. Attempting to convert.")
-            players_df[col] = pd.to_numeric(players_df[col], errors='coerce').fillna(0).astype('float32')
-            logging.info(f"Converted column '{col}' to numeric.")
+    return current_agg, next5_agg
 
 def train_and_predict(df_train, df_predict, players_df):
     logging.info("Training models for each position.")
 
-    features = ['minutes', 'goals_scored', 'assists', 'clean_sheets', 'goals_conceded', 
-                'own_goals', 'penalties_saved', 'penalties_missed', 'yellow_cards', 
-                'red_cards', 'saves', 'bonus', 'bps', 'influence', 'creativity', 
-                'threat', 'ict_index', 'starts', 'expected_goals', 'expected_assists', 
-                'expected_goal_involvements', 'expected_goals_conceded', 'total_points', 
-                'in_dreamteam', 'year_start', 'gameweek']
+    # Drop NaN positions
+    df_train = df_train.dropna(subset=['element_type']).copy()
+    df_predict = df_predict.dropna(subset=['element_type']).copy()
 
-    # Ensure all required columns are present in both train and predict data
+    df_train['element_type']   = df_train['element_type'].astype('int32')
+    df_predict['element_type'] = df_predict['element_type'].astype('int32')
+
+    features = [
+        'minutes','goals_scored','assists','clean_sheets','goals_conceded','own_goals',
+        'penalties_saved','penalties_missed','yellow_cards','red_cards','saves','bonus','bps',
+        'influence','creativity','threat','ict_index','starts','expected_goals','expected_assists',
+        'expected_goal_involvements','expected_goals_conceded','total_points','in_dreamteam',
+        'year_start','gameweek'
+    ]
+    # Ensure columns
     for col in features:
         if col not in df_train.columns:
             df_train[col] = 0.0
-            logging.warning(f"Column '{col}' missing in df_train. Set to 0.")
+            logging.warning(f"Column '{col}' missing in df_train; set to 0.")
         if col not in df_predict.columns:
             df_predict[col] = 0.0
-            logging.warning(f"Column '{col}' missing in df_predict. Set to 0.")
+            logging.warning(f"Column '{col}' missing in df_predict; set to 0.")
 
-    # Impute missing values
+        df_train[col]   = pd.to_numeric(df_train[col], errors='coerce').fillna(0).astype('float32')
+        df_predict[col] = pd.to_numeric(df_predict[col], errors='coerce').fillna(0).astype('float32')
+
+    # Impute
     imputer = SimpleImputer(strategy='mean')
-    df_train_imputed = imputer.fit_transform(df_train[features])
-    df_predict_imputed = imputer.transform(df_predict[features])
+    X_train_imputed = imputer.fit_transform(df_train[features])
+    X_pred_imputed  = imputer.transform(df_predict[features])
 
-    # Scale the data
+    # Scale
     scaler = StandardScaler()
-    df_train_scaled = scaler.fit_transform(df_train_imputed).astype('float32')
-    df_predict_scaled = scaler.transform(df_predict_imputed).astype('float32')
+    X_train_scaled_array = scaler.fit_transform(X_train_imputed).astype('float32')
+    X_pred_scaled_array  = scaler.transform(X_pred_imputed).astype('float32')
 
-    df_train_scaled = pd.DataFrame(df_train_scaled, columns=features)
-    df_train_scaled['element_type'] = df_train['element_type'].values.astype('int32')
+    # Convert to DataFrame with same indexes
+    df_train_scaled = pd.DataFrame(X_train_scaled_array, columns=features, index=df_train.index)
+    df_predict_scaled = pd.DataFrame(X_pred_scaled_array, columns=features, index=df_predict.index)
 
-    df_predict_scaled = pd.DataFrame(df_predict_scaled, columns=features)
-    df_predict_scaled['element_type'] = df_predict['element_type'].values.astype('int32')
+    df_train_scaled['element_type']   = df_train['element_type']
+    df_predict_scaled['element_type'] = df_predict['element_type']
 
-    # Initialize an empty DataFrame to collect predictions
     df_predictions = pd.DataFrame()
 
-    # Loop over each position (element_type)
-    for position in df_train['element_type'].unique():
+    # Use a tqdm progress bar for each position
+    unique_positions = df_train_scaled['element_type'].unique()
+    for position in tqdm(unique_positions, desc="Training each position"):
         logging.info(f"Training model for position: {position}")
 
-        # Filter data for the current position
-        X_train_pos = df_train_scaled[df_train_scaled['element_type'] == position][features]
-        y_train_pos = df_train[df_train['element_type'] == position]['total_points'].fillna(0).astype('float32')
+        X_train_pos = df_train_scaled.loc[df_train_scaled['element_type']==position, features]
+        y_train_pos = df_train.loc[df_train_scaled['element_type']==position, 'total_points'].fillna(0).astype('float32')
 
-        X_predict_pos = df_predict_scaled[df_predict_scaled['element_type'] == position][features]
-        predict_indices = df_predict_scaled[df_predict_scaled['element_type'] == position].index
+        X_pred_pos  = df_predict_scaled.loc[df_predict_scaled['element_type']==position, features]
+        pred_idx    = X_pred_pos.index
 
-        # Check the number of samples
         n_samples = X_train_pos.shape[0]
         logging.info(f"Number of training samples for position {position}: {n_samples}")
 
@@ -311,379 +450,309 @@ def train_and_predict(df_train, df_predict, players_df):
             logging.warning(f"No training samples for position {position}. Skipping.")
             continue
         elif n_samples == 1:
-            logging.warning(f"Only one training sample for position {position}. Training without cross-validation.")
-            # Train without cross-validation
+            logging.warning(f"Only one training sample for position {position}.")
             rf = RandomForestRegressor(random_state=42, n_estimators=50)
             rf.fit(X_train_pos, y_train_pos)
-
-            # Predict future performance
-            predicted_performance = rf.predict(X_predict_pos)
+            predicted_perf = rf.predict(X_pred_pos)
         else:
-            # Adjust cv parameter
-            cv_splits = min(3, n_samples)
-            logging.info(f"Using cv={cv_splits} for position {position}")
-
-            # Train the model with hyperparameter tuning
             rf = RandomForestRegressor(random_state=42, n_estimators=50)
-            param_grid = {
-                'max_depth': [None, 10, 20],
-                'min_samples_split': [2, 5]
-            }
+            param_grid = {'max_depth':[10], 'min_samples_split':[2]}
+            cv_splits  = min(2, n_samples)
             grid_search = GridSearchCV(
                 estimator=rf,
                 param_grid=param_grid,
                 cv=cv_splits,
                 scoring='neg_mean_squared_error',
-                n_jobs=1  # Optimized to use single core
+                n_jobs=1
             )
-            grid_search.fit(X_train_pos, y_train_pos)
+            try:
+                grid_search.fit(X_train_pos, y_train_pos)
+            except ValueError as ve:
+                logging.error(f"GridSearch failed for pos {position}: {ve}")
+                continue
+            best_model    = grid_search.best_estimator_
+            predicted_perf = best_model.predict(X_pred_pos)
 
-            best_model = grid_search.best_estimator_
-
-            # Predict future performance
-            predicted_performance = best_model.predict(X_predict_pos)
-
-        # Collect predictions
-        position_predictions = pd.DataFrame({
-            'id': df_predict.iloc[predict_indices]['id'].values,
-            'predicted_performance': predicted_performance.astype('float32'),
+        pos_preds = pd.DataFrame({
+            'id': df_predict.loc[pred_idx, 'id'].values,
+            'predicted_performance': predicted_perf.astype('float32'),
             'element_type': position,
-            'total_points': df_predict.iloc[predict_indices]['total_points'].values.astype('float32')
+            'total_points': df_predict.loc[pred_idx, 'total_points'].values.astype('float32')
         })
+        # Merge 'form', 'minutes' from players_df if needed
+        pos_preds = pd.merge(pos_preds, players_df[['id','form']], on='id', how='left')
+        pos_preds = pd.merge(pos_preds, players_df[['id','minutes']], on='id', how='left')
 
-        # Add 'form' and 'minutes' by merging with players_df
-        position_predictions = pd.merge(position_predictions, players_df[['id', 'form']], on='id', how='left')
-        position_predictions = pd.merge(position_predictions, players_df[['id', 'minutes']], on='id', how='left')
+        df_predictions = pd.concat([df_predictions, pos_preds], ignore_index=True)
 
-        df_predictions = pd.concat([df_predictions, position_predictions], ignore_index=True)
-
-        # Clean up to free memory
-        del X_train_pos, y_train_pos, X_predict_pos, grid_search
+        del X_train_pos, y_train_pos, X_pred_pos
         gc.collect()
 
     logging.info("Prediction completed for all positions.")
-    return df_predictions, pd.DataFrame()  # Return empty importance_df if not used
+    return df_predictions, pd.DataFrame()  # skip feature importances
 
-# Check if there are enough players to meet team formation constraints
+##################################################
+#             Team Optimization Code             #
+##################################################
+
 def check_sufficient_players(players_df):
-    """
-    Checks if there are sufficient players in each position to meet team constraints.
-
-    Parameters:
-    - players_df (pd.DataFrame): DataFrame containing player information.
-
-    Returns:
-    - bool: True if sufficient players exist, False otherwise.
-    """
-    position_counts = players_df['element_type'].value_counts()
-    required_positions = {1: 2, 2: 5, 3: 5, 4: 3}  # Squad positions
-    for pos, count in required_positions.items():
-        if position_counts.get(pos, 0) < count:
-            logging.error(f"Not enough players for position {pos}. Required: {count}, Available: {position_counts.get(pos, 0)}")
+    pos_counts = players_df['element_type'].value_counts()
+    required   = {1:2, 2:5, 3:5, 4:3}
+    for pos, needed in required.items():
+        if pos_counts.get(pos, 0) < needed:
+            logging.error(f"Not enough players for pos {pos}. Have {pos_counts.get(pos,0)}, need {needed}")
             return False
     return True
 
-def aggregate_gameweek_data(events_df, current_gameweek):
-    """Aggregate player stats for training and next five weeks prediction."""
-    current_events = events_df[events_df['gameweek'] <= current_gameweek]
-    next_five_weeks_events = events_df[(events_df['gameweek'] > current_gameweek) & (events_df['gameweek'] <= current_gameweek + 5)]
-
-    current_agg = current_events.groupby('id').agg({
-        'minutes': 'sum', 'goals_scored': 'sum', 'assists': 'sum', 'clean_sheets': 'sum',
-        'goals_conceded': 'sum', 'own_goals': 'sum', 'penalties_saved': 'sum', 'penalties_missed': 'sum',
-        'yellow_cards': 'sum', 'red_cards': 'sum', 'saves': 'sum', 'bonus': 'sum', 'bps': 'sum',
-        'influence': 'sum', 'creativity': 'sum', 'threat': 'sum', 'ict_index': 'sum',
-        'expected_goals': 'sum', 'expected_assists': 'sum', 'expected_goal_involvements': 'sum',
-        'expected_goals_conceded': 'sum', 'total_points': 'sum', 'in_dreamteam': 'sum',
-        'gameweek': 'max', 'year_start': 'max'
-    }).reset_index().astype({'id': 'int32', 'gameweek': 'int32', 'year_start': 'int32'})
-
-    next_five_weeks_agg = next_five_weeks_events.groupby('id').agg({
-        'minutes': 'sum', 'goals_scored': 'sum', 'assists': 'sum', 'clean_sheets': 'sum',
-        'goals_conceded': 'sum', 'own_goals': 'sum', 'penalties_saved': 'sum', 'penalties_missed': 'sum',
-        'yellow_cards': 'sum', 'red_cards': 'sum', 'saves': 'sum', 'bonus': 'sum', 'bps': 'sum',
-        'influence': 'sum', 'creativity': 'sum', 'threat': 'sum', 'ict_index': 'sum',
-        'expected_goals': 'sum', 'expected_assists': 'sum', 'expected_goal_involvements': 'sum',
-        'expected_goals_conceded': 'sum', 'total_points': 'sum', 'in_dreamteam': 'sum',
-        'gameweek': 'max', 'year_start': 'max'
-    }).reset_index().astype({'id': 'int32', 'gameweek': 'int32', 'year_start': 'int32'})
-
-    return current_agg, next_five_weeks_agg
-
 def optimize_team(players_df, budget, weights):
-    """
-    Optimize the FPL team selection based on weighted factors.
+    logging.info(f"Optimizing team with budget={budget}M, weights={weights}")
+    if not isinstance(weights, list) or len(weights)!=3:
+        raise ValueError("Weights must be [points_weight, form_weight, minutes_weight].")
 
-    Parameters:
-    - players_df (pd.DataFrame): DataFrame containing player information and performance metrics.
-    - budget (float): Total budget available for team selection (e.g., 100 for £100M).
-    - weights (dict): Dictionary containing user-defined weights for factors.
-                      Example: {'total_points': 40, 'form': 30, 'minutes': 30}
+    try:
+        wt_points = float(weights[0]) / 100
+        wt_form   = float(weights[1]) / 100
+        wt_mins   = float(weights[2]) / 100
+    except (ValueError,TypeError) as e:
+        logging.error(f"Converting weights to float failed: {e}")
+        raise
 
-    Returns:
-    - pd.DataFrame: DataFrame of selected players with their roles and weighted scores.
-    """
-    logging.info(f"Optimizing team selection within a budget of {budget}M.")
-
-    total_points = int(weights[0])/100
-    form = int(weights[1])/100
-    minutes = int(weights[2])/100
-
-    # Ensure sufficient players for each position
     if not check_sufficient_players(players_df):
-        logging.warning("Not enough players to meet team constraints.")
+        logging.warning("Not enough players to meet formation constraints.")
         return pd.DataFrame(columns=players_df.columns)
 
-    # Clean NaN or infinity values in relevant columns
-    required_columns = ['now_cost', 'total_points', 'form', 'minutes', 'predicted_performance']
-    for col in required_columns:
-        if col in players_df.columns:
-            players_df[col] = players_df[col].replace([np.inf, -np.inf], np.nan).fillna(players_df[col].median()).astype('float32')
-            logging.info(f"Cleaned column '{col}'.")
-        else:
-            logging.error(f"Required column '{col}' is missing from players_df.")
-            raise KeyError(f"Required column '{col}' is missing from players_df.")
+    logging.info(players_df[players_df['second_name'].str.contains('Salah', na=False)])
 
-    # Calculate weighted_score based on user-defined weights
-    # Normalize weights to sum to 1
-    total_weight = total_points + form + minutes
-    w_total_points = total_points / total_weight
-    w_form = form / total_weight
-    w_minutes = minutes / total_weight
+    required_cols = ['now_cost','total_points','form','minutes','predicted_performance']
+    for col in required_cols:
+        if col not in players_df.columns:
+            logging.error(f"Required col '{col}' missing in players_df.")
+            raise KeyError(f"Required col '{col}' missing.")
+        players_df.loc[:, col] = players_df[col].replace([np.inf, -np.inf], np.nan)
+        med = players_df[col].median()
+        players_df.loc[:, col] = players_df[col].fillna(med).astype('float32')
 
-    # Compute weighted_score
-    players_df['weighted_score'] = (
-        players_df['predicted_performance'] * w_total_points +
-        players_df['form'] * w_form +
-        players_df['minutes'] * w_minutes
+    total_wt = wt_points + wt_form + wt_mins
+    if total_wt == 0:
+        raise ValueError("Sum of weights = 0.")
+
+    w_pts = wt_points / total_wt
+    w_frm = wt_form   / total_wt
+    w_mns = wt_mins   / total_wt
+
+    players_df.loc[:, 'weighted_score'] = (
+        players_df['total_points'] * w_pts +
+        players_df['form']                  * w_frm +
+        players_df['minutes']               * w_mns
     ).astype('float32')
 
-    logging.info("Calculated weighted performance for all players based on user-defined weights.")
-
-    # Initialize the optimization problem
     prob = LpProblem("FPL_Team_Selection", LpMaximize)
-
-    # Create binary decision variables for squad selection (x_i)
     player_vars = LpVariable.dicts("player", players_df.index, cat=LpBinary)
 
-    # Objective function: maximize total weighted scores
-    prob += lpSum(players_df.loc[i, 'weighted_score'] * player_vars[i] for i in players_df.index), "Total_Weighted_Scores"
+    # Objective
+    prob += lpSum(players_df.loc[i,'weighted_score'] * player_vars[i] for i in players_df.index), "Total_Weighted_Score"
 
-    # Budget constraint: total cost <= budget
+    # Budget constraint
     prob += (
-        lpSum(players_df.loc[i, 'now_cost'] * player_vars[i] for i in players_df.index) <= budget,
-        "TotalBudget"
+        lpSum(players_df.loc[i,'now_cost'] * player_vars[i] for i in players_df.index) <= budget,
+        "BudgetConstraint"
     )
 
-    # Squad size constraint: exactly 15 players
+    # Squad size
     prob += (
         lpSum(player_vars[i] for i in players_df.index) == 15,
-        "TotalSquadSize"
+        "SquadSizeConstraint"
     )
 
-    # Positional constraints for the entire squad
-    positions = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}
-    squad_position_limits = {1: 2, 2: 5, 3: 5, 4: 3}
-
-    for pos, name in positions.items():
+    # Positions
+    pos_limits = {1:2, 2:5, 3:5, 4:3}
+    for pos, limit in pos_limits.items():
         prob += (
-            lpSum(player_vars[i] for i in players_df.index if players_df.loc[i, 'element_type'] == pos) == squad_position_limits[pos],
-            f"Squad_Position_{name}_Constraint"
+            lpSum(player_vars[i] for i in players_df.index if players_df.loc[i,'element_type']==pos) == limit,
+            f"Pos_{pos}_limit"
         )
 
-    # Optional: Constraint to limit the number of players from the same club (e.g., max 3 per club)
+    # Max 3 from same club
     if 'team' in players_df.columns:
         clubs = players_df['team'].unique()
-        max_players_per_club = 3
         for club in clubs:
-            club_players = players_df[players_df['team'] == club].index
+            club_idx = players_df[players_df['team']==club].index
             prob += (
-                lpSum(player_vars[i] for i in club_players) <= max_players_per_club,
-                f"Max_Players_{club}"
+                lpSum(player_vars[i] for i in club_idx) <= 3,
+                f"Max_3_{club}"
             )
-    else:
-        logging.warning("'team' column not found in players_df. Skipping club diversity constraints.")
 
-    # Solve the problem
     prob.solve()
 
-    # Check if the solution is optimal
     if LpStatus[prob.status] == 'Optimal':
         logging.info("Optimization successful.")
-        selected_indices = [i for i in players_df.index if player_vars[i].varValue == 1]
+        chosen_indices = [i for i in players_df.index if player_vars[i].varValue == 1]
+        final_team = players_df.loc[chosen_indices].copy()
 
-        # Extract selected players
-        optimal_team = players_df.loc[selected_indices].copy()
-        # Initialize 'is_starter' as False; you can add logic to determine starters if needed
-        optimal_team['is_starter'] = False
+        # Label bench vs. starters (1 GK, 3 DEF, 5 MID, 2 FWD => 11)
+        final_team['is_starter'] = False
 
-        # Example: Assign starters based on highest weighted_score within each position
-        for pos in positions.keys():
-            pos_players = optimal_team[optimal_team['element_type'] == pos]
-            if pos == 1:  # Goalkeepers: 1 starter
-                starter = pos_players.nlargest(1, 'weighted_score').index
-            elif pos == 2:  # Defenders: 3 starters
-                starter = pos_players.nlargest(3, 'weighted_score').index
-            elif pos == 3:  # Midfielders: 3 starters
-                starter = pos_players.nlargest(3, 'weighted_score').index
-            elif pos == 4:  # Forwards: 1 starter
-                starter = pos_players.nlargest(1, 'weighted_score').index
-            optimal_team.loc[starter, 'is_starter'] = True
+        # GK
+        gk_players = final_team[final_team['element_type'] == 1]
+        if len(gk_players) >= 1:
+            gk_idx = gk_players.nlargest(1, 'weighted_score').index
+            final_team.loc[gk_idx, 'is_starter'] = True
 
-        return optimal_team
+        # 3 DEF
+        def_players = final_team[final_team['element_type'] == 2]
+        if len(def_players) >= 3:
+            def_idx = def_players.nlargest(3, 'weighted_score').index
+            final_team.loc[def_idx, 'is_starter'] = True
+
+        # 5 MID
+        mid_players = final_team[final_team['element_type'] == 3]
+        if len(mid_players) >= 5:
+            mid_idx = mid_players.nlargest(5, 'weighted_score').index
+            final_team.loc[mid_idx, 'is_starter'] = True
+
+        # 2 FWD
+        fwd_players = final_team[final_team['element_type'] == 4]
+        if len(fwd_players) >= 2:
+            fwd_idx = fwd_players.nlargest(2, 'weighted_score').index
+            final_team.loc[fwd_idx, 'is_starter'] = True
+
+        return final_team
     else:
         logging.error(f"Optimization failed: {LpStatus[prob.status]}")
         return pd.DataFrame(columns=players_df.columns)
 
-def get_optimal_team(current_gameweek, budget, weights):
-    """Get optimal team for the specified gameweek."""
-    logging.info(f"Fetching data and optimizing team for gameweek {current_gameweek}.")
-    players_df = prepare_data()
+###################################################
+#       High-Level Orchestration / API            #
+###################################################
 
-    # For simplicity, assuming df_train and df_predict are derived from players_df
-    # Adjust according to your actual data structure
-    df_train = players_df.copy()  # Placeholder; adjust based on actual training data
-    df_predict = players_df.copy()  # Placeholder; adjust based on actual prediction data
-
-    # Aggregate gameweek data
-    current_agg, next_five_weeks_agg = aggregate_gameweek_data(df_train, current_gameweek)
-
-    # Train and predict
-    predicted_df, _ = train_and_predict(current_agg, next_five_weeks_agg, players_df)
-
-    # Proceed with optimization
-    optimal_team = optimize_team(predicted_df, budget, weights)
-
-    return optimal_team
-
-# Print optimal team layout
 def print_optimal_team_layout(df):
     logging.info("Printing the optimal team layout.")
-
-    # Ensure 'is_starter' column exists
     if 'is_starter' not in df.columns:
-        logging.warning("'is_starter' column not found. Assuming all are starters.")
         df['is_starter'] = True
 
-    # Separate starters and bench
-    starters = df[df['is_starter'] == True]
-    bench = df[df['is_starter'] == False]
+    starters = df[df['is_starter']]
+    bench = df[~df['is_starter']]
 
-    # Format player names with predicted performance
-    def format_names(sub_df):
-        if sub_df.empty:
+    def fmt(sub):
+        if sub.empty:
             return []
-        # Fill NaN in 'first_name' and 'second_name' to prevent errors
-        sub_df = sub_df[['first_name', 'second_name', 'predicted_performance']].fillna({'first_name': '', 'second_name': '', 'predicted_performance': 0.0})
-        return sub_df.apply(lambda x: f"{x['first_name']} {x['second_name']} (Predicted: {x['predicted_performance']:.1f})", axis=1).tolist()
+        sub = sub.fillna({'first_name':'','second_name':'','predicted_performance':0.0})
+        return sub.apply(lambda x: f"{x['first_name']} {x['second_name']} (Pred:{x['predicted_performance']:.1f})", axis=1).tolist()
 
-    # Get lists of players per position with predicted scores
-    gks_starters = format_names(starters[starters['element_type'] == 1])
-    defs_starters = format_names(starters[starters['element_type'] == 2])
-    mids_starters = format_names(starters[starters['element_type'] == 3])
-    fwds_starters = format_names(starters[starters['element_type'] == 4])
-
-    gks_bench = format_names(bench[bench['element_type'] == 1])
-    defs_bench = format_names(bench[bench['element_type'] == 2])
-    mids_bench = format_names(bench[bench['element_type'] == 3])
-    fwds_bench = format_names(bench[bench['element_type'] == 4])
-
-    # Print formatted output
     print("\n--- Optimal Team Layout ---\n")
+    gk_starters = fmt(starters[starters['element_type']==1][['first_name','second_name','predicted_performance']])
+    df_starters = fmt(starters[starters['element_type']==2][['first_name','second_name','predicted_performance']])
+    md_starters = fmt(starters[starters['element_type']==3][['first_name','second_name','predicted_performance']])
+    fw_starters = fmt(starters[starters['element_type']==4][['first_name','second_name','predicted_performance']])
+
+    gk_bench = fmt(bench[bench['element_type']==1][['first_name','second_name','predicted_performance']])
+    df_bench = fmt(bench[bench['element_type']==2][['first_name','second_name','predicted_performance']])
+    md_bench = fmt(bench[bench['element_type']==3][['first_name','second_name','predicted_performance']])
+    fw_bench = fmt(bench[bench['element_type']==4][['first_name','second_name','predicted_performance']])
 
     print("Starters:")
-    print("Goalkeepers:        {}".format(', '.join(gks_starters) if gks_starters else 'None'))
-    print("Defenders:          {}".format(', '.join(defs_starters) if defs_starters else 'None'))
-    print("Midfielders:        {}".format(', '.join(mids_starters) if mids_starters else 'None'))
-    print("Forwards:           {}".format(', '.join(fwds_starters) if fwds_starters else 'None'))
+    print(f"Goalkeepers:  {', '.join(gk_starters) if gk_starters else 'None'}")
+    print(f"Defenders:    {', '.join(df_starters) if df_starters else 'None'}")
+    print(f"Midfielders:  {', '.join(md_starters) if md_starters else 'None'}")
+    print(f"Forwards:     {', '.join(fw_starters) if fw_starters else 'None'}")
 
     print("\nBench:")
-    print("Goalkeepers:        {}".format(', '.join(gks_bench) if gks_bench else 'None'))
-    print("Defenders:          {}".format(', '.join(defs_bench) if defs_bench else 'None'))
-    print("Midfielders:        {}".format(', '.join(mids_bench) if mids_bench else 'None'))
-    print("Forwards:           {}".format(', '.join(fwds_bench) if fwds_bench else 'None'))
+    print(f"Goalkeepers:  {', '.join(gk_bench) if gk_bench else 'None'}")
+    print(f"Defenders:    {', '.join(df_bench) if df_bench else 'None'}")
+    print(f"Midfielders:  {', '.join(md_bench) if md_bench else 'None'}")
+    print(f"Forwards:     {', '.join(fw_bench) if fw_bench else 'None'}")
 
-    total_value = df['now_cost'].sum()
-    print("\nTotal Value: {:.1f}M".format(total_value))
+    total_val = df['now_cost'].sum()
+    print(f"\nTotal Value: {total_val:.1f}M")
+    logging.info(f"Total team value: {total_val:.1f}M")
 
-    logging.info(f"Total team value: {total_value}M")
-
-
-def export_all_players_to_csv(players_df, file_name="all_players.csv"):
-    logging.info(f"Exporting all players to {file_name}.")
-
-    # Calculate points per million if not already done
+def export_all_players_to_csv(players_df, fname="all_players.csv"):
+    logging.info(f"Exporting all players to {fname}.")
     if 'points_per_million' not in players_df.columns:
         if 'predicted_performance' in players_df.columns and 'now_cost' in players_df.columns:
-            players_df['points_per_million'] = players_df['predicted_performance'] / players_df['now_cost']
-            players_df['points_per_million'] = players_df['points_per_million'].astype('float32')
-            logging.info("Calculated 'points_per_million' for all players.")
+            players_df.loc[:, 'points_per_million'] = players_df.apply(
+                lambda x: x['predicted_performance']/x['now_cost'] if x['now_cost']>0 else 0,
+                axis=1
+            ).astype('float32')
         else:
-            logging.error("Cannot calculate 'points_per_million' as 'predicted_performance' or 'now_cost' is missing.")
-            raise KeyError("Missing 'predicted_performance' or 'now_cost' column.")
-    else:
-        players_df['points_per_million'] = players_df['points_per_million'].astype('float32')
+            raise KeyError("Cannot create 'points_per_million' without 'predicted_performance' or 'now_cost'.")
 
-    # Select relevant columns
-    columns_to_export = ['first_name', 'second_name', 'now_cost', 'predicted_performance', 'total_points', 'points_per_million']
+    cols_needed = ['first_name','second_name','now_cost','predicted_performance','total_points','points_per_million']
+    missing = [c for c in cols_needed if c not in players_df.columns]
+    if missing:
+        logging.error(f"Missing columns for CSV: {missing}")
+        raise KeyError(f"Missing {missing} for CSV.")
 
-    # Check if the required columns exist in the DataFrame
-    missing_columns = [col for col in columns_to_export if col not in players_df.columns]
-    if missing_columns:
-        logging.error(f"Missing columns for export: {missing_columns}")
-        raise KeyError(f"Missing columns for export: {missing_columns}")
+    sorted_df = players_df[cols_needed].sort_values('points_per_million', ascending=False)
+    sorted_df.to_csv(fname, index=False)
+    logging.info(f"All players exported to {fname} sorted by points_per_million desc.")
 
-    # Sort players by points_per_million in descending order
-    sorted_players_df = players_df[columns_to_export].sort_values(by='points_per_million', ascending=False)
-
-    # Export the sorted DataFrame to CSV
-    sorted_players_df.to_csv(file_name, index=False)
-    logging.info(f"All players exported to {file_name} in descending order by points_per_million.")
+############################################
+#        Final team_optimization()         #
+############################################
 
 def team_optimization(weights):
-    """Main workflow for fetching data, training the model, and optimizing team."""
-    logging.info("Starting the FPL optimization process.")
-    current_gameweek = get_current_gameweek()
+    """
+    Main workflow:
+    1) prepare_data -> (players_df, events_df, fixtures_df)
+    2) aggregate_gameweek_data -> (current_agg, next_five_agg)
+    3) train_and_predict -> predicted_df
+    4) aggregate predicted_df by id so each player is single-row
+    5) merge aggregated preds into players_df
+    6) run optimize_team
+    7) print/export
+    """
+    try:
+        logging.info("Starting the FPL optimization process.")
+        current_gameweek = get_current_gameweek()
 
-    # Fetch data and prepare
-    players_df = prepare_data()
+        players_df, events_df, fixtures_df = prepare_data()
+        current_agg, next_five_weeks_agg = aggregate_gameweek_data(events_df, current_gameweek, players_df)
 
-    # Placeholder: Define how df_train and df_predict are derived
-    # Adjust according to your actual data structure
-    df_train = players_df.copy()  # Placeholder
-    df_predict = players_df.copy()  # Placeholder
+        # Train/predict
+        predicted_df, _ = train_and_predict(current_agg, next_five_weeks_agg, players_df)
+        logging.info(f"Predicted df columns: {predicted_df.columns.tolist()}")
 
-    # Aggregate gameweek data
-    current_agg, next_five_weeks_agg = aggregate_gameweek_data(df_train, current_gameweek)
+        logging.info(predicted_df[predicted_df['id'] == 328])
 
-    # Train and predict
-    predicted_df, _ = train_and_predict(current_agg, next_five_weeks_agg, players_df)
+        # If 'predicted_performance' already in players_df, drop it so we can merge new
+        if 'predicted_performance' in players_df.columns:
+            players_df.drop(columns=['predicted_performance'], inplace=True)
+            logging.info("Dropped old 'predicted_performance' from players_df.")
 
-    # Proceed with optimization
-    optimal_team = optimize_team(predicted_df, budget, weights)
+        # Aggregation to avoid 1.5 million row merges:
+        agg_preds = (
+            predicted_df
+            .groupby('id', as_index=False)
+            .agg({'predicted_performance': 'mean'})
+            .rename(columns={'predicted_performance': 'pred_perf_agg'})
+        )
+        logging.info(f"After aggregation, agg_preds shape: {agg_preds.shape}")
 
-    # Save and display results
-    if not optimal_team.empty:
-        optimal_team.to_csv('optimal_team.csv', index=False)
-        logging.info("Optimal team saved to 'optimal_team.csv'.")
-        print_optimal_team_layout(optimal_team)
-    else:
-        logging.warning("No optimal team was selected.")
+        # Merge single-row-per-id
+        merged_df = pd.merge(players_df, agg_preds, on='id', how='left')
+        merged_df['predicted_performance'] = merged_df['pred_perf_agg'].fillna(0).astype('float32')
+        merged_df.drop(columns=['pred_perf_agg'], inplace=True)
 
-    # Export all players to CSV sorted by points_per_million
-    export_all_players_to_csv(players_df)
+        # ensure no duplicates in final
+        merged_df = merged_df.drop_duplicates(subset='id', keep='last').reset_index(drop=True)
 
-    return True, optimal_team.to_dict(orient='records')
+        logging.info(f"Merged DataFrame shape after combine: {merged_df.shape}")
+        logging.info(f"Merged DataFrame columns: {merged_df.columns.tolist()}")
 
-# Example usage:
-if __name__ == "__main__":
-    # Define user weights as a list: [total_points_weight, form_weight, minutes_weight]
-    user_weights = [40, 30, 30]  # Example weights
+        # Optimize the final 15
+        optimal_team = optimize_team(merged_df, budget, weights)
+        if not optimal_team.empty:
+            optimal_team.to_csv('optimal_team.csv', index=False)
+            logging.info("Optimal team saved to 'optimal_team.csv'.")
+            print_optimal_team_layout(optimal_team)
+        else:
+            logging.warning("No optimal team was selected.")
 
-    # Run team optimization
-    success, optimal_team = team_optimization(user_weights)
+        # Export all players for reference
+        export_all_players_to_csv(merged_df)
 
-    if success:
-        logging.info("Team optimization completed successfully.")
-    else:
-        logging.error("Team optimization failed.")
+        return True, optimal_team.to_dict(orient='records')
+    except Exception as e:
+        logging.error(f"Team optimization failed: {e}")
+        return False, {}
