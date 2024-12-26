@@ -248,11 +248,17 @@ def updateBootstrapStaticTables(user, password, database, host):
     for table in currentElement:
         if table not in ["events", "elements", "teams"]:
             continue
+            
+        # Get existing columns for this table
+        true_table = f"bootstrapstatic_{table}"
+        cursor.execute(f"SHOW COLUMNS FROM {true_table}")
+        existing_columns = {column[0] for column in cursor.fetchall()}
+
         for element in currentElement[table]:
-            true_table = f"bootstrapstatic_{table}"
             elementsKept = dict()
             for item in element:
-                if not isinstance(element[item], (list, dict)):
+                # Only keep items that have corresponding columns in the database
+                if item in existing_columns and not isinstance(element[item], (list, dict)):
                     valueType = str(type(element[item])).replace("<class ","").replace(">","").replace("'","").replace(" ","")
                     if valueType == "NoneType":
                         value = 0
@@ -265,7 +271,10 @@ def updateBootstrapStaticTables(user, password, database, host):
                             value = valueClean
                         elementsKept[item] = value
 
-            elementsKept['year_start'] = season_start
+            if 'year_start' in existing_columns:
+                elementsKept['year_start'] = season_start
+
+            # Rest of your existing logic...
             if table == 'elements':
                 if generateCurrentGameweek() == None:
                     currentGameweek = 1
@@ -275,28 +284,30 @@ def updateBootstrapStaticTables(user, password, database, host):
                 for item in elementsKept:
                     if item not in ['region']:
                         tempHold[item] = elementsKept[item]
-                tempHold['gameweek'] = currentGameweek
+                if 'gameweek' in existing_columns:
+                    tempHold['gameweek'] = currentGameweek
                 elementsKept = tempHold
 
-            if table == 'events':
-                tempHold = dict()
-                for item in elementsKept:
-                    if item in ['id','name','deadline_time','average_entry_score','finished','data_checked','highest_scoring_entry','deadline_time_epoch','deadline_time_game_offset','highest_score','is_previous','is_current','is_next','cup_leagues_created','h2h_ko_matches_created','chip_plays_bboost','chip_plays_3xc','most_selected','most_transferred_in','top_element','points','transfers_made','most_captained','most_vice_captained','chip_plays_freehit','chip_plays_wildcard','year_start']:
-                        tempHold[item] = elementsKept[item]
-                elementsKept = tempHold
+            # Only include columns that exist in the database
+            elementsKept = {k: v for k, v in elementsKept.items() if k in existing_columns}
 
-            columns = ','.join(f"`{str(x).replace('/', '_')}`" for x in elementsKept.keys())
-            values = ','.join(f"'{str(x).replace('/', '_')}'" for x in elementsKept.values())
+            if elementsKept:  # Only proceed if we have valid columns to insert
+                columns = ','.join(f"`{str(x).replace('/', '_')}`" for x in elementsKept.keys())
+                values = ','.join(f"'{str(x).replace('/', '_')}'" for x in elementsKept.values())
 
-            sql_insert = f"""
-                INSERT INTO {true_table} ({columns}) VALUES ({values})
-                ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in elementsKept.keys()])};
-            """
-            try:
-                cursor.execute(sql_insert)
-                dbConnect.commit()
-            except pymysql.Error as e:
-                print(f"Error executing SQL for table {table}: {e}")
+                sql_insert = f"""
+                    INSERT INTO {true_table} ({columns}) VALUES ({values})
+                    ON DUPLICATE KEY UPDATE {', '.join([f"{key}=VALUES({key})" for key in elementsKept.keys()])};
+                """
+                try:
+                    cursor.execute(sql_insert)
+                    dbConnect.commit()
+                    print(f"Successfully updated {true_table}")
+                except pymysql.Error as e:
+                    print(f"Error executing SQL for table {table}: {e}")
+
+    cursor.close()
+    dbConnect.close()
 
     print(f"Bootstrap static table updated: {true_table}")
     cursor.close()
