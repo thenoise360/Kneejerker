@@ -606,11 +606,10 @@ def get_alternative_players(player_id):
     players = cursor.fetchall()
 
     while len(players) == 0:
-            
+        
             currentGWAlternate = currentGW - 1
 
-            query = f'SELECT id, team, team_code, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {
-            currentGWAlternate}  and id <> {player_id} ORDER BY form DESC LIMIT 6'
+            query = f'SELECT id, team, team_code, web_name, total_points, now_cost, form FROM {db}.bootstrapstatic_elements where element_type = {position} and now_cost BETWEEN {costLow} and {costHigh} and year_start = {season_start} and gameweek = {currentGWAlternate}  and id <> {player_id} ORDER BY form DESC LIMIT 6'
 
             cursor.execute(query)
 
