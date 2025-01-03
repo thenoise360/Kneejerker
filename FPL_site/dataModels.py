@@ -491,6 +491,248 @@ def get_teams(player_id):
 
     return teams
 
+def top_5_players_last_5_weeks():
+    """
+    Returns JSON/dict data for the top 5 players in each position
+    over the last 5 weeks, plus weekly average scores per position.
+    Includes:
+       - 0 points for missing GWs
+       - Current team from bootstrapstatic_elements for that year_start
+    """
+    dbConnect = connect_db()
+    if dbConnect is None:
+        logger.error("Failed to connect to the database in top_5_players_last_5_weeks().")
+        return {}
+
+    cursor = dbConnect.cursor(dictionary=True)
+
+    # Example: if the current gameweek is 19, last 5 GWs are 15..19
+    current_gw = 19
+    start_gw = current_gw - 4  # 15
+    end_gw = current_gw        # 19
+
+    # Positions: 1=GK, 2=DEF, 3=MID, 4=FWD
+    position_map = {
+        1: "goalkeepers",
+        2: "defenders",
+        3: "midfielders",
+        4: "forwards"
+    }
+
+    # Prepare the final structure
+    result = {
+        "goalkeepers":  {"averageScores": [], "players": []},
+        "defenders":    {"averageScores": [], "players": []},
+        "midfielders":  {"averageScores": [], "players": []},
+        "forwards":     {"averageScores": [], "players": []},
+    }
+
+    gws_list = list(range(start_gw, end_gw + 1))  # [15,16,17,18,19]
+
+    try:
+        # --------------------------------------------------------------------------------------
+        # 1) QUERY the last 5 GWs from elementsummary_history (h) joined with:
+        #       elementsummary_fixtures (f) for fixture difficulty
+        #       bootstrapstatic_elements (e) for the correct year_start/team info
+        #       bootstrapstatic_teams (t) for the team name
+        #
+        #    The important part is ensuring e.year_start = h.year_start and e.gameweek = h.round
+        #
+        #    Adjust if your schema differs (e.g. if e.gameweek isn’t a column).
+        # --------------------------------------------------------------------------------------
+        query = f"""
+            SELECT 
+                h.element        AS player_id,
+                h.round          AS gw,
+                h.total_points   AS points,
+                f.difficulty     AS fixture_difficulty,
+
+                -- subqueries
+                (
+                SELECT e2.web_name
+                FROM {db}.bootstrapstatic_elements e2
+                WHERE e2.id = h.element
+                    AND e2.year_start = h.year_start
+                ORDER BY ABS(e2.gameweek - h.round)
+                LIMIT 1
+                ) AS player_name,
+
+                (
+                SELECT e2.element_type
+                FROM {db}.bootstrapstatic_elements e2
+                WHERE e2.id = h.element
+                    AND e2.year_start = h.year_start
+                ORDER BY ABS(e2.gameweek - h.round)
+                LIMIT 1
+                ) AS position_id,
+
+                (
+                SELECT t.name
+                FROM {db}.bootstrapstatic_elements e2
+                JOIN {db}.bootstrapstatic_teams t 
+                    ON t.id = e2.team
+                AND t.year_start = e2.year_start
+                WHERE e2.id = h.element
+                    AND e2.year_start = h.year_start
+                ORDER BY ABS(e2.gameweek - h.round)
+                LIMIT 1
+                ) AS team_name
+
+            FROM {db}.elementsummary_history h
+            JOIN {db}.elementsummary_fixtures f
+                ON h.fixture = f.id
+            AND f.year_start = h.year_start
+            WHERE h.year_start = {season_start}
+            AND h.round BETWEEN {start_gw} AND {end_gw}
+            AND h.minutes > 15
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        # We'll store data in nested dictionaries
+        from collections import defaultdict
+
+        # data_by_position[pos][pid] = {
+        #     'player_name': str,
+        #     'team_name': str,
+        #     'gw_points': { gw_number: points },
+        #     'gw_difficulty': { gw_number: difficulty }
+        # }
+        data_by_position = {
+            1: defaultdict(lambda: {
+                "player_name": "",
+                "team_name": "",
+                "gw_points": defaultdict(int),
+                "gw_difficulty": defaultdict(lambda: 3)  # default difficulty = 3
+            }),
+            2: defaultdict(lambda: {
+                "player_name": "",
+                "team_name": "",
+                "gw_points": defaultdict(int),
+                "gw_difficulty": defaultdict(lambda: 3)
+            }),
+            3: defaultdict(lambda: {
+                "player_name": "",
+                "team_name": "",
+                "gw_points": defaultdict(int),
+                "gw_difficulty": defaultdict(lambda: 3)
+            }),
+            4: defaultdict(lambda: {
+                "player_name": "",
+                "team_name": "",
+                "gw_points": defaultdict(int),
+                "gw_difficulty": defaultdict(lambda: 3)
+            }),
+        }
+
+        # Also track sum of points for top-5 selection
+        sum_points_by_position = {
+            1: defaultdict(int),
+            2: defaultdict(int),
+            3: defaultdict(int),
+            4: defaultdict(int)
+        }
+
+        # Also track weekly sums & counts for averageScores
+        weekly_position_sums = {
+            1: defaultdict(int),
+            2: defaultdict(int),
+            3: defaultdict(int),
+            4: defaultdict(int)
+        }
+        weekly_position_count = {
+            1: defaultdict(int),
+            2: defaultdict(int),
+            3: defaultdict(int),
+            4: defaultdict(int)
+        }
+
+        for row in rows:
+            pos_id = row["position_id"]
+            pid = row["player_id"]
+            gw = row["gw"]
+            pts = row["points"]
+            difficulty = row["fixture_difficulty"] if row["fixture_difficulty"] else 3
+
+            # Fill the dictionaries
+            p_data = data_by_position[pos_id][pid]
+            p_data["player_name"] = row["player_name"]
+            p_data["team_name"]   = row["team_name"]
+            p_data["gw_points"][gw] = pts
+            p_data["gw_difficulty"][gw] = difficulty
+
+            # Add to sum (for top 5)
+            sum_points_by_position[pos_id][pid] += pts
+
+            # Add to weekly sums for average
+            weekly_position_sums[pos_id][gw]   += pts
+            weekly_position_count[pos_id][gw]  += 1
+
+        # --------------------------------------------------------------------------------------
+        # 2) Compute the average scores (for each position, per GW),
+        #    then store them in result[posName]["averageScores"] as an ordered list
+        # --------------------------------------------------------------------------------------
+        for pos_id, pos_name in position_map.items():
+            # Build an array of average scores in the order of gw 15..19
+            avg_scores = []
+            for gw in gws_list:
+                total_pts_this_gw = weekly_position_sums[pos_id][gw]
+                num_players_this_gw = weekly_position_count[pos_id][gw]
+                if num_players_this_gw > 0:
+                    avg_pts = round(total_pts_this_gw / num_players_this_gw, 2)
+                else:
+                    avg_pts = 0
+                avg_scores.append(avg_pts)
+
+            result[pos_name]["averageScores"] = avg_scores
+
+        # --------------------------------------------------------------------------------------
+        # 3) Identify top 5 players in each position by total points
+        #    Then build the "players" list in the final JSON
+        # --------------------------------------------------------------------------------------
+        for pos_id, pos_name in position_map.items():
+            sorted_by_sum = sorted(
+                sum_points_by_position[pos_id].items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+            top_5_ids = [player_id for player_id, _ in sorted_by_sum[:5]]
+
+            players_list = []
+            for pid in top_5_ids:
+                p_data = data_by_position[pos_id][pid]
+
+                # Weeks array in ascending order
+                # We'll “force” a 0 if the player didn’t appear that gw
+                # and difficulty default is 3 if none available
+                weeks_sorted = []
+                scores_sorted = []
+                difficulty_sorted = []
+                for gw in gws_list:
+                    weeks_sorted.append(gw)
+                    scores_sorted.append(p_data["gw_points"][gw]) 
+                    difficulty_sorted.append(p_data["gw_difficulty"][gw])
+
+                # Add to players list
+                players_list.append({
+                    "name": p_data["player_name"],
+                    "club": p_data["team_name"],
+                    "weeks": weeks_sorted,         # e.g. [15, 16, 17, 18, 19]
+                    "scores": scores_sorted,       # e.g. [0, 12, 8, 0, 9]
+                    "difficulty": difficulty_sorted
+                })
+
+            result[pos_name]["players"] = players_list
+
+    except Exception as e:
+        logger.exception(f"Error in top_5_players_last_5_weeks: {str(e)}")
+        return {}
+    finally:
+        cursor.close()
+        dbConnect.close()
+
+    return result
+
 def fetch_player_summary(player_id):
     try:
         logger.info(f"Request for player_summary with player_id: {player_id}")

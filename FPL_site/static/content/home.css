@@ -569,6 +569,11 @@ canvas {
     justify-content: space-between;
 }
 
+.alternative-player:hover {
+    background-color: var(--black-10);
+    cursor: pointer;
+}
+
 .alternatives-shirt {
     max-width: 50px;
 }
