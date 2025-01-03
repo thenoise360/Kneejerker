@@ -8,6 +8,6 @@ if project_root not in sys.path:
 if os.path.join(project_root, 'FPL_site') not in sys.path:
     sys.path.append(os.path.join(project_root, 'FPL_site'))
 
-from sqlFunction import updateAllTables
+from sqlFunction import update_all_tables
 
-updateAllTables()
+update_all_tables()
