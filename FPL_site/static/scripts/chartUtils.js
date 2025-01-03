@@ -65,16 +65,15 @@ export function renderBarChart(chartId, labels, values, formattedValues) {
                 itemStyle: {
                     color: function (params) {
                         return params.dataIndex === maxIndex
-                            ? 'var(--primary-color)'  // highlight bar
-                            : 'var(--black-20)';     // other bars
-                    }
-                },
-                // HOVER (emphasis) state
-                emphasis: {
-                    itemStyle: {
-                        // Keep same color, but reduce opacity to 0.8
+                          ? 'var(--primary-color)'
+                          : 'var(--black-20)';
+                      }
+                    },
+                    emphasis: {
+                      itemStyle: {
+                        color: 'inherit', 
                         opacity: 0.8
-                    }
+                      }
                 },
                 label: {
                     show: true,
