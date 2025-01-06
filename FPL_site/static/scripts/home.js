@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function populatePlayerSummary(player) {
         const carouselIndicators = document.getElementById('carouselIndicators');
         const summaryCarouselInner = document.getElementById('summaryCarouselInner');
-
+    
         if (!carouselIndicators || !summaryCarouselInner) {
             console.error("Carousel elements not found in the DOM.");
             return;
@@ -419,19 +419,19 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error("Invalid player data provided.");
             return;
         }
-
+    
         const metricGroups = [];
         const metricsPerGroup = 3;
         for (let i = 0; i < player.metrics.length; i += metricsPerGroup) {
             metricGroups.push(player.metrics.slice(i, i + metricsPerGroup));
         }
-
+    
         // Carousel indicators
         carouselIndicators.innerHTML = metricGroups.map((_, index) => `
             <button type="button" data-bs-target="#summaryCarousel" data-bs-slide-to="${index}"
               ${index === 0 ? 'class="active" aria-current="true"' : ''} aria-label="Slide ${index + 1}"></button>
         `).join('');
-
+    
         // Carousel items
         summaryCarouselInner.innerHTML = metricGroups.map((group, groupIndex) => `
             <div class="carousel-item ${groupIndex === 0 ? 'active' : ''}">
@@ -446,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             </div>
         `).join('');
-
+    
         // Reinitialize Carousel
         const myCarousel = document.querySelector('#summaryCarousel');
         if (myCarousel) {
@@ -454,27 +454,64 @@ document.addEventListener('DOMContentLoaded', function () {
             if (carouselInstance) carouselInstance.dispose();
             new bootstrap.Carousel(myCarousel);
         }
-
+    
         // Basic info
         document.getElementById('player-summary-name').textContent = player.name || 'Unknown';
         document.getElementById('chance-next-round').textContent = player.news || '';
-
+    
         const chanceElement = document.getElementById('chance-next-round');
         chanceElement.className = '';
         chanceElement.classList.add("chance-next-round-" + player.chance_of_playing);
         chanceElement.style.display = '';
-
+    
         document.getElementById('player-value').textContent 
             = "\u00A3" + (player.value ?? 0);
-        document.getElementById('minutes').textContent 
-            = player.minutes || '-';
+    
+        // Yellow card section
+        const yellowCardsElement = document.getElementById('yellow-cards');
+        if (yellowCardsElement && player.suspension) {
+            const yellowCards = player.suspension.total_yellow_cards || 0;
+            const yellowsLeft = player.suspension.yellow_cards_needed || 0;
+    
+            // Determine image path
+            const cardImagePath = `/static/content/referee-cards/${yellowCards >= 5 ? '5-plus-yellow' : yellowCards + '-yellow'}.png`;
+    
+            // Set image and text
+            yellowCardsElement.innerHTML = `
+                <img src="${cardImagePath}" alt="${yellowCards} yellow cards" class="yellow-card-img">
+                <div class="yellow-card-info">
+                    <span class="supporting-metrics-values">${yellowCards}</span>
+                </div>
+            `;
+        }
+        
+        // Yellow card section
+        const suspensionsYellowsLeftElement = document.getElementById('suspensions-yellows-left');
+
+        if (suspensionsYellowsLeftElement) {
+            if (player.suspension) {
+                const yellowCardsNeeded = player.suspension.yellow_cards_needed || 0;
+                const yellowCards = player.suspension.yellow_cards || 0;
+                const yellowCardsRemaining = yellowCardsNeeded - yellowCards;
+
+                // Update the text content with a valid message
+                suspensionsYellowsLeftElement.textContent = 
+                    `${yellowCardsRemaining > 0 ? yellowCardsRemaining : 0} yellow cards to a suspension`;
+            } else {
+                // If no suspension data is available, set a default message
+                suspensionsYellowsLeftElement.textContent = 'No suspension data available';
+            }
+        } else {
+            console.error("Element with ID 'suspensions-yellows-left' not found in the DOM.");
+        }
+
         document.getElementById('position-name').textContent 
             = player.position_name || 'Position';
         document.querySelector('.coat-hanger .shirt').src 
             = player.shirtImage || '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
         document.querySelector('.coat-hanger .player-team-name').textContent 
             = player.team_name || '-';
-    }
+    }    
 
     function updateFixtureDetails(player) {
         if (!player.fixtures || !Array.isArray(player.fixtures)) {
