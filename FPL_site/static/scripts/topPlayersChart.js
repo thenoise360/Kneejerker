@@ -1,55 +1,65 @@
+/***** chartPosition.js (example) *****/
 import { renderLineChart } from './chartUtils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const positionDropdown = document.getElementById('positionDropdown');
     const carouselInner = document.getElementById('carouselInner');
     const carouselIndicators = document.getElementById('carouselIndicators');
+    const carouselElem = document.getElementById('playerCarousel');
 
+    /**
+     * Fetch player data for a given position (e.g., "midfielders", "forwards", etc.)
+     * and rebuild the carousel with the new data.
+     */
     function fetchPlayerData(position) {
-        // Call your backend route: /api/top-5-players?position=X
         fetch(`/api/top-5-players?position=${position}`)
             .then(response => response.json())
             .then(data => {
-                if (
-                    !data ||
-                    !data[position] ||
-                    !data[position].players ||
-                    !data[position].averageScores
-                ) {
+                // Basic validation
+                if (!data || !data[position] || !data[position].players || !data[position].averageScores) {
                     console.error(`Invalid data format for position: ${position}`, data);
                     return;
                 }
 
-                // Destructure from the returned JSON
-                const players = data[position].players;       // Array of top 5 players
-                const averageScores = data[position].averageScores; // Position-wide weekly averages
+                // Dispose of any existing Bootstrap carousel instance
+                const oldCarousel = bootstrap.Carousel.getInstance(carouselElem);
+                if (oldCarousel) {
+                    oldCarousel.dispose();
+                }
 
-                // This array is used for auto-scaling the chart’s y-axis
-                // by scanning the min/max of all player scores
-                const allScores = players.reduce((acc, player) => {
-                    return acc.concat(player.scores);
-                }, []);
+                // Remove old 'slid.bs.carousel' event listeners
+                carouselElem.removeEventListener('slid.bs.carousel', handleSlide);
 
-                // Clear any existing carousel items
+                // Clear old indicators & items
                 carouselIndicators.innerHTML = '';
                 carouselInner.innerHTML = '';
 
+                // Extract new data
+                const players = data[position].players;        // Top 5 players
+                const averageScores = data[position].averageScores; // Weekly average for this position
+
+                // allScores for auto-scaling chart Y-axis
+                const allScores = players.reduce((acc, player) => acc.concat(player.scores), []);
+
+                // Build new indicators and carousel items
                 players.forEach((player, index) => {
-                    // CREATE CAROUSEL INDICATOR
+                    // 1) Create carousel indicator
                     const indicator = document.createElement('button');
                     indicator.setAttribute('type', 'button');
                     indicator.setAttribute('data-bs-target', '#playerCarousel');
-                    indicator.setAttribute('data-bs-slide-to', index);
+                    indicator.setAttribute('data-bs-slide-to', index.toString());
                     indicator.className = (index === 0) ? 'active' : '';
                     indicator.setAttribute('aria-current', (index === 0) ? 'true' : 'false');
                     indicator.setAttribute('aria-label', `Slide ${index + 1}`);
+
+                    // Add the indicator to the DOM
                     carouselIndicators.appendChild(indicator);
 
-                    // CREATE CAROUSEL ITEM
+                    // 2) Create the carousel item
                     const carouselItem = document.createElement('div');
                     carouselItem.className = (index === 0) ? 'carousel-item active' : 'carousel-item';
 
-                    // Build the HTML for the chart card
+                    // Build the HTML content
                     carouselItem.innerHTML = `
                         <div class="chart-card">
                             <div class="chart-card-header">
@@ -58,8 +68,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                             <div class="chart-card-body">
                                 <div class="chart-total-row">
-                                    <span class="chart-total">${player.scores.reduce((a, b) => a + b, 0)}</span>
-                                    <span class="vs-total">vs. ${averageScores.reduce((a, b) => a + b, 0)}</span>
+                                    <span class="chart-total">
+                                        ${player.scores.reduce((a, b) => a + b, 0)}
+                                    </span>
+                                    <span class="vs-total">
+                                        vs. ${averageScores.reduce((a, b) => a + b, 0).toFixed(1)}
+                                    </span>
                                 </div>
                                 <div class="chart-total-descriptions">
                                     <span class="chart-description">Points vs. average</span>
@@ -69,32 +83,34 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     `;
 
+                    // Add this new item to the carousel
                     carouselInner.appendChild(carouselItem);
 
-                    // RENDER THE CHART for the first carousel item immediately
+                    // Render the chart immediately for the first item
                     if (index === 0) {
-                        // IMPORTANT: Pass player.name as the last argument
                         renderLineChart(
-                            `chart-${index + 1}`,   // chart container ID
-                            player.weeks,          // X-axis: GWs
-                            player.scores,         // Y-axis: player's points
-                            averageScores,         // Another series for average
-                            player.difficulty,     // Fixture difficulty array
-                            allScores,             // For auto-scaling the axis
-                            player.name            // So tooltips show player’s name
+                            `chart-${index + 1}`,  // ID of the chart container
+                            player.weeks,         // X-axis: GWs
+                            player.scores,        // Player’s points
+                            averageScores,        // Position-wide average
+                            player.difficulty,    // Difficulty array
+                            allScores,            // For Y-axis scaling
+                            player.name           // Tooltip label
                         );
                     }
                 });
 
-                // When the carousel slides to a new item, render the chart if not rendered
-                document.getElementById('playerCarousel').addEventListener('slid.bs.carousel', function (e) {
+                /**
+                 * New event listener for the newly rebuilt carousel.
+                 * Renders a chart on the newly active slide if it isn't already rendered.
+                 */
+                function handleSlide(e) {
                     const newIndex = e.to;
                     const chartId = `chart-${newIndex + 1}`;
                     const player = players[newIndex];
 
-                    // If this chart isn't rendered yet, do it now
+                    // If the chart container is empty, render now
                     if (document.getElementById(chartId).children.length === 0) {
-                        // Again, pass all 7 arguments
                         renderLineChart(
                             chartId,
                             player.weeks,
@@ -105,15 +121,21 @@ document.addEventListener('DOMContentLoaded', function () {
                             player.name
                         );
                     }
-                });
+                }
+
+                // Attach the new event listener for slide transitions
+                carouselElem.addEventListener('slid.bs.carousel', handleSlide);
+
+                // Re-initialize the carousel with the new items
+                new bootstrap.Carousel(carouselElem);
             })
             .catch(error => console.error('Error fetching player data:', error));
     }
 
-    // Initial load: fetch data for "midfielders"
+    // Initially load midfielders
     fetchPlayerData('midfielders');
 
-    // Change position via dropdown
+    // On dropdown change, load the selected position
     positionDropdown.addEventListener('change', function () {
         fetchPlayerData(this.value);
     });

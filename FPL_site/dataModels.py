@@ -507,7 +507,7 @@ def top_5_players_last_5_weeks():
     cursor = dbConnect.cursor(dictionary=True)
 
     # Example: if the current gameweek is 19, last 5 GWs are 15..19
-    current_gw = 19
+    current_gw = generateCurrentGameweek()
     start_gw = current_gw - 4  # 15
     end_gw = current_gw        # 19
 
