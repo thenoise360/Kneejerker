@@ -38,41 +38,44 @@
         <div id="chance-next-round" class="" style="display: none;">
             -
         </div>
-        <div class="player-summary-home">
-            <div class="player-summary-area">
-                <div class="supporting-metrics">
-                    <div class="supporting-metrics-values" id="player-value">£-.-</div>
-                    <div id="metric-text">value</div>
-                </div>
-                <div class="player-details">
-                    <div id="player-summary-name" class="players-name">-</div>
-                    <div class="coat-hanger">
-                        <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
-                        <div class="player-team-name">-</div>
+        <div class="player-summary-wrapper">
+            <div class="player-summary-home">
+                <div class="player-summary-area">
+                    <div class="supporting-metrics">
+                        <div class="supporting-metrics-values" id="player-value">£-.-</div>
+                        <div id="metric-text">value</div>
+                    </div>
+                    <div class="player-details">
+                        <div id="player-summary-name" class="players-name">-</div>
+                        <div class="coat-hanger">
+                            <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
+                            <div class="player-team-name">-</div>
+                        </div>
+                    </div>
+                    <div class="supporting-metrics">
+                        <div id="yellow-cards" class="player-yellow-cards"></div>
                     </div>
                 </div>
-                <div class="supporting-metrics">
-                    <div class="supporting-metrics-values" id="minutes">-.-</div>
-                    <div id="metric-text">Avg mins</div>
+                <div id="summaryCarousel" class="carousel slide" data-bs-interval="false">
+                    <div class="carousel-indicators" id="carouselIndicators"></div>
+                    <div class="carousel-inner" id="summaryCarouselInner">
+                        <!-- Carousel items will be injected here by JavaScript -->
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#summaryCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#summaryCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+                <div class="position-average-title">
+                    <div id="position-name">Position</div>
+                    <div>&nbspaverage</div>
                 </div>
             </div>
-            <div id="summaryCarousel" class="carousel slide" data-bs-interval="false">
-                <div class="carousel-indicators" id="carouselIndicators"></div>
-                <div class="carousel-inner" id="summaryCarouselInner">
-                    <!-- Carousel items will be injected here by JavaScript -->
-                </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#summaryCarousel" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Previous</span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#summaryCarousel" data-bs-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Next</span>
-                </button>
-            </div>
-            <div class="position-average-title">
-                <div id="position-name">Position</div>
-                <div>&nbspaverage</div>
+            <div class="footer" id="suspensions-yellows-left">
             </div>
         </div>
     </div>

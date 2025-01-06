@@ -1,66 +1,106 @@
-/***** chartPosition.js (example) *****/
+/***** topPlayersChart.js *****/
 import { renderLineChart } from './chartUtils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const positionDropdown = document.getElementById('positionDropdown');
-    const carouselInner = document.getElementById('carouselInner');
-    const carouselIndicators = document.getElementById('carouselIndicators');
-    const carouselElem = document.getElementById('playerCarousel');
 
     /**
-     * Fetch player data for a given position (e.g., "midfielders", "forwards", etc.)
-     * and rebuild the carousel with the new data.
+     * fetchPlayerData(position):
+     * Fetches top-5 players for the given position, removes the old
+     * #playerCarousel node, creates a fresh one, and reattaches it
+     * to the same parent.
      */
     function fetchPlayerData(position) {
+        console.log(`Fetching data for position: ${position}`);
         fetch(`/api/top-5-players?position=${position}`)
             .then(response => response.json())
             .then(data => {
-                // Basic validation
-                if (!data || !data[position] || !data[position].players || !data[position].averageScores) {
-                    console.error(`Invalid data format for position: ${position}`, data);
+                // Validate structure
+                if (
+                    !data ||
+                    !data[position] ||
+                    !data[position].players ||
+                    !data[position].averageScores
+                ) {
+                    console.error(`Invalid data for position: ${position}`, data);
                     return;
                 }
 
-                // Dispose of any existing Bootstrap carousel instance
-                const oldCarousel = bootstrap.Carousel.getInstance(carouselElem);
-                if (oldCarousel) {
-                    oldCarousel.dispose();
+                // 1) Find the existing #playerCarousel (if it exists)
+                const oldCarouselElem = document.getElementById('playerCarousel');
+                if (!oldCarouselElem) {
+                    console.error('No element with ID "playerCarousel" found in the DOM.');
+                    return;
                 }
 
-                // Remove old 'slid.bs.carousel' event listeners
-                carouselElem.removeEventListener('slid.bs.carousel', handleSlide);
+                // We'll need the parent to re-insert a fresh node
+                const parentNode = oldCarouselElem.parentNode;
+                if (!parentNode) {
+                    console.error('playerCarousel has no parent node!');
+                    return;
+                }
 
-                // Clear old indicators & items
-                carouselIndicators.innerHTML = '';
-                carouselInner.innerHTML = '';
+                // 2) Remove the old #playerCarousel
+                parentNode.removeChild(oldCarouselElem);
 
-                // Extract new data
-                const players = data[position].players;        // Top 5 players
-                const averageScores = data[position].averageScores; // Weekly average for this position
+                // 3) Create a brand-new carousel element
+                const newCarouselElem = document.createElement('div');
+                newCarouselElem.id = 'playerCarousel';
+                newCarouselElem.className = 'carousel slide';
+                // No auto-interval if you prefer manual control
+                newCarouselElem.setAttribute('data-bs-interval', 'false');
 
-                // allScores for auto-scaling chart Y-axis
-                const allScores = players.reduce((acc, player) => acc.concat(player.scores), []);
+                newCarouselElem.innerHTML = `
+                    <div class="carousel-indicators" id="carouselIndicators"></div>
+                    <div class="carousel-inner" id="carouselInner"></div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#playerCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#playerCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                `;
 
-                // Build new indicators and carousel items
+                // 4) Insert the new carousel into the same parent
+                parentNode.appendChild(newCarouselElem);
+
+                // Grab references for indicators & inner
+                const carouselIndicators = newCarouselElem.querySelector('#carouselIndicators');
+                const carouselInner = newCarouselElem.querySelector('#carouselInner');
+
+                if (!carouselIndicators || !carouselInner) {
+                    console.error('Could not find #carouselIndicators or #carouselInner inside the new carousel.');
+                    return;
+                }
+
+                // 5) Extract new data
+                const players = data[position].players;
+                const averageScores = data[position].averageScores;
+                // For auto-scaling the chart Y-axis
+                const allScores = players.reduce((acc, p) => acc.concat(p.scores), []);
+
+                // 6) Build new indicators & slides
                 players.forEach((player, index) => {
-                    // 1) Create carousel indicator
+                    // INDICATOR
                     const indicator = document.createElement('button');
-                    indicator.setAttribute('type', 'button');
+                    indicator.type = 'button';
                     indicator.setAttribute('data-bs-target', '#playerCarousel');
-                    indicator.setAttribute('data-bs-slide-to', index.toString());
-                    indicator.className = (index === 0) ? 'active' : '';
-                    indicator.setAttribute('aria-current', (index === 0) ? 'true' : 'false');
+                    indicator.setAttribute('data-bs-slide-to', String(index));
                     indicator.setAttribute('aria-label', `Slide ${index + 1}`);
-
-                    // Add the indicator to the DOM
+                    if (index === 0) {
+                        indicator.classList.add('active');
+                        indicator.setAttribute('aria-current', 'true');
+                    }
                     carouselIndicators.appendChild(indicator);
 
-                    // 2) Create the carousel item
-                    const carouselItem = document.createElement('div');
-                    carouselItem.className = (index === 0) ? 'carousel-item active' : 'carousel-item';
+                    // CAROUSEL ITEM
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = (index === 0) ? 'carousel-item active' : 'carousel-item';
 
-                    // Build the HTML content
-                    carouselItem.innerHTML = `
+                    // Example layout
+                    itemDiv.innerHTML = `
                         <div class="chart-card">
                             <div class="chart-card-header">
                                 <span class="chart-rank">#${index + 1}</span>
@@ -68,12 +108,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                             <div class="chart-card-body">
                                 <div class="chart-total-row">
-                                    <span class="chart-total">
-                                        ${player.scores.reduce((a, b) => a + b, 0)}
-                                    </span>
-                                    <span class="vs-total">
-                                        vs. ${averageScores.reduce((a, b) => a + b, 0).toFixed(1)}
-                                    </span>
+                                    <span class="chart-total">${
+                                        player.scores.reduce((a, b) => a + b, 0)
+                                    }</span>
+                                    <span class="vs-total">vs. ${
+                                        averageScores.reduce((a, b) => a + b, 0).toFixed(1)
+                                    }</span>
                                 </div>
                                 <div class="chart-total-descriptions">
                                     <span class="chart-description">Points vs. average</span>
@@ -82,35 +122,31 @@ document.addEventListener('DOMContentLoaded', function () {
                             <div id="chart-${index + 1}" class="line-chart"></div>
                         </div>
                     `;
+                    carouselInner.appendChild(itemDiv);
 
-                    // Add this new item to the carousel
-                    carouselInner.appendChild(carouselItem);
-
-                    // Render the chart immediately for the first item
+                    // Render the first chart right away
                     if (index === 0) {
                         renderLineChart(
-                            `chart-${index + 1}`,  // ID of the chart container
-                            player.weeks,         // X-axis: GWs
-                            player.scores,        // Player’s points
-                            averageScores,        // Position-wide average
-                            player.difficulty,    // Difficulty array
-                            allScores,            // For Y-axis scaling
-                            player.name           // Tooltip label
+                            `chart-${index + 1}`, // chart container ID
+                            player.weeks,
+                            player.scores,
+                            averageScores,
+                            player.difficulty,
+                            allScores,
+                            player.name
                         );
                     }
                 });
 
-                /**
-                 * New event listener for the newly rebuilt carousel.
-                 * Renders a chart on the newly active slide if it isn't already rendered.
-                 */
+                // 7) handleSlide references the *new* players array
                 function handleSlide(e) {
+                    console.log(`Slide event fired: newIndex = ${e.to}`);
                     const newIndex = e.to;
                     const chartId = `chart-${newIndex + 1}`;
                     const player = players[newIndex];
 
-                    // If the chart container is empty, render now
-                    if (document.getElementById(chartId).children.length === 0) {
+                    const chartElem = document.getElementById(chartId);
+                    if (chartElem && chartElem.children.length === 0) {
                         renderLineChart(
                             chartId,
                             player.weeks,
@@ -123,20 +159,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
-                // Attach the new event listener for slide transitions
-                carouselElem.addEventListener('slid.bs.carousel', handleSlide);
+                // 8) Add the event + init
+                newCarouselElem.addEventListener('slid.bs.carousel', handleSlide);
+                new bootstrap.Carousel(newCarouselElem, { interval: false });
 
-                // Re-initialize the carousel with the new items
-                new bootstrap.Carousel(carouselElem);
+                console.log(`Carousel rebuilt for position: ${position}`);
             })
-            .catch(error => console.error('Error fetching player data:', error));
+            .catch(error => {
+                console.error(`Error fetching player data for position=${position}:`, error);
+            });
     }
 
-    // Initially load midfielders
-    fetchPlayerData('midfielders');
+    // If we have a positionDropdown, default to "midfielders" or whichever you want
+    if (positionDropdown) {
+        fetchPlayerData('midfielders');
 
-    // On dropdown change, load the selected position
-    positionDropdown.addEventListener('change', function () {
-        fetchPlayerData(this.value);
-    });
+        positionDropdown.addEventListener('change', function () {
+            const newPos = this.value;
+            console.log('Switching to position:', newPos);
+            fetchPlayerData(newPos);
+        });
+    } else {
+        console.error('No element with ID "positionDropdown" found in the DOM.');
+    }
 });

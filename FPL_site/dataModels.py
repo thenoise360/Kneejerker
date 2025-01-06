@@ -769,6 +769,24 @@ def fetch_player_summary(player_id):
             4: 'Forward'
         }
 
+        # Fetch suspension data for the player
+        suspensions = fetch_suspension_data()
+        suspension_data = next((s for s in suspensions if s['player_id'] == player_id), None)
+
+        # Process suspension data
+        if suspension_data:
+            yellow_cards = suspension_data['total_yellow_cards']
+            yellows_left = suspension_data['yellow_cards_needed']
+            suspension_length = suspension_data['suspension_length']
+            suspension_end = suspension_data['suspension_end_gameweek']
+            card_image_path = f'/static/content/referee-cards/{min(yellow_cards, 5)}-yellow.png' if yellow_cards < 5 else '/static/content/referee-cards/5-plus-yellow.png'
+        else:
+            yellow_cards = 0
+            yellows_left = 0
+            suspension_length = 0
+            suspension_end = None
+            card_image_path = '/static/content/referee-cards/0-yellow.png'
+
         # Calculate averages
         valid_players = [p for p in elements if p['minutes'] > 0 and p['element_type'] == position]
         if not valid_players:
@@ -778,11 +796,12 @@ def fetch_player_summary(player_id):
         average_goals = round(sum(p['goals_scored'] for p in valid_players) / len(valid_players), 2)
         average_assists = round(sum(p['assists'] for p in valid_players) / len(valid_players), 2)
         average_form = round(sum(float(p['form']) for p in valid_players) / len(valid_players), 2)
+        average_points = round(sum(float(p['total_points']) for p in valid_players) / len(valid_players), 2)
         average_influence = round(sum(float(p['influence']) for p in valid_players) / len(valid_players), 2)
         average_creativity = round(sum(float(p['creativity']) for p in valid_players) / len(valid_players), 2)
         average_threat = round(sum(float(p['threat']) for p in valid_players) / len(valid_players), 2)
         average_ep_next = round(sum(float(p['ep_next']) for p in valid_players) / len(valid_players), 2)
-        average_points = round(sum(float(p['total_points']) for p in valid_players) / len(valid_players), 2)
+        average_minutes = round(sum(float(p['minutes']) for p in valid_players) / len(valid_players)/generateCurrentGameweek(), 0)
 
         # Get team info
         team = next((t for t in teams if t['code'] == player['team_code']), None)
@@ -798,9 +817,8 @@ def fetch_player_summary(player_id):
         player_summary = {
             'id': player_id,
             'name': player['web_name'],
+            'value': float(player['now_cost'] / 10),
             'minutes': round(player['minutes']/generateCurrentGameweek(), 2),
-            'value': float(player['now_cost']/10),
-            'name': player['web_name'],
             'chance_of_playing': player['chance_of_playing_next_round'],
             'news': player['news'],
             'position': position,
@@ -818,7 +836,15 @@ def fetch_player_summary(player_id):
                 
                 {'title': 'Est. points next game', 'value': player['ep_next'], 'averageValue': average_ep_next},
                 {'title': 'Points', 'value': player['total_points'], 'averageValue': average_points},
-            ]
+                {'title': 'Avg. mins', 'value': round(player['minutes']/generateCurrentGameweek(), 0), 'averageValue': average_minutes},
+            ],
+            'suspension': {
+                'total_yellow_cards': yellow_cards,
+                'yellow_cards_needed': yellows_left,
+                'card_image': card_image_path,
+                'suspension_length': suspension_length,
+                'suspension_end_gameweek': suspension_end
+            }
         }
 
         logger.info(f"Successfully retrieved summary for player ID {player_id}")
@@ -827,6 +853,7 @@ def fetch_player_summary(player_id):
     except Exception as e:
         logger.exception(f"An unexpected error occurred while processing player ID {player_id}: {str(e)}")
         return {"error": "An unexpected error occurred."}, 500
+
 
 def get_alternative_players(player_id):
     player = fetch_player_summary(player_id)[0]
@@ -867,3 +894,95 @@ def get_alternative_players(player_id):
 
     else:
         return players
+    
+def fetch_suspension_data():
+    """
+    Fetch suspension data for players based on yellow card rules and current gameweek.
+    """
+    dbConnect = connect_db()
+    if dbConnect is None:
+        logger.error("Failed to connect to the database.")
+        return []
+
+    current_gameweek = generateCurrentGameweek()
+    if current_gameweek is None:
+        logger.error("Failed to fetch the current gameweek.")
+        return []
+
+    try:
+        query = f"""
+        WITH DeduplicatedHistory AS (
+            SELECT 
+                esh.element AS player_id,
+                esh.round,
+                SUM(esh.yellow_cards) AS yellow_cards
+            FROM {db}.elementsummary_history esh
+            WHERE esh.year_start = {season_start} -- Filter to the current season
+            GROUP BY esh.element, esh.round
+        ),
+        TotalYellowCards AS (
+            SELECT 
+                dh.player_id,
+                SUM(dh.yellow_cards) AS total_yellow_cards
+            FROM DeduplicatedHistory dh
+            GROUP BY dh.player_id
+        ),
+        UniquePlayers AS (
+            SELECT DISTINCT
+                p.id AS player_id,
+                CONCAT(p.first_name, ' ', p.second_name) AS player_name
+            FROM {db}.bootstrapstatic_elements p
+            WHERE p.year_start = {season_start} -- Ensure filtering matches the season
+        )
+        SELECT 
+            tp.player_id,
+            up.player_name,
+            tp.total_yellow_cards,
+            CASE
+                WHEN tp.total_yellow_cards < 5 AND {current_gameweek} <= 19 THEN 5 - tp.total_yellow_cards
+                WHEN tp.total_yellow_cards < 10 AND {current_gameweek} <= 32 THEN 10 - tp.total_yellow_cards
+                WHEN tp.total_yellow_cards < 15 THEN 15 - tp.total_yellow_cards
+                ELSE 0
+            END AS yellow_cards_needed,
+            CASE
+                WHEN tp.total_yellow_cards <= 4 AND {current_gameweek} <= 19 THEN 1
+                WHEN tp.total_yellow_cards BETWEEN 5 AND 10 AND {current_gameweek} <= 32 THEN 2
+                WHEN tp.total_yellow_cards >= 15 THEN 3
+                ELSE 0
+            END AS suspension_length,
+            CASE
+                WHEN tp.total_yellow_cards <= 4 AND {current_gameweek} <= 19 THEN {current_gameweek} + 1
+                WHEN tp.total_yellow_cards BETWEEN 5 AND 10 AND {current_gameweek} <= 32 THEN {current_gameweek} + 2
+                WHEN tp.total_yellow_cards >= 15 THEN {current_gameweek} + 3
+                ELSE NULL
+            END AS suspension_end_gameweek
+        FROM TotalYellowCards tp
+        JOIN UniquePlayers up 
+            ON tp.player_id = up.player_id
+        ORDER BY 
+            player_id ASC,
+            yellow_cards_needed ASC,
+            total_yellow_cards DESC;
+        """
+        
+        cursor = dbConnect.cursor(dictionary=True)
+        logger.info(f"Executing query: {query}")
+        cursor.execute(query)
+        results = cursor.fetchall()
+        
+        return results
+
+    except Error as e:
+        logger.error(f"Error executing query: {e}")
+        return []
+    finally:
+        dbConnect.close()
+
+# Example usage
+if __name__ == "__main__":
+    suspensions = fetch_suspension_data()
+    if suspensions:
+        for suspension in suspensions:
+            print(suspension)
+    else:
+        print("No suspension data found.")
