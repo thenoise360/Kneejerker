@@ -561,26 +561,32 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     
         const gameweeks = Object.keys(fixtureMap).sort((a, b) => a - b);
-        
+    
         gameweeks.forEach((gw, index) => {
             const fixtures = fixtureMap[gw];
             const fixtureElement = document.getElementById(`fixture-${index + 1}`);
-            const venueElement = document.querySelector(`.venue-row .venue:nth-child(${index + 1})`);
-            const shirtElement = document.querySelector(`.team-shirts .coat-hanger:nth-child(${index + 1}) .shirt`);
-            const coatHanger = shirtElement?.parentElement;
+            const venueElement = document.getElementById(`venue-${index + 1}`);
+            const coatHanger = document.querySelector(`.team-shirts .coat-hanger:nth-child(${index + 1})`);
     
-            if (!fixtureElement || !shirtElement || !coatHanger) return;
+            if (!fixtureElement || !venueElement || !coatHanger) return;
+    
+            // Clear the coat hanger completely — SVG or IMG — and reset to base shirt
+            coatHanger.innerHTML = '';
+            const newImg = document.createElement("img");
+            newImg.classList.add("shirt");
+            newImg.src = '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
+            coatHanger.appendChild(newImg);
+    
+            const shirtElement = coatHanger.querySelector(".shirt");
     
             if (fixtures.length === 2) {
                 const [fix1, fix2] = fixtures;
                 fixtureElement.textContent = `${fix1.teamName} + ${fix2.teamName}`;
                 fixtureElement.className = `difficulty-${Math.max(fix1.difficulty, fix2.difficulty)}`;
                 const composite = generateCompositeShirt(fix1.shirtImage, fix2.shirtImage);
-                const existingSvg = coatHanger.querySelector("svg");
-                if (existingSvg) existingSvg.remove();
                 coatHanger.replaceChild(composite, shirtElement);
                 venueElement.textContent = 'Double';
-                venueElement.className = 'double';
+                venueElement.className = 'home';
             } else {
                 const fix = fixtures[0];
                 fixtureElement.textContent = fix.teamName;
@@ -590,7 +596,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 venueElement.className = fix.homeOrAway.toLowerCase();
             }
         });
-    }
+    }    
 
     /* ------------------ Initialize / Refresh Charts ------------------ */
 
