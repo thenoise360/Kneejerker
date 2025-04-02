@@ -1,18 +1,82 @@
 ﻿from datetime import datetime
 from re import M
+from flask import request, jsonify, session as flask_session
 from flask import render_template, request, jsonify, send_from_directory, abort
 from . import app
 import os
+import requests
 import logging
 from .dataModels import (
     get_players, get_players_by_team, 
     get_players_by_position, get_comparison_stats, 
     get_player_index_scores, get_player_net_transfers,
     get_player_ownership, get_top_10_net_transfers_in, get_top_10_net_transfers_out,
-    next_5_fixtures, fetch_player_summary, get_alternative_players, top_5_players_last_5_weeks
+    next_5_gameweeks, fetch_player_summary, get_alternative_players, top_5_players_last_5_weeks, loginToFPL, getFPLTeamData
 )
 
 from .futurePerformanceModel import( team_optimization )
+
+# Remove ==================================================
+
+@app.route('/my-team')
+def my_team():
+    logger.info("Request for my-team page")
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    return render_template('my-team.html', is_ajax=is_ajax, title='My Team')
+
+@app.route('/login-fpl', methods=['POST'])
+def login_fpl():
+    """
+    Logs into FPL and saves real browser session cookies for future requests.
+    """
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    login_response = loginToFPL(username, password)
+
+    if "error" in login_response:
+        return jsonify(login_response), 401  # Unauthorized
+
+    # Debugging: Print the returned cookies
+    print("Login Cookies (Stored):", login_response["cookies"])
+
+    # ✅ Check if `pl_profile` is missing
+    if "pl_profile" not in login_response["cookies"]:
+        print("🚨 WARNING: `pl_profile` is missing from stored cookies!")
+
+    # Save cookies correctly
+    flask_session['fpl_cookies'] = login_response["cookies"]
+
+    return jsonify({"message": "Login successful"})
+
+
+@app.route('/get-my-team', methods=['POST'])
+def get_my_team():
+    data = request.get_json()
+    team_id = data.get('team_id')
+
+    if not team_id:
+        return jsonify({"error": "Team ID is required"}), 400
+
+    # Retrieve stored cookies from Flask session
+    cookies = flask_session.get('fpl_cookies', {})
+
+    print("Stored Cookies in Flask:", cookies)  # ✅ Debug stored cookies
+
+    if not cookies:
+        return jsonify({"error": "No login session found. Please log in first."}), 401  # Unauthorized
+
+    # Get team data using stored cookies
+    team_data = getFPLTeamData(cookies, team_id)
+
+    return jsonify(team_data)
+
+
+# Remove ==================================================
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -124,13 +188,13 @@ def compare_players_route():
     players_data = get_comparison_stats(id1, id2)
     return jsonify(players_data)
 
-@app.route('/get_next_5_fixtures')
-def get_player_next_5_fixtures():
-    logger.info("Request for get_next_5_fixtures")
+@app.route('/get_next_5_gameweeks')
+def get_player_next_5_gameweeks():
+    logger.info("Request for get_next_5_gameweeks")
     try:
         player_id = request.args.get('id')
-        fixtures = next_5_fixtures(player_id)
-        return jsonify(fixtures)
+        gameweeks = next_5_gameweeks(player_id)
+        return jsonify(gameweeks)
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         return str(e), 500

@@ -6,7 +6,7 @@ sys.path.append(file_dir)
 
 import requests
 import json
-from scipy.stats.stats import pearsonr 
+from scipy.stats import pearsonr
 from scipy.stats import linregress
 
 season = "2024_2025"

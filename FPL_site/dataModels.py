@@ -4,7 +4,10 @@ from FPL_site.config import current_config
 from FPL_site.genericMethods import unicodeReplace
 import requests
 import json
+import time
+import httpx
 import logging
+import random
 
 player_shirts = {
     3: '/static/content/Tshirts/sleeves-red-white-football-shirt-svgrepo-com.svg', # Arsenal
@@ -60,6 +63,104 @@ def connect_db():
     except Error as e:
         logger.error(f"Error while connecting to MySQL: {e}")
         return None
+
+def get_random_user_agent():
+    """
+    Returns a randomly chosen User-Agent string.
+    """
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    ]
+    return random.choice(user_agents)
+
+def loginToFPL(username, password):
+    """
+    Logs into FPL using HTTP/2 with randomized headers to bypass bot detection.
+    """
+    client = httpx.Client(http2=True)
+
+    login_url = 'https://users.premierleague.com/accounts/login/'
+    headers = {
+        'User-Agent': get_random_user_agent(),  # Rotate user-agents
+        'Referer': 'https://fantasy.premierleague.com/',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Origin': 'https://fantasy.premierleague.com',
+        'DNT': '1',
+    }
+
+    payload = {
+        'password': password,
+        'login': username,
+        'redirect_uri': 'https://fantasy.premierleague.com/a/login',
+        'app': 'plfpl-web'
+    }
+
+    # Perform login
+    response = client.post(login_url, data=payload, headers=headers, follow_redirects=True)
+
+    # Extract cookies
+    cookies_dict = {c.name: c.value for c in client.cookies.jar}
+
+    # Debugging
+    print("🚨 Login Cookies:", cookies_dict)
+
+    return {"status": "Login successful", "cookies": cookies_dict}
+
+
+def getFPLTeamData(cookies, team_id):
+    """
+    Fetches the my-team data from FPL using stored session cookies.
+    """
+    url = f"https://fantasy.premierleague.com/api/my-team/{team_id}"
+
+    # Manually set `pl_profile` if missing
+    if "pl_profile" not in cookies:
+        cookies["pl_profile"] = "PASTE_YOUR_PL_PROFILE_COOKIE_HERE"  # Manually extracted from browser
+
+    csrf_token = cookies.get("csrftoken", "")
+    session_id = cookies.get("sessionid", "")
+    pl_profile = cookies.get("pl_profile", "")
+    datadome = cookies.get("datadome", "")
+
+    headers = {
+        'Accept': '*/*',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8,la;q=0.7',
+        'Referer': 'https://fantasy.premierleague.com/my-team/',
+        'Sec-CH-UA': '"Chromium";v="132", "Google Chrome";v="132", "Not A(Brand";v="8"',
+        'Sec-CH-UA-Mobile': '?0',
+        'Sec-CH-UA-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'Priority': 'u=1, i',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+        'X-CSRFToken': csrf_token,
+    }
+
+    # Construct Cookie header manually
+    cookie_header = f"sessionid={session_id}; csrftoken={csrf_token}; datadome={datadome}; pl_profile={pl_profile}"
+    headers["Cookie"] = cookie_header  # ✅ Ensures `pl_profile` is sent
+
+    session = requests.Session()
+    session.cookies.update(cookies)
+
+    response = session.get(url, headers=headers)
+
+    print(f"🚨 Team Data Response Status: {response.status_code}")
+    print("🚨 Response Headers:", response.headers)
+    print("🚨 Response Text:", response.text)  # Debugging
+
+    if response.status_code == 200:
+        return response.json()
+
+    return {"error": f"Failed to fetch team data. Status Code: {response.status_code}", "details": response.text}
+
 
 # Get us the current gameweek number
 def generateCurrentGameweek():
@@ -411,7 +512,7 @@ def get_top_10_net_transfers_out():
     return data
 
 
-def next_5_fixtures(player_id):
+def next_5_gameweeks(player_id):
 
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
@@ -436,41 +537,50 @@ def next_5_fixtures(player_id):
     fixtures = list()
 
     while i < gw + 6:
-        fixture = dict()
         team_id = player_info['team_id']
-        query = f'SELECT team_a, team_h, team_a_difficulty, team_h_difficulty FROM {db}.fixtures_fixtures WHERE year_start = {season_start} AND (team_h={team_id} OR team_a={team_id}) AND event = {i};'
+        query = f'''
+            SELECT team_a, team_h, team_a_difficulty, team_h_difficulty 
+            FROM {db}.fixtures_fixtures 
+            WHERE year_start = {season_start} 
+            AND (team_h={team_id} OR team_a={team_id}) 
+            AND event = {i};
+        '''
         cursor.execute(query)
-        difficulty_info = cursor.fetchone()  # Fetch the difficulty info for the current fixture
+        fixtures_in_gw = cursor.fetchall()  # <-- Now fetching all fixtures, not just one
 
-        # Process the result
-        if difficulty_info['team_a'] == player_info['team_id']:
-            venue = 'Away'
-            opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_h'])
-            opponent_id = team_id_to_code[difficulty_info['team_h']]
-        elif difficulty_info['team_h'] == player_info['team_id']:
-            venue = 'Home'
-            opponent = next(team['short_name'] for team in teams if team['id'] == difficulty_info['team_a'])
-            opponent_id = team_id_to_code[difficulty_info['team_a']]
-        else:
-            venue = 'blank'
-            opponent = '-'
-            opponent_id = 1000
+        if not fixtures_in_gw:
+            fixtures.append({
+                'teamName': '-',
+                'difficulty': "None",
+                'shirtImage': player_shirts['Unknown'],
+                'homeOrAway': 'blank',
+                'gameweek': i
+            })
+            i += 1
+            continue
 
+        for fixture_info in fixtures_in_gw:
+            if fixture_info['team_a'] == team_id:
+                venue = 'Away'
+                opponent_id = fixture_info['team_h']
+                opponent = next(t['short_name'] for t in teams if t['id'] == opponent_id)
+            else:
+                venue = 'Home'
+                opponent_id = fixture_info['team_a']
+                opponent = next(t['short_name'] for t in teams if t['id'] == opponent_id)
 
-        if venue == 'Away':
-            difficulty = difficulty_info['team_a_difficulty']
-        elif venue == 'Home':
-            difficulty = difficulty_info['team_h_difficulty']
-        else: 
-            difficulty = "None"
+            opponent_code = team_id_to_code[opponent_id]
+            difficulty = fixture_info['team_a_difficulty'] if venue == 'Away' else fixture_info['team_h_difficulty']
 
-        fixture = {
-            'teamName': opponent, 
-            'difficulty': difficulty, 
-            'shirtImage': player_shirts[opponent_id], 
-            'homeOrAway': venue}
-        fixtures.append(fixture)
-        i += 1                 
+            fixtures.append({
+                'teamName': opponent,
+                'difficulty': difficulty,
+                'shirtImage': player_shirts[opponent_code],
+                'homeOrAway': venue,
+                'gameweek': i
+            })
+
+        i += 1             
 
     cursor.close()  # Close the cursor after using it
     dbConnect.close()  # Close the database connection

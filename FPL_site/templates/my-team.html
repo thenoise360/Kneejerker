@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2>{{ title }}.</h2>
+<h3>{{ message }}</h3>
+
+<!-- Login Form -->
+<form id="login-form">
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    <div class="mb-3">
+        <label for="team_id" class="form-label">Team ID</label>
+        <input type="text" class="form-control" id="team_id" name="team_id" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Login & Fetch Team</button>
+</form>
+
+<!-- Response Message -->
+<p id="response-message"></p>
+
+<!-- JSON Output -->
+<pre id="json-output" style="white-space: pre-wrap; background-color: #f8f9fa; padding: 10px; border-radius: 5px;"></pre>
+
+
+<script>
+    document.getElementById("login-form").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const teamId = document.getElementById("team_id").value; // Add a new input field for team ID
+
+        const responseMessage = document.getElementById("response-message");
+        responseMessage.innerText = "Logging in...";
+
+        try {
+            // Step 1: Login
+            let loginResponse = await fetch("/login-fpl", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+
+            let loginResult = await loginResponse.json();
+
+            if (!loginResponse.ok) {
+                responseMessage.innerText = `Login failed: ${loginResult.error}`;
+                return;
+            }
+
+            responseMessage.innerText = "Login successful. Fetching team data...";
+
+            // Step 2: Fetch Team Data
+            let teamResponse = await fetch("/get-my-team", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ team_id: teamId })
+            });
+
+            let teamData = await teamResponse.json();
+
+            if (!teamResponse.ok) {
+                responseMessage.innerText = `Error fetching team data: ${teamData.error}`;
+                return;
+            }
+
+            // Step 3: Display JSON Response
+            responseMessage.innerText = "Team data retrieved successfully!";
+            document.getElementById("json-output").innerText = JSON.stringify(teamData, null, 4);
+
+        } catch (error) {
+            responseMessage.innerText = `Unexpected error: ${error.message}`;
+        }
+    });
+</script>
+
+{% endblock %}

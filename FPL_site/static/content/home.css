@@ -369,6 +369,7 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
 }
 
 .difficulty-3 {
@@ -378,6 +379,7 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
 }
 
 .difficulty-4 {
@@ -387,6 +389,7 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
 }
 
 .difficulty-5 {
@@ -396,6 +399,7 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
 }
 
 .difficulty-0 {
