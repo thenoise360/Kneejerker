@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showLoader();
         Promise.all([
             fetch(`/get_player_summary?id=${playerId}`).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-            fetch(`/get_next_5_fixtures?id=${playerId}`).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch(`/get_next_5_gameweeks?id=${playerId}`).then(r => r.ok ? r.json() : Promise.reject(r.status)),
             fetch(`/get_player_alternates?id=${playerId}`).then(r => r.ok ? r.json() : Promise.reject(r.status))
         ])
         .then(([playerDataResponse, fixtures, altPlayers]) => {
@@ -513,34 +513,90 @@ document.addEventListener('DOMContentLoaded', function () {
             = player.team_name || '-';
     }    
 
+    function generateCompositeShirt(shirtUrl1, shirtUrl2) {
+        const svgNS = "http://www.w3.org/2000/svg";
+    
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("width", "50");
+        svg.setAttribute("height", "50");
+        svg.setAttribute("viewBox", "0 0 100 100");
+        svg.style.display = "block"; // Match <img> behavior
+    
+        // Define <defs> and mask
+        const defs = document.createElementNS(svgNS, "defs");
+        const mask = document.createElementNS(svgNS, "mask");
+        mask.setAttribute("id", "diagonal-mask-" + Math.random()); // avoid ID collision
+        const maskShape = document.createElementNS(svgNS, "polygon");
+        maskShape.setAttribute("points", "0,100 100,0 100,100");
+        maskShape.setAttribute("fill", "white");
+        mask.appendChild(maskShape);
+        defs.appendChild(mask);
+        svg.appendChild(defs);
+    
+        const backShirt = document.createElementNS(svgNS, "image");
+        backShirt.setAttributeNS("http://www.w3.org/1999/xlink", "href", shirtUrl1);
+        backShirt.setAttribute("width", "100");
+        backShirt.setAttribute("height", "100");
+    
+        const frontShirt = document.createElementNS(svgNS, "image");
+        frontShirt.setAttributeNS("http://www.w3.org/1999/xlink", "href", shirtUrl2);
+        frontShirt.setAttribute("width", "100");
+        frontShirt.setAttribute("height", "100");
+        frontShirt.setAttribute("mask", `url(#${mask.getAttribute('id')})`);
+    
+        svg.appendChild(backShirt);
+        svg.appendChild(frontShirt);
+    
+        return svg;
+    }    
+
     function updateFixtureDetails(player) {
-        if (!player.fixtures || !Array.isArray(player.fixtures)) {
-            console.error("Invalid fixtures data provided.");
-            return;
-        }
-
-        player.fixtures.forEach((fixture, index) => {
+        if (!Array.isArray(player.fixtures)) return;
+    
+        // Group fixtures by gameweek
+        const fixtureMap = {};
+        player.fixtures.forEach(fix => {
+            if (!fixtureMap[fix.gameweek]) fixtureMap[fix.gameweek] = [];
+            fixtureMap[fix.gameweek].push(fix);
+        });
+    
+        const gameweeks = Object.keys(fixtureMap).sort((a, b) => a - b);
+    
+        gameweeks.forEach((gw, index) => {
+            const fixtures = fixtureMap[gw];
             const fixtureElement = document.getElementById(`fixture-${index + 1}`);
-            if (fixtureElement) {
-                fixtureElement.className = `difficulty-${fixture.difficulty}`;
-                fixtureElement.textContent = fixture.teamName;
-
-                const shirtElement = document.querySelector(`.team-shirts .coat-hanger:nth-child(${index + 1}) .shirt`);
-                if (shirtElement) {
-                    shirtElement.src = fixture.shirtImage;
-                    if (fixture.difficulty === 0) {
-                        shirtElement.classList.add('no-fixture');
-                    }
-                }
-
-                const venueElement = document.querySelector(`.venue-row .venue:nth-child(${index + 1})`);
-                if (venueElement) {
-                    venueElement.textContent = fixture.homeOrAway;
-                    venueElement.className = fixture.homeOrAway.toLowerCase();
-                }
+            const venueElement = document.getElementById(`venue-${index + 1}`);
+            const coatHanger = document.querySelector(`.team-shirts .coat-hanger:nth-child(${index + 1})`);
+    
+            if (!fixtureElement || !venueElement || !coatHanger) return;
+    
+            // Clear the coat hanger completely — SVG or IMG — and reset to base shirt
+            coatHanger.innerHTML = '';
+            const newImg = document.createElement("img");
+            newImg.classList.add("shirt");
+            newImg.src = '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
+            coatHanger.appendChild(newImg);
+    
+            const shirtElement = coatHanger.querySelector(".shirt");
+    
+            if (fixtures.length === 2) {
+                const [fix1, fix2] = fixtures;
+                fixtureElement.textContent = `${fix1.teamName} + ${fix2.teamName}`;
+                fixtureElement.className = `difficulty-${Math.max(fix1.difficulty, fix2.difficulty)}`;
+                const composite = generateCompositeShirt(fix1.shirtImage, fix2.shirtImage);
+                coatHanger.replaceChild(composite, shirtElement);
+                venueElement.textContent = 'Double';
+                venueElement.className = 'home';
+            } else {
+                const fix = fixtures[0];
+                fixtureElement.textContent = fix.teamName;
+                fixtureElement.className = `difficulty-${fix.difficulty}`;
+                shirtElement.src = fix.shirtImage;
+                venueElement.textContent = fix.homeOrAway;
+                venueElement.className = fix.homeOrAway.toLowerCase();
             }
         });
-    }
+    }    
 
     /* ------------------ Initialize / Refresh Charts ------------------ */
 

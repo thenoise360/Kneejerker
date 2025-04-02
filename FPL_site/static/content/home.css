@@ -369,6 +369,8 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .difficulty-3 {
@@ -378,6 +380,8 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .difficulty-4 {
@@ -387,6 +391,8 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .difficulty-5 {
@@ -396,6 +402,8 @@ canvas {
     padding: 4px 8px;
     width: -webkit-fill-available;
     justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .difficulty-0 {
@@ -407,6 +415,7 @@ canvas {
     width: -webkit-fill-available;
     justify-content: center;
     align-items: center;
+    text-align: center;
 }
 
 .chance-next-round-0 {

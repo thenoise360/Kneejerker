@@ -1,8 +1,13 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from .config import current_config
+import cryptography
+import os
 
 app = Flask(__name__)
+
+# Set the secret key (must be unique and secret)
+app.secret_key = os.urandom(24)  # Generates a random secure key
 
 # Use the current configuration
 config = current_config
