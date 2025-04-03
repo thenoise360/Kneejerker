@@ -558,6 +558,25 @@ canvas {
     width: -webkit-fill-available;
 }
 
+.alt-message-only {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    min-height: 80px;
+    padding: 1em;
+}
+
+.alt-pill-message {
+    background-color: #FFCC00;
+    color: #333;
+    font-size: 0.95rem;
+    padding: 0.6em 1.2em;
+    border-radius: 2em;
+    border: 2px solid #ddb000;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
 .alternatives-details {
     width: -webkit-fill-available;
     display: grid;

@@ -299,75 +299,81 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ------------------ Player Info & Alternatives ------------------ */
 
     function updateAlternativePlayers(players) {
-        // 1) We only want up to 4 real players
-        const truncatedPlayers = players.slice(0, 4);
+        const container = document.querySelector('.alternatives-details');
     
-        // 2) We always want at least 2 slots visible
-        //    so if there's 1 or 0 players, we still show 2 placeholders.
-        let displayCount = Math.max(truncatedPlayers.length, 2);
+        if (typeof players === 'string') {
+            container.classList.remove('grid');
+            container.classList.add('alt-message-only');
+            container.innerHTML = `
+                <div class="alt-pill-message">
+                    ${players}
+                </div>
+            `;
+            return;
+        }
     
-        // But we won't exceed 6 total placeholders.
-        // If your requirement is strictly "up to 4" in total, we can do:
-        displayCount = Math.min(displayCount, 4);
+        container.classList.add('grid');
+        container.classList.remove('alt-message-only');
     
-        // Grab all 6 placeholders from the DOM
-        const allPlaceholders = Array.from(document.querySelectorAll('.alternatives-details .alternative-player'));
-    
-        // Loop through all 6 placeholders
-        for (let i = 0; i < allPlaceholders.length; i++) {
-            const container = allPlaceholders[i];
-    
-            if (i < displayCount) {
-                // We want to show this slot
-                container.style.display = 'block';
-    
-                if (i < truncatedPlayers.length) {
-                    // Fill with real player data
-                    const player = truncatedPlayers[i];
-                    
-                    //  If you’re using your existing code:
-                    const altPlayerName = container.querySelector('.alt-player');
-                    const altShirt = container.querySelector('.alternatives-shirt');
-                    const altTeamName = container.querySelector('.alt-player-team-name');
-                    const altValue = container.querySelector('.alt-player-value');
-                    const altForm = container.querySelector('.alt-player-form');
-    
-                    altPlayerName.textContent = player.web_name ?? '-';
-                    altShirt.src = player.shirt ?? '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
-                    altTeamName.textContent = player.team_name ?? '-';
-                    altValue.textContent = player.now_cost 
-                        ? '£' + (player.now_cost / 10).toFixed(1)
-                        : '£-.-';
-                    altForm.textContent = player.form ?? '-';
-    
-                    // If you want it clickable -> debouncedSelectPlayer
-                    container.onclick = () => debouncedSelectPlayer(player.id);
-    
-                } else {
-                    // We have fewer real players than displayCount, so this is a "placeholder" row
-                    // Just fill with generic dashes or whatever you want to display
-                    const altPlayerName = container.querySelector('.alt-player');
-                    const altShirt = container.querySelector('.alternatives-shirt');
-                    const altTeamName = container.querySelector('.alt-player-team-name');
-                    const altValue = container.querySelector('.alt-player-value');
-                    const altForm = container.querySelector('.alt-player-form');
-    
-                    altPlayerName.textContent = '-';
-                    altShirt.src = '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
-                    altTeamName.textContent = '-';
-                    altValue.textContent = '£-.-';
-                    altForm.textContent = '-';
-    
-                    // Remove any existing click
-                    container.onclick = null;
-                }
-            } else {
-                // Past our displayCount => hide
-                container.style.display = 'none';
+        // Rebuild placeholders if they were replaced by the message
+        if (container.querySelectorAll('.alternative-player').length === 0) {
+            container.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'alternative-player';
+                placeholder.innerHTML = `
+                    <div class="alt-player">-</div>
+                    <div class="coat-hanger">
+                        <img class="shirt alternatives-shirt" src="/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg">
+                        <div class="alt-player-team-name">-</div>
+                        <div class="alt-player-data">
+                            <div class="alt-player-value">£-.-</div>
+                            <div class="alt-player-form">-</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(placeholder);
             }
         }
-    }
     
+        const allPlaceholders = Array.from(container.querySelectorAll('.alternative-player'));
+    
+        const truncatedPlayers = players.slice(0, 4);
+        let displayCount = Math.max(truncatedPlayers.length, 2);
+        displayCount = Math.min(displayCount, 4);
+    
+        for (let i = 0; i < allPlaceholders.length; i++) {
+            const placeholder = allPlaceholders[i];
+    
+            if (i < displayCount) {
+                placeholder.style.display = 'block';
+    
+                if (i < truncatedPlayers.length) {
+                    const player = truncatedPlayers[i];
+    
+                    placeholder.querySelector('.alt-player').textContent = player.web_name ?? '-';
+                    placeholder.querySelector('.alternatives-shirt').src = player.shirt ?? '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
+                    placeholder.querySelector('.alt-player-team-name').textContent = player.team_name ?? '-';
+                    placeholder.querySelector('.alt-player-value').textContent = player.now_cost
+                        ? '£' + (player.now_cost / 10).toFixed(1)
+                        : '£-.-';
+                    placeholder.querySelector('.alt-player-form').textContent = player.form ?? '-';
+    
+                    placeholder.onclick = () => debouncedSelectPlayer(player.id);
+                } else {
+                    // Placeholder data
+                    placeholder.querySelector('.alt-player').textContent = '-';
+                    placeholder.querySelector('.alternatives-shirt').src = '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
+                    placeholder.querySelector('.alt-player-team-name').textContent = '-';
+                    placeholder.querySelector('.alt-player-value').textContent = '£-.-';
+                    placeholder.querySelector('.alt-player-form').textContent = '-';
+                    placeholder.onclick = null;
+                }
+            } else {
+                placeholder.style.display = 'none';
+            }
+        }
+    }   
 
     function selectPlayer(playerId) {
 
