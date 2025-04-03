@@ -35,7 +35,7 @@ player_shirts = {
     21: '/static/content/Tshirts/sleeves-maroon-skyblue-football-shirt-svgrepo-com.svg', # West Ham
     39: '/static/content/Tshirts/plain-orange-football-shirt-svgrepo-com.svg', # Wolves
     'Unknown': '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', # Default
-};
+}
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -984,7 +984,7 @@ def get_alternative_players(player_id):
 
     players = cursor.fetchall()
 
-    while len(players) == 0:
+    if len(players) == 0:
         
             currentGWAlternate = currentGW - 1
 
