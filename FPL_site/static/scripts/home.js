@@ -596,7 +596,12 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 const fix = fixtures[0];
                 fixtureElement.textContent = fix.teamName;
-                fixtureElement.className = `difficulty-${fix.difficulty}`;
+                if (fix.difficulty != 'None') {
+                    fixtureElement.className = `difficulty-${fix.difficulty}`;
+                }
+                else {
+                    fixtureElement.className = `difficulty-0`;
+                }
                 shirtElement.src = fix.shirtImage;
                 venueElement.textContent = fix.homeOrAway;
                 venueElement.className = fix.homeOrAway.toLowerCase();
