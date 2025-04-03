@@ -539,12 +539,21 @@ def next_5_gameweeks(player_id):
     while i < gw + 6:
         team_id = player_info['team_id']
         query = f'''
-            SELECT team_a, team_h, team_a_difficulty, team_h_difficulty 
-            FROM {db}.fixtures_fixtures 
-            WHERE year_start = {season_start} 
-            AND (team_h={team_id} OR team_a={team_id}) 
-            AND event = {i};
+            SELECT DISTINCT
+                es_f.team_h AS "team_h",
+                es_f.team_a AS "team_a",
+                f_f.team_h_difficulty AS "team_h_difficulty", 
+                f_f.team_a_difficulty AS "team_a_difficulty",
+                es_f.event AS "gameweek"
+            FROM {db}.elementsummary_fixtures es_f 
+            JOIN {db}.fixtures_fixtures f_f ON es_f.code = f_f.code 
+            WHERE 
+                f_f.year_start = {season_start} 
+                AND es_f.year_start = {season_start} 
+                AND es_f.event = {i}
+                AND (es_f.team_a = {team_id} OR es_f.team_h = {team_id});
         '''
+
         cursor.execute(query)
         fixtures_in_gw = cursor.fetchall()  # <-- Now fetching all fixtures, not just one
 
@@ -553,7 +562,7 @@ def next_5_gameweeks(player_id):
                 'teamName': '-',
                 'difficulty': "None",
                 'shirtImage': player_shirts['Unknown'],
-                'homeOrAway': 'blank',
+                'homeOrAway': 'Blank',
                 'gameweek': i
             })
             i += 1
