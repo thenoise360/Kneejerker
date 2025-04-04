@@ -233,7 +233,6 @@ def get_players_by_team():
     return teams_dict
 
 def get_players_by_position():
-    # Connect to the database
     dbConnect = connect_db()
     cursor = dbConnect.cursor(dictionary=True)
 
@@ -241,36 +240,47 @@ def get_players_by_position():
         1: 'Goalkeeper',
         2: 'Defender',
         3: 'Midfielder',
-        4: 'Forward'
+        4: 'Forward',
+        5: 'Manager'
     }
 
-    # Execute SQL query to get players and their respective teams
-    cursor.execute(f'SELECT p.element_type AS "position_id", p.first_name AS "First_name", p.second_name AS "Surname", p.id AS "ID" FROM {db}.bootstrapstatic_elements p WHERE p.year_start = {season_start}')
+    cursor.execute(f'''
+        SELECT
+            MIN(p.id) AS ID,
+            p.element_type AS position_id,
+            p.first_name AS First_name,
+            p.second_name AS Surname
+        FROM {db}.bootstrapstatic_elements p
+        WHERE p.year_start = {season_start}
+        GROUP BY p.first_name, p.second_name, p.element_type
+    ''')
 
-    # Fetch all results from the executed query
     players = cursor.fetchall()
-    dbConnect.close()  # Close the database connection
+    dbConnect.close()
 
-    # Initialize the final dictionary
     positions_dict = {}
 
-    # Process the data to create the desired structure
     for entry in players:
-        position_name = positions[entry['position_id']]
+        position_id = entry.get('position_id')
+        position_name = positions.get(position_id, 'Unknown')
+
+        if position_name == 'Unknown':
+            logger.warning(f"⚠️ Unknown position_id: {position_id} for {entry['First_name']} {entry['Surname']}")
+            continue  # Optional: skip unknowns
+
         full_name = f"{entry['First_name']} {entry['Surname']}"
         player_id = entry['ID']
-        position_id = entry['position_id']
-    
+
         if position_name not in positions_dict:
             positions_dict[position_name] = {}
-    
-        positions_dict[position_name][full_name] = {
-            'full_name': full_name, 
-            'id': player_id, 
-            'position': position_id
-        }
 
-    # Sort the dictionary by player names within each position
+        if full_name not in positions_dict[position_name]:
+            positions_dict[position_name][full_name] = {
+                'full_name': full_name,
+                'id': player_id,
+                'position': position_id
+            }
+
     for position in positions_dict:
         positions_dict[position] = dict(sorted(positions_dict[position].items()))
 

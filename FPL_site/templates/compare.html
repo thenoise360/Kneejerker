@@ -39,4 +39,11 @@
         <!-- Cards will be dynamically populated here -->
     </div>
 </div>
+<div id="loading-overlay" style="display: none;">
+    <div class="loading-container">
+        <img class="team-loader" src="/static/content/images/loader.gif" alt="Loading..." />
+        <p id="loading-text" class="secondary-text" style="text-align: center">This may take 1-2 minutes to process. Please don't leave the page.</p>
+    </div>
+</div>
+<script type="module" src="{{ url_for('static', filename='scripts/compare.js') }}"></script>
 {% endblock %}

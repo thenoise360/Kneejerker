@@ -1,5 +1,6 @@
 /***** topPlayersChart.js *****/
 import { renderLineChart } from './chartUtils.js';
+import { trackCarousel } from './analytics.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const positionDropdown = document.getElementById('positionDropdown');
@@ -144,6 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const newIndex = e.to;
                     const chartId = `chart-${newIndex + 1}`;
                     const player = players[newIndex];
+                    trackCarousel(positionDropdown.value, player.name);
 
                     const chartElem = document.getElementById(chartId);
                     if (chartElem && chartElem.children.length === 0) {

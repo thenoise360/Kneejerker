@@ -3,6 +3,7 @@ from re import M
 from flask import request, jsonify, session as flask_session
 from flask import render_template, request, jsonify, send_from_directory, abort
 from . import app
+from .config import current_config
 import os
 import requests
 import logging
@@ -22,7 +23,7 @@ from .futurePerformanceModel import( team_optimization )
 def my_team():
     logger.info("Request for my-team page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('my-team.html', is_ajax=is_ajax, title='My Team')
+    return render_template('my-team.html', is_ajax=is_ajax, title='My Team',, mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/login-fpl', methods=['POST'])
 def login_fpl():
@@ -75,7 +76,6 @@ def get_my_team():
 
     return jsonify(team_data)
 
-
 # Remove ==================================================
 
 # Set up logging
@@ -100,7 +100,7 @@ def custom_static(filename):
 @app.route('/')
 def home():
     logger.info("Request for home page")
-    return render_template('home.html', title='Home Page', year=datetime.now().year)
+    return render_template('home.html', title='Home Page', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/api/net-transfers-in')
 def net_transfers_in():
@@ -127,19 +127,19 @@ def top_5_players():
 def players():
     logger.info("Request for players page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('players.html', is_ajax=is_ajax, title='Team')
+    return render_template('players.html', is_ajax=is_ajax, title='Top layers', mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/team')
 def team():
     logger.info("Request for team page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('team.html', is_ajax=is_ajax, title='Team')
+    return render_template('team.html', is_ajax=is_ajax, title='Team', mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/compare')
 def compare():
     logger.info("Request for compare page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('compare.html', is_ajax=is_ajax, title='Player Comparison')
+    return render_template('compare.html', is_ajax=is_ajax, title='Player Comparison', mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/get_players')
 def get_players_route():

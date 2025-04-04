@@ -12,6 +12,7 @@ class DevelopmentConfig(Config):
     USER = os.getenv('USER')
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
+    MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
 
     # Print out the variables for debugging
     print(f"Development - HOST: {HOST}")
@@ -25,6 +26,7 @@ class ProductionConfig(Config):
     USER = os.getenv('USER')
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
+    MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
 
 def get_config():
     env = os.getenv('FLASK_ENV', 'development')

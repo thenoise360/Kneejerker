@@ -7,6 +7,7 @@ import {
     isUserActive, 
     truncateLabel 
 } from './utils.js';
+import { trackPlayerSummary } from './analytics.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -359,7 +360,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         : '£-.-';
                     placeholder.querySelector('.alt-player-form').textContent = player.form ?? '-';
     
-                    placeholder.onclick = () => debouncedSelectPlayer(player.id);
+                    placeholder.onclick = () => {
+                        trackPlayerSummary(player.id, player.web_name); // Optional: log here too
+                        debouncedSelectPlayer(player.id);
+                      };
                 } else {
                     // Placeholder data
                     placeholder.querySelector('.alt-player').textContent = '-';
@@ -517,7 +521,9 @@ document.addEventListener('DOMContentLoaded', function () {
             = player.shirtImage || '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg';
         document.querySelector('.coat-hanger .player-team-name').textContent 
             = player.team_name || '-';
-    }    
+
+        trackPlayerSummary(player.id, player.name);
+    } 
 
     function generateCompositeShirt(shirtUrl1, shirtUrl2) {
         const svgNS = "http://www.w3.org/2000/svg";
