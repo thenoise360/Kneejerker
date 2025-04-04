@@ -1,363 +1,371 @@
 first_name,second_name,now_cost,predicted_performance,total_points,points_per_million
-Cameron,Burgess,3.8,81.26,15,21.38421
-Leif,Davis,4.3,63.0,51,14.651162
-Emile,Smith Rowe,5.1,72.74,97,14.262745
-Jorge Luiz,Frello Filho,4.7,63.94,16,13.604256
-Christian,Walton,4.3,55.56,14,12.92093
-Marc,Guehi,4.7,59.220005,101,12.600001
-Aaron,Ramsdale,4.4,53.66,57,12.195455
-Kalvin,Phillips,4.8,58.3,25,12.145833
-Iliman,Ndiaye,5.2,63.04,81,12.123077
-Guido,Rodriguez,4.8,57.88,29,12.058333
-Lewis,Cook,5.0,59.98,68,11.996
-Nathan,Ake,5.3,63.12,24,11.909433
-Andreas,Hoelgebaum Pereira,4.9,57.96,71,11.828571
-Daniel,Munoz,5.1,59.74,112,11.713726
-Mark,Travers,4.4,50.64,19,11.50909
-Wout,Faes,3.9,44.86,35,11.502564
-James,Bree,3.9,42.42,15,10.876923
-Marcus,Tavernier,5.4,58.44,55,10.822222
-Simon,Adingra,5.1,53.96,39,10.580392
-Jannik,Vestergaard,3.9,41.2,11,10.564102
-Jakub,Stolarczyk,4.0,41.959995,10,10.489999
-Jurriën,Timber,5.6,58.56,108,10.457143
-Amadou,Onana,4.8,49.839996,41,10.383332
-James,Justin,4.1,42.56,48,10.380488
-Harry,Wilson,5.2,53.78,63,10.342308
-Boubakary,Soumare,4.4,44.46,32,10.104545
-Conor,Coady,4.0,40.16,12,10.04
-Conor,Chaplin,5.1,51.1,33,10.019608
-Vitalii,Mykolenko,4.4,43.98,85,9.995454
-Chris,Richards,4.4,43.66,53,9.922727
-Issa,Diop,4.4,43.26,31,9.831818
-Thomas,Partey,4.9,46.599995,87,9.510202
-Matheus Luiz,Nunes,4.9,46.22,45,9.432653
-Tyler,Adams,4.9,44.94,41,9.171428
-Álex,Moreno Lopera,4.3,38.66,31,8.990697
-Carlos,Baleba,5.0,44.72,61,8.944
-Noussair,Mazraoui,4.3,38.22,74,8.888372
-Ezri,Konsa Ngoyo,4.4,39.0,59,8.863636
-Luke,Woolfenden,3.9,34.18,16,8.764102
-Abdoulaye,Doucoure,5.1,44.4,67,8.705883
-Ross,Barkley,5.2,45.16,40,8.684616
-Ethan,Pinnock,4.4,37.9,46,8.613637
-Antonee,Robinson,4.9,42.079998,99,8.587754
-Milos,Kerkez,5.3,44.92,105,8.4754715
-Bernardo,Veiga de Carvalho e Silva,6.1,50.820004,76,8.331148
-Joachim,Andersen,4.2,34.82,41,8.290477
-Robert,Sanchez,4.5,37.28,86,8.284444
-Guglielmo,Vicario,4.8,39.74,56,8.279166
-Ben,Johnson,3.9,32.06,17,8.220513
-Mads,Hermansen,4.4,36.04,54,8.190909
-Pervis,Estupinan,4.9,39.76,51,8.114285
-Caleb,Okoli,4.0,31.759998,19,7.9399996
-Yehor,Yarmoliuk,4.4,34.82,26,7.913636
-Illia,Zabarnyi,4.4,34.16,65,7.763636
-Jan,Bednarek,4.0,31.040003,47,7.7600007
-Diogo,Dalot Teixeira,5.0,38.66,85,7.732
-Nicolas,Jackson,7.7,58.2,108,7.5584416
-Chris,Wood,7.2,54.36,174,7.55
-Ben,Davies,4.3,31.74,24,7.381395
-Christian,Nrgaard,4.8,35.14,73,7.3208327
-Tim,Iroegbunam,4.3,31.4,17,7.3023252
-Ben,Brereton Diaz,4.9,35.62,13,7.2693872
-Ashley,Young,4.4,31.62,80,7.1863637
-Fabian,Schar,5.4,37.98,66,7.0333333
-Jacob,Greaves,3.9,27.32,32,7.005128
-Jack,Grealish,6.4,44.72,26,6.9875
-Danny,Welbeck,5.5,38.14,92,6.9345455
-Archie,Gray,4.6,31.46,34,6.8391304
-Andrew,Robertson,5.8,39.08,76,6.7379313
-Destiny,Udogie,4.8,32.32,43,6.733333
-Enzo,Fernandez,4.7,31.28,93,6.6553197
-Idrissa,Gueye,4.8,31.7,70,6.6041665
-Rodrigo,Muniz Carvalho,5.5,36.26,78,6.592727
-Nathan,Broadhead,4.9,31.82,17,6.4938774
-Boubacar,Kamara,5.0,32.44,30,6.488
-Julio,Enciso,5.4,34.68,24,6.422222
-Antoine,Semenyo,5.7,36.46,111,6.396491
-Keane,Lewis-Potter,5.0,31.919998,75,6.384
-Reiss,Nelson,5.0,31.68,27,6.336
-Elliot,Anderson,5.0,31.36,86,6.2720003
-Jack,Taylor,4.8,29.96,27,6.2416663
-Dominic,Calvert-Lewin,5.4,33.7,59,6.240741
-Mikkel,Damsgaard,5.1,31.78,108,6.231373
-Fraser,Forster,4.3,26.6,19,6.186046
-David,Brooks,4.9,30.18,43,6.1591835
-Kevin,Schade,5.1,31.08,104,6.0941176
-Daichi,Kamada,5.1,30.82,32,6.043137
-Bobby,De Cordova-Reid,5.2,31.18,43,5.9961543
-Abdul,Fatawu,5.3,31.72,24,5.9849052
-Jack,Harrison,5.2,30.86,58,5.9346156
-Ryan,Manning,4.3,25.06,18,5.8279066
-Dwight,McNeil,5.1,29.5,65,5.7843137
-Jack,Stephens,4.0,22.84,12,5.71
-Trevoh,Chalobah,4.4,25.06,67,5.695454
-Tino,Livramento,4.5,25.4,65,5.6444445
-Francisco Evanilson,de Lima Barbosa,5.7,31.96,89,5.6070175
-Axel,Tuanzebe,3.9,21.76,16,5.5794873
-Eberechi,Eze,6.8,37.58,86,5.5264707
-Ismaïla,Sarr,5.7,30.76,113,5.3964915
-Kristoffer,Ajer,4.4,23.52,28,5.3454547
-Axel,Disasi,4.2,22.4,30,5.3333335
-Alisson,Ramses Becker,5.6,29.78,90,5.3178573
-Aaron,Wan-Bissaka,4.5,23.62,90,5.248889
-Nathan,Collins,4.5,23.200003,90,5.155556
-Konstantinos,Tsimikas,4.6,23.68,32,5.147826
-Tyrick,Mitchell,4.8,24.64,97,5.133333
-Emiliano,Martinez Romero,5.0,25.299997,73,5.0599995
-Rico,Lewis,4.3,20.96,56,4.8744183
-Nélson,Cabral Semedo,4.5,21.9,65,4.866667
-Harry,Maguire,4.9,23.72,36,4.840816
-Morgan,Gibbs-White,6.6,31.88,121,4.830303
-Stefan,Ortega Moreno,5.2,25.1,26,4.8269234
-Adam,Smith,4.4,21.14,34,4.8045454
-Nick,Pope,4.9,23.1,56,4.714286
-Michail,Antonio,5.4,25.4,42,4.7037034
-Malo,Gusto,4.9,22.76,41,4.644898
-Kenny,Tete,4.4,20.34,37,4.6227274
-Reece,James,4.8,22.1,24,4.6041665
-Tyler,Dibling,4.4,20.24,56,4.6
-David,Raya Martin,5.5,24.539999,119,4.461818
-Leandro,Trossard,6.8,30.3,101,4.455882
-Vladimír,Coufal,4.1,18.24,18,4.4487805
-Nikola,Milenkovic,5.0,22.06,126,4.4119997
-Sam,Johnstone,4.2,18.36,12,4.371429
-Saša,Lukic,4.8,20.8,43,4.333333
-Ibrahima,Konate,5.2,22.36,82,4.3
-Djed,Spence,4.4,18.64,42,4.2363634
-Wilfred,Ndidi,4.9,20.54,46,4.191837
-Joe,Willock,4.7,19.68,38,4.1872344
-Ola,Aina,5.4,22.48,123,4.162963
-Nathan,Wood-Gordon,4.0,16.64,13,4.16
-Rodrigo,Bentancur,4.9,20.38,41,4.1591835
-Yves,Bissouma,4.8,19.9,44,4.145833
-Harry,Winks,4.4,18.14,40,4.122727
-Adama,Traore,4.6,18.84,75,4.095652
-Rúben,Gato Alves Dias,5.4,21.76,44,4.0296297
-Wes,Burns,4.8,19.34,30,4.0291667
-Kamaldeen,Sulemana,5.0,19.42,33,3.884
-João Pedro,Junqueira de Jesus,5.6,21.44,111,3.8285716
-Georginio,Rutter,5.1,19.52,70,3.8274512
-Jaden,Philogene,5.3,20.14,35,3.7999997
-Matz,Sels,5.1,18.96,133,3.7176468
-Tommy,Doyle,4.7,17.26,28,3.6723406
-Will,Hughes,4.9,17.96,53,3.6653059
-Ryan,Gravenberch,5.0,18.06,71,3.612
-Filip,Jrgensen,4.2,15.16,18,3.609524
-Jean-Ricner,Bellegarde,4.9,17.64,77,3.6
-Dango,Ouattara,5.0,17.94,99,3.588
-Pablo,Sarabia,5.0,17.92,27,3.584
-Ollie,Watkins,8.9,31.46,147,3.5348315
-Mads,Roerslev Rasmussen,4.3,15.16,36,3.5255811
-Igor Julio,dos Santos de Paulo,4.4,15.48,15,3.5181816
-Cody,Gakpo,7.4,25.96,96,3.508108
-Paul,Onuachu,4.9,17.16,39,3.5020406
-Crysencio,Summerville,5.6,19.48,33,3.4785714
-Manuel,Akanji,5.3,18.42,44,3.4754715
-Lewis,Dunk,4.2,14.559999,38,3.4666667
-Riccardo,Calafiori,5.8,19.74,33,3.403448
-Mathias,Jensen,5.3,18.02,28,3.3999999
-James,Tarkowski,4.9,16.64,95,3.3959181
-Timothy,Castagne,4.2,14.239999,42,3.390476
-Dara,O'Shea,3.9,13.2,36,3.3846152
-Sandro,Tonali,5.5,18.46,56,3.3563635
-Son,Heung-min,9.7,32.3,123,3.329897
-Mateo,Kovacic,5.4,17.9,80,3.3148146
-Kyle,Walker-Peters,4.3,14.200001,43,3.3023257
-Justin,Kluivert,6.3,20.56,147,3.2634919
-Gabriel,Fernando de Jesus,6.9,22.32,40,3.2347825
-Cole,Palmer,10.7,34.14,181,3.1906543
-Cameron,Archer,4.9,15.56,46,3.1755102
-Alphonse,Areola,4.2,13.2,47,3.1428573
-Jérémy,Doku,6.2,19.44,67,3.135484
-Raúl,Jimenez,5.5,17.08,120,3.1054544
-Joelinton Cássio,Apolinario de Lira,6.0,18.5,79,3.0833333
-Jan Paul,van Hecke,4.5,13.680001,77,3.0400002
-Taylor,Harwood-Bellis,4.0,12.0,42,3.0
-Micky,van de Ven,4.5,13.48,29,2.9955554
-Leon,Bailey,6.2,18.56,43,2.9935484
-Tosin,Adarabioyo,4.2,12.56,50,2.9904764
-Marcus,Rashford,6.6,19.46,74,2.9484847
-Bart,Verbruggen,4.5,13.24,82,2.942222
-Alex,McCarthy,4.2,12.34,12,2.9380953
-Roméo,Lavia,4.5,13.08,16,2.9066668
-Gabriel,dos Santos Magalhaes,6.4,17.98,117,2.8093748
-Leny,Yoro,4.3,12.08,14,2.809302
-Matthijs,de Ligt,4.8,13.44,68,2.7999997
-Craig,Dawson,4.3,11.96,17,2.7813952
-Emmanuel,Agbadou,4.0,10.88,21,2.72
-Jean-Clair,Todibo,4.2,11.4,38,2.7142859
-Ethan,Nwaneri,4.6,12.36,52,2.6869564
-Aaron,Cresswell,3.9,10.44,27,2.6769228
-Lamare,Bogarde,3.9,10.2,6,2.6153846
-Diego Carlos,Santos Silva,4.5,11.64,20,2.5866668
-Yankuba,Minteh,5.1,13.02,76,2.5529413
-Ryan,Yates,4.8,12.2,59,2.5416665
-Dominic,Solanke-Mitchell,7.3,18.54,87,2.539726
-Martin,degaard,8.2,20.76,78,2.5317073
-Amad,Diallo,5.6,13.82,105,2.4678571
-Jack,Hinshelwood,4.9,12.04,50,2.4571428
-Dean,Henderson,4.6,11.18,106,2.430435
-Myles,Lewis-Skelly,4.5,10.92,24,2.4266667
-Luis,Diaz,7.5,18.18,138,2.424
-Anthony,Elanga,5.4,13.06,129,2.4185185
-Max,Kilman,4.3,10.28,68,2.3906975
-Gonçalo Manuel,Ganchinho Guedes,5.3,12.62,55,2.381132
-Diogo,Teixeira da Silva,7.2,16.66,72,2.313889
-Kepa,Arrizabalaga,4.6,10.58,72,2.3
-Emerson,Palmieri dos Santos,4.4,10.08,62,2.290909
-Yoane,Wissa,6.6,14.959999,132,2.2666667
-Ollie,Scarles,4.0,9.0,24,2.25
-Kevin,De Bruyne,9.3,20.6,76,2.2150538
-Tyrone,Mings,4.4,9.68,31,2.2
-Bruno,Guimaraes Rodriguez Moura,6.1,13.399999,103,2.196721
-Norberto Bercique,Gomes Betuncal,5.0,10.92,62,2.184
+Cameron,Burgess,3.8,80.72,17,21.242105
+Leif,Davis,4.3,67.78,51,15.76279
+Emile,Smith Rowe,5.1,72.2,97,14.156862
+Jorge Luiz,Frello Filho,4.7,64.1,16,13.638298
+Christian,Walton,4.3,57.540005,14,13.381396
+Marc,Guehi,4.7,61.08,103,12.995746
+Nathan,Ake,5.3,67.64,25,12.762263
+John,Stones,5.3,67.5,22,12.735848
+Aaron,Ramsdale,4.4,55.720005,59,12.663637
+Kalvin,Phillips,4.8,58.02,26,12.0875
+Guido,Rodriguez,4.8,57.659996,29,12.012499
+Daniel,Munoz,5.1,61.040005,114,11.968629
+Iliman,Ndiaye,5.2,62.04,82,11.93077
+Lewis,Cook,5.0,59.52,74,11.904
+Andreas,Hoelgebaum Pereira,4.9,57.78,70,11.791836
+Mark,Travers,4.4,48.68,19,11.063636
+Wout,Faes,3.9,42.68,36,10.943589
+Jurriën,Timber,5.6,61.1,108,10.910714
+Jakub,Stolarczyk,4.0,43.18,10,10.795
+Marcus,Tavernier,5.4,58.160004,71,10.7703705
+Simon,Adingra,5.1,54.04,41,10.596079
+James,Justin,4.1,42.62,48,10.395122
+Amadou,Onana,4.8,49.86,42,10.3875
+Jannik,Vestergaard,3.9,40.38,11,10.353847
+Conor,Coady,4.0,41.24,13,10.31
+Harry,Wilson,5.2,53.58,62,10.303847
+James,Bree,3.9,40.16,15,10.297436
+Conor,Chaplin,5.1,51.82,33,10.160785
+Boubakary,Soumare,4.4,44.56,34,10.127273
+Luke,Thomas,3.9,39.24,5,10.061539
+Vitalii,Mykolenko,4.4,42.68,87,9.7
+Thomas,Partey,4.9,46.84,87,9.559183
+Issa,Diop,4.4,42.0,31,9.545454
+Matheus Luiz,Nunes,4.9,46.24,48,9.436735
+Chris,Richards,4.4,40.36,53,9.172728
+Álex,Moreno Lopera,4.2,38.38,31,9.138096
+Tyler,Adams,4.9,44.76,42,9.134693
+Carlos,Baleba,5.0,44.64,62,8.9279995
+Mads,Hermansen,4.4,38.76,56,8.809091
+Noussair,Mazraoui,4.3,37.54,74,8.730232
+Ross,Barkley,5.2,45.32,40,8.7153845
+Abdoulaye,Doucoure,5.1,44.32,69,8.690196
+Ezri,Konsa Ngoyo,4.4,37.88,65,8.609091
+Guglielmo,Vicario,4.8,41.26,56,8.595833
+Luke,Woolfenden,3.9,33.48,16,8.584615
+Ethan,Pinnock,4.4,37.32,47,8.481818
+Ben,Johnson,3.9,32.88,19,8.430769
+Pervis,Estupinan,4.9,41.08,52,8.383674
+Bernardo,Veiga de Carvalho e Silva,6.1,51.14,76,8.383607
+Antonee,Robinson,4.9,39.88,99,8.138776
+Milos,Kerkez,5.3,42.9,106,8.094339
+Dominic,Calvert-Lewin,5.4,43.62,58,8.077778
+Fábio,Freitas Gouveia Carvalho,4.5,36.06,35,8.013333
+Joachim,Andersen,4.2,33.42,41,7.957143
+Yehor,Yarmoliuk,4.4,35.0,28,7.9545455
+Jan,Bednarek,4.0,31.679998,48,7.9199996
+Caleb,Okoli,4.0,31.600002,20,7.9000006
+Nicolas,Jackson,7.7,60.68,108,7.88052
+Chris,Wood,7.2,56.56,174,7.855556
+Robert,Sanchez,4.5,34.3,86,7.622222
+Illia,Zabarnyi,4.4,33.5,66,7.613636
+Christian,Nrgaard,4.8,36.26,75,7.554166
+Ben,Brereton Diaz,4.9,36.38,13,7.42449
+Ben,Davies,4.3,31.72,24,7.376744
+Ashley,Young,4.4,32.42,81,7.368181
+Diogo,Dalot Teixeira,5.0,36.32,85,7.264
+Tim,Iroegbunam,4.3,30.78,18,7.158139
+Jack,Grealish,6.4,44.64,35,6.975
+Fabian,Schar,5.4,37.54,67,6.951852
+Mikkel,Damsgaard,5.1,35.24,109,6.9098043
+Destiny,Udogie,4.8,33.1,43,6.8958325
+Andrew,Robertson,5.8,38.92,83,6.7103443
+Archie,Gray,4.6,30.86,34,6.708696
+Idrissa,Gueye,4.8,32.04,72,6.6749997
+Julio,Enciso,5.4,35.88,29,6.6444445
+Enzo,Fernandez,4.7,30.84,93,6.5617023
+Boubacar,Kamara,5.0,32.1,33,6.4199996
+Antoine,Semenyo,5.7,36.52,113,6.4070177
+Nathan,Broadhead,4.9,31.32,24,6.3918366
+Jack,Taylor,4.8,30.6,28,6.375
+Jacob,Greaves,3.9,24.84,32,6.3692307
+Keane,Lewis-Potter,5.0,31.84,76,6.368
+David,Brooks,4.9,30.82,44,6.289796
+Danny,Welbeck,5.5,34.46,93,6.2654543
+Tino,Livramento,4.5,28.1,67,6.2444444
+Elliot,Anderson,5.0,31.04,86,6.208
+Fraser,Forster,4.3,26.52,19,6.167442
+Kevin,Schade,5.1,31.4,106,6.1568627
+Will,Smallbone,5.0,30.54,13,6.1080003
+Daichi,Kamada,5.1,30.98,33,6.0745096
+Jack,Harrison,5.2,31.319998,60,6.0230765
+Ryan,Manning,4.3,25.84,25,6.009302
+Abdul,Fatawu,5.3,31.62,24,5.9660378
+Dwight,McNeil,5.1,30.32,65,5.945098
+Bobby,De Cordova-Reid,5.2,30.76,43,5.915385
+Jack,Stephens,4.0,22.24,14,5.56
+Brajan,Gruda,5.4,30.0,21,5.5555553
+Axel,Tuanzebe,3.9,21.64,21,5.5487175
+Eberechi,Eze,6.8,37.38,88,5.497059
+Kristoffer,Ajer,4.4,24.0,29,5.4545455
+Ismaïla,Sarr,5.7,30.4,115,5.3333335
+Trevoh,Chalobah,4.4,23.28,67,5.2909093
+Harry,Maguire,4.9,25.86,36,5.277551
+Axel,Disasi,4.2,22.16,30,5.2761908
+Konstantinos,Tsimikas,4.6,23.84,32,5.1826086
+Emiliano,Martinez Romero,5.0,25.78,79,5.156
+Aaron,Wan-Bissaka,4.5,23.079998,90,5.1288886
+Tyrick,Mitchell,4.8,24.6,98,5.125
+Rodrigo,Muniz Carvalho,5.5,28.14,78,5.1163635
+Rico,Lewis,4.3,21.92,57,5.0976744
+Nathan,Collins,4.5,22.4,91,4.9777775
+Kenny,Tete,4.4,21.04,37,4.7818184
+Adam,Smith,4.4,21.0,35,4.772727
+Ollie,Watkins,8.9,42.12,147,4.7325845
+Morgan,Gibbs-White,6.6,31.16,121,4.7212124
+Stefan,Ortega Moreno,5.2,24.38,26,4.688462
+Malo,Gusto,4.9,22.36,41,4.5632653
+Alisson,Ramses Becker,5.6,25.46,90,4.5464287
+Nélson,Cabral Semedo,4.5,20.24,65,4.497778
+Nikola,Milenkovic,5.0,22.2,126,4.44
+Leandro,Trossard,6.8,30.179998,101,4.438235
+Tyler,Dibling,4.4,19.38,57,4.4045453
+Michail,Antonio,5.4,23.72,42,4.3925924
+Reece,James,4.8,20.88,24,4.3499994
+Sam,Johnstone,4.2,18.26,12,4.3476195
+Francisco Evanilson,de Lima Barbosa,5.7,24.66,97,4.326316
+Nick,Pope,4.9,21.06,58,4.297959
+Ibrahima,Konate,5.2,22.32,88,4.292308
+Joe,Willock,4.7,19.64,39,4.1787233
+Adama,Traore,4.6,19.2,75,4.1739135
+David,Raya Martin,5.5,22.86,119,4.156364
+Djed,Spence,4.4,18.12,42,4.1181817
+Vladimír,Coufal,4.1,16.76,18,4.087805
+Saša,Lukic,4.8,19.54,43,4.070833
+Harry,Winks,4.4,17.76,40,4.0363636
+Yves,Bissouma,4.8,19.26,44,4.0125
+Ola,Aina,5.4,21.52,122,3.9851851
+Wes,Burns,4.8,19.08,29,3.975
+Wilfred,Ndidi,4.9,19.4,48,3.9591835
+Rodrigo,Bentancur,4.9,19.38,41,3.9551017
+Kamaldeen,Sulemana,5.0,19.36,36,3.8720002
+Rúben,Gato Alves Dias,5.4,20.84,50,3.8592591
+Georginio,Rutter,5.1,19.66,90,3.854902
+Nathaniel,Clyne,4.3,16.4,17,3.8139532
+Jaden,Philogene,5.3,20.16,35,3.8037734
+Tommy,Doyle,4.7,17.82,28,3.7914894
+Nathan,Wood-Gordon,4.0,15.16,13,3.79
+Ryan,Gravenberch,5.0,18.52,74,3.704
+João Pedro,Junqueira de Jesus,5.6,20.46,113,3.6535714
+Igor Julio,dos Santos de Paulo,4.4,16.0,15,3.6363635
+Pablo,Sarabia,5.0,17.98,27,3.596
+Jean-Ricner,Bellegarde,4.9,17.52,77,3.5755103
+Matz,Sels,5.1,18.22,133,3.5725489
+Dango,Ouattara,5.0,17.72,101,3.544
+Cody,Gakpo,7.4,26.08,97,3.5243242
+Crysencio,Summerville,5.6,19.62,33,3.5035717
+Gabriel,Fernando de Jesus,6.9,23.72,40,3.437681
+Will,Hughes,4.9,16.84,53,3.4367347
+Filip,Jrgensen,4.2,14.2,18,3.3809526
+Cole,Palmer,10.7,35.98,181,3.3626168
+Mathias,Jensen,5.3,17.64,28,3.3283017
+Mateo,Kovacic,5.4,17.74,80,3.285185
+Son,Heung-min,9.7,31.620003,123,3.2597942
+James,Tarkowski,4.9,15.96,96,3.2571428
+Raúl,Jimenez,5.5,17.84,120,3.2436364
+Alphonse,Areola,4.2,13.439999,47,3.1999998
+Paul,Onuachu,4.9,15.58,46,3.1795917
+Justin,Kluivert,6.3,20.02,147,3.1777778
+Jérémy,Doku,6.2,19.4,70,3.1290324
+Sandro,Tonali,5.5,17.08,66,3.1054544
+Leon,Bailey,6.2,18.82,46,3.0354838
+Manuel,Akanji,5.3,15.96,44,3.0113206
+Lewis,Dunk,4.2,12.560001,40,2.9904766
+Joelinton Cássio,Apolinario de Lira,6.0,17.8,81,2.9666665
+Roméo,Lavia,4.5,13.3,16,2.9555557
+Timothy,Castagne,4.2,12.36,42,2.9428573
+Riccardo,Calafiori,5.8,17.04,37,2.937931
+Marcus,Rashford,6.6,19.14,82,2.8999999
+Alex,McCarthy,4.2,12.08,12,2.8761907
+Mads,Roerslev Rasmussen,4.3,12.36,34,2.8744185
+Dara,O'Shea,3.9,11.0,38,2.8205128
+Ethan,Nwaneri,4.6,12.84,52,2.7913043
+Craig,Dawson,4.3,12.0,17,2.7906976
+Kyle,Walker-Peters,4.3,11.880001,45,2.762791
+Micky,van de Ven,4.5,12.36,29,2.7466667
+Matthijs,de Ligt,4.8,12.8,68,2.6666665
+Aaron,Cresswell,3.9,10.36,27,2.6564102
+Taylor,Harwood-Bellis,4.0,10.52,44,2.63
+Yankuba,Minteh,5.1,13.2,76,2.5882354
+Lamare,Bogarde,3.9,9.96,6,2.5538461
+Jean-Clair,Todibo,4.2,10.72,38,2.552381
+Gabriel,dos Santos Magalhaes,6.4,16.2,116,2.53125
+Bart,Verbruggen,4.5,11.380001,83,2.5288892
+Gonçalo Manuel,Ganchinho Guedes,5.3,13.28,55,2.5056603
+Jack,Hinshelwood,4.9,12.16,51,2.4816325
+Luis,Diaz,7.5,18.6,147,2.48
+Jan Paul,van Hecke,4.5,11.16,78,2.48
+Dean,Henderson,4.6,11.38,108,2.4739132
+Anthony,Elanga,5.4,13.34,129,2.4703703
+Ryan,Yates,4.8,11.68,59,2.4333334
+Myles,Lewis-Skelly,4.5,10.94,24,2.431111
+Martin,degaard,8.2,19.78,78,2.4121952
+Emmanuel,Agbadou,4.0,9.6,19,2.4
+Diogo,Teixeira da Silva,7.2,17.06,79,2.3694444
+Leny,Yoro,4.3,10.08,14,2.3441858
+Cameron,Archer,4.9,11.46,47,2.3387754
+Diego Carlos,Santos Silva,4.5,10.52,20,2.3377779
+Amad,Diallo,5.6,13.0,107,2.3214285
+Tosin,Adarabioyo,4.2,9.72,50,2.314286
+Tariq,Lamptey,4.4,9.84,40,2.2363636
+Bruno,Guimaraes Rodriguez Moura,6.1,13.4,105,2.1967213
+Kepa,Arrizabalaga,4.6,10.02,73,2.178261
+Emerson,Palmieri dos Santos,4.4,9.36,62,2.1272726
+Ian,Maatsen,4.5,9.48,24,2.1066666
+Dejan,Kulusevski,6.2,13.06,110,2.1064517
 Edson,Alvarez Velazquez,5.0,10.52,36,2.104
-John,McGinn,5.2,10.939999,53,2.103846
-Ilkay,Gundogan,6.3,13.14,55,2.0857143
-Kobbie,Mainoo,5.2,10.8,30,2.0769231
-Bruno,Borges Fernandes,8.6,17.84,154,2.0744185
-Dejan,Kulusevski,6.4,13.06,94,2.040625
-Ryan,Christie,4.9,9.92,75,2.0244899
-Rayan,Ait-Nouri,4.8,9.6,86,2.0
-Sam,Szmodics,5.7,11.36,52,1.9929825
-Pedro,Porro,5.3,10.559999,93,1.9924526
-Alejandro,Garnacho,5.9,11.72,79,1.9864407
-Ian,Maatsen,4.5,8.88,24,1.9733334
-Alexander,Isak,9.4,18.48,169,1.9659575
-Omari,Giraud-Hutchinson,5.2,9.98,77,1.9192307
-Lewis,Hall,5.1,9.64,91,1.8901962
-Christian,Eriksen,5.2,9.8,30,1.8846155
-Declan,Rice,6.2,11.68,90,1.8838711
-Lucas,Bergvall,4.4,8.24,35,1.8727272
-Jhon,Duran,5.8,10.74,53,1.851724
-Jordan,Pickford,5.1,9.44,116,1.8509804
-James,Maddison,7.4,13.54,118,1.8297297
-Alex,Iwobi,5.6,10.18,121,1.8178573
-Radu,Dragusin,4.3,7.8,24,1.8139534
+Kevin,De Bruyne,9.3,19.54,76,2.1010754
+Christian,Eriksen,5.2,10.86,30,2.0884616
+John,McGinn,5.2,10.78,56,2.073077
+Bruno,Borges Fernandes,8.6,17.8,154,2.0697672
+Max,Kilman,4.3,8.88,68,2.0651162
+Omari,Giraud-Hutchinson,5.2,10.62,77,2.0423079
+Kobbie,Mainoo,5.2,10.6,32,2.0384617
+Sam,Szmodics,5.7,11.260001,52,1.9754388
+Alejandro,Garnacho,5.9,11.64,79,1.9728814
+Lewis,Hall,5.0,9.68,101,1.9360001
+Ilkay,Gundogan,6.3,12.16,58,1.9301586
+Dominic,Solanke-Mitchell,7.3,14.080001,87,1.9287672
+Alexander,Isak,9.5,18.1,177,1.9052632
+Ryan,Christie,4.9,9.28,76,1.8938775
+Ollie,Scarles,4.0,7.56,24,1.89
+Rayan,Ait-Nouri,4.8,9.0,88,1.8749999
+Pedro,Porro,5.3,9.88,93,1.8641509
+Yoane,Wissa,6.6,12.26,137,1.8575758
+Tyrone,Mings,4.4,8.16,31,1.8545454
+Declan,Rice,6.2,11.380001,90,1.8354841
+Lucas,Bergvall,4.4,8.0,35,1.8181818
+Konstantinos,Mavropanos,4.3,7.8,38,1.8139534
+Jarrod,Bowen,7.6,13.74,127,1.8078947
+Martin,Dubravka,4.2,7.5799994,44,1.8047619
 André,Trindade da Costa Neto,5.0,9.0,46,1.8
 Stephy,Mavididi,5.0,9.0,60,1.8
-Konstantinos,Mavropanos,4.3,7.68,38,1.7860464
-Rodrigo,Martins Gomes,5.1,9.1,28,1.7843138
-Jarrod,Bowen,7.6,13.46,127,1.7710527
-Flynn,Downes,4.7,8.2,35,1.7446809
-Jake,O'Brien,4.5,7.8,40,1.7333333
-Martin,Dubravka,4.2,7.2,44,1.7142857
-Jens,Cajuste,4.5,7.66,46,1.7022222
-Lesley,Ugochukwu,4.4,7.38,26,1.6772727
-Noni,Madueke,6.0,10.0,100,1.6666666
-Joël,Veltman,4.3,7.12,58,1.6558138
-Sean,Longstaff,4.5,7.4,30,1.6444445
-Oliver,Skipp,4.7,7.6199994,19,1.6212765
-Jarrad,Branthwaite,4.8,7.68,67,1.5999999
-Kieran,Trippier,5.6,8.88,34,1.5857143
-Virgil,van Dijk,6.4,10.08,108,1.5749999
-Pape Matar,Sarr,4.7,7.4,60,1.5744681
-Marc,Cucurella Saseta,5.3,8.3,93,1.5660378
-Carlos Henrique,Casimiro,4.7,7.28,39,1.5489362
-Mark,Flekken,4.4,6.8000007,96,1.5454546
-Jesper,Lindstrm,5.0,7.7000003,44,1.5400001
-Sugawara,Yukinari,4.2,6.36,39,1.5142858
-Nicolás,Dominguez,4.8,7.2399993,37,1.5083331
-Cheick,Doucoure,4.9,7.24,19,1.477551
-Callum,Hudson-Odoi,5.3,7.8000007,95,1.4716982
-Adam,Armstrong,5.1,7.44,45,1.4588236
-Timo,Werner,6.2,8.94,34,1.4419354
-Mario,Lemina,4.8,6.78,47,1.4125
-Mats,Wieffer,4.7,6.6,30,1.4042554
-Jacob,Ramsey,5.4,7.5,52,1.3888888
-Youri,Tielemans,5.5,7.6,85,1.3818182
-Joško,Gvardiol,6.1,8.28,106,1.357377
-Erling,Haaland,14.7,18.52,143,1.259864
-Mateus Gonçalo,Espanha Fernandes,5.0,6.18,61,1.236
-Lucas,Tolentino Coelho de Lima,5.7,7.0400004,71,1.2350879
-Alexis,Mac Allister,6.2,7.64,87,1.2322581
-Brennan,Johnson,6.2,7.62,108,1.2290323
-Michael,Keane,3.8,4.6,33,1.2105263
-Dominik,Szoboszlai,6.4,7.62,111,1.190625
-Levi,Colwill,4.4,5.1,72,1.1590909
-Toti António,Gomes,4.3,4.86,59,1.1302326
-Lucas,Digne,4.5,5.04,75,1.12
-Gabriel,Martinelli Silva,6.5,7.1000004,98,1.0923078
-Pau,Torres,4.2,4.48,32,1.0666667
-Trent,Alexander-Arnold,7.3,7.48,101,1.0246575
-Mohammed,Kudus,6.2,6.28,74,1.0129033
-Vitaly,Janelt,4.9,4.76,68,0.9714286
-Neco,Williams,4.4,4.24,89,0.9636363
-Wesley,Fofana,4.3,4.1,26,0.9534883
-Facundo,Buonanotte,4.6,4.28,63,0.9304348
-Jørgen,Strand Larsen,5.3,4.8,109,0.9056604
-Matty,Cash,4.4,3.92,41,0.8909091
-Marcos,Senesi,4.6,4.08,21,0.8869565
-Dean,Huijsen,4.5,3.96,71,0.88
-Curtis,Jones,5.3,4.52,70,0.8528302
-Liam,Delap,5.6,4.72,108,0.8428571
-Tomáš,Soucek,4.9,4.02,102,0.82040817
+Jake,O'Brien,4.5,8.04,42,1.7866666
+Alex,Iwobi,5.6,9.92,121,1.7714286
+Rodrigo,Martins Gomes,5.1,9.0,28,1.7647059
+Lesley,Ugochukwu,4.4,7.74,29,1.7590908
+Marc,Cucurella Saseta,5.3,9.28,93,1.7509433
+James,Maddison,7.4,12.68,118,1.7135135
+Joël,Veltman,4.3,7.32,58,1.7023256
+Jhon,Duran,5.7,9.66,53,1.6947368
+Sugawara,Yukinari,4.2,7.08,40,1.6857144
+Levi,Colwill,4.4,7.34,72,1.6681818
+Jordan,Pickford,5.1,8.46,119,1.6588236
+Carlos Henrique,Casimiro,4.7,7.7200003,39,1.6425533
+Sean,Longstaff,4.5,7.34,30,1.6311111
+Jarrad,Branthwaite,4.8,7.8,69,1.625
+Pape Matar,Sarr,4.7,7.62,60,1.6212766
+Oliver,Skipp,4.7,7.62,19,1.6212766
+Jens,Cajuste,4.5,7.26,48,1.6133333
+Radu,Dragusin,4.3,6.72,23,1.5627906
+Flynn,Downes,4.7,7.3,35,1.5531915
+Noni,Madueke,6.0,9.22,100,1.5366668
+Jesper,Lindstrm,5.0,7.68,44,1.536
+Mats,Wieffer,4.7,7.14,31,1.519149
+Mark,Flekken,4.4,6.52,97,1.4818182
+Callum,Hudson-Odoi,5.3,7.84,95,1.4792453
+Kieran,Trippier,5.6,8.28,36,1.4785714
+Virgil,van Dijk,6.4,9.36,116,1.4625
+Nicolás,Dominguez,4.8,7.0,37,1.4583333
+Cheick,Doucoure,4.9,7.08,19,1.4448979
+Pau,Torres,4.2,5.98,39,1.4238096
+Timo,Werner,6.2,8.68,34,1.4000001
+Mario,Lemina,4.8,6.6999993,47,1.3958331
+Youri,Tielemans,5.5,7.56,88,1.3745455
+Jacob,Ramsey,5.4,7.3999996,55,1.3703703
+Lucas,Tolentino Coelho de Lima,5.7,7.68,71,1.3473685
+Toti António,Gomes,4.3,5.78,59,1.3441861
+Norberto Bercique,Gomes Betuncal,5.0,6.72,63,1.344
+Michael,Keane,3.8,5.08,33,1.3368421
+Mateus Gonçalo,Espanha Fernandes,5.0,6.56,69,1.312
+Lucas,Digne,4.5,5.76,81,1.2800001
+Trent,Alexander-Arnold,7.5,9.48,133,1.2639999
+Erling,Haaland,14.7,18.1,164,1.2312926
+Matty,Cash,4.4,5.38,47,1.2227273
+Dominik,Szoboszlai,6.4,7.66,114,1.196875
+Gabriel,Martinelli Silva,6.5,7.68,98,1.1815385
+Joško,Gvardiol,6.1,7.2,112,1.1803279
+Adam,Armstrong,5.1,6.0,45,1.1764706
+Brennan,Johnson,6.2,7.2400002,108,1.167742
+Alexis,Mac Allister,6.2,7.0,90,1.1290323
+Neco,Williams,4.4,4.9,89,1.1136364
+Jørgen,Strand Larsen,5.3,5.54,109,1.045283
+Marcos,Senesi,4.6,4.76,22,1.0347826
+Dean,Huijsen,4.5,4.56,71,1.0133333
+Vitaly,Janelt,4.8,4.84,69,1.0083333
+Liam,Delap,5.6,5.5,117,0.98214287
+Facundo,Buonanotte,4.5,4.32,64,0.96000004
+Wesley,Fofana,4.3,3.98,26,0.92558134
+Curtis,Jones,5.3,4.8,73,0.9056604
+Mohammed,Kudus,6.2,5.48,74,0.883871
+Tomáš,Soucek,4.9,4.28,102,0.8734694
+Caoimhin,Kelleher,4.0,3.34,43,0.835
 Hwang,Hee-chan,6.1,4.96,34,0.81311476
-Harvey,Barnes,5.9,4.38,73,0.7423729
-Eddie,Nketiah,5.9,4.32,35,0.7322034
-Jordan,Ayew,5.1,3.72,58,0.7294118
-Mikel,Merino,6.0,4.32,78,0.72
-Caoimhin,Kelleher,4.0,2.58,37,0.645
-Abdukodir,Khusanov,5.0,3.14,14,0.628
-Jean-Philippe,Mateta,7.6,4.08,123,0.5368421
-Kyle,Walker,5.1,2.72,13,0.53333336
-João Pedro,Ferreira Silva,5.9,2.9200003,42,0.4949153
-Dan,Burn,4.4,1.98,73,0.45
-Kai,Havertz,7.8,3.3,84,0.4230769
-Murillo,Santiago Costa dos Santos,4.7,1.88,110,0.4
-Darwin,Nunez Ribeiro,7.0,2.68,60,0.38285714
-William,Saliba,6.3,2.32,116,0.36825395
-Patson,Daka,4.8,1.7,25,0.35416666
-Adam,Wharton,4.7,1.56,22,0.3319149
-Jamie,Vardy,5.3,1.7,100,0.3207547
-Joshua,Zirkzee,6.5,1.7,62,0.26153848
-Matheus,Santos Carneiro Da Cunha,6.9,1.7,116,0.24637681
-Rasmus,Hjlund,6.9,1.7,58,0.24637681
-Omar,Marmoush,7.5,1.7,38,0.22666667
-Bukayo,Saka,10.3,2.24,115,0.21747573
-Mitoma,Kaoru,6.5,1.28,118,0.19692308
-Jadon,Sancho,6.2,1.2,68,0.1935484
-Ederson,Santana de Moraes,5.3,1.0,75,0.18867923
-Mohamed,Salah,13.8,1.12,306,0.08115942
-Sepp,van den Berg,4.1,0.18,38,0.04390244
-Santiago,Bueno,4.3,0.18,42,0.041860465
-Matt,Doherty,4.3,0.18,60,0.041860465
-Lisandro,Martinez,4.4,0.18,66,0.040909093
-Victor,Kristiansen,4.4,0.17999999,32,0.04090909
-Felipe,Rodrigues da Silva,4.5,0.18,35,0.040000003
-Calvin,Bassey,4.5,0.18,67,0.040000003
-Maxence,Lacroix,4.5,0.18,93,0.040000003
-Joe,Gomez,4.9,0.18,13,0.036734696
-Cristian,Romero,4.9,0.18,44,0.036734696
-Benjamin,White,6.1,0.18,29,0.029508198
-Phil,Foden,9.2,0.0,99,0.0
-Yasin,Ayari,5.0,0.0,47,0.0
-Sander,Berge,5.0,0.0,43,0.0
-Matt,O'Riley,5.5,0.0,25,0.0
-Jack,Clarke,5.4,0.0,43,0.0
-Bilal,El Khannouss,4.8,0.0,57,0.0
+Jordan,Ayew,5.1,3.96,59,0.7764706
+Eddie,Nketiah,5.9,4.44,36,0.7525424
+Harvey,Barnes,5.9,4.44,78,0.7525424
+Abdukodir,Khusanov,5.0,3.76,14,0.752
+Mikel,Merino,6.0,4.48,78,0.74666667
+Kyle,Walker,5.1,3.5399997,13,0.6941176
+Jean-Philippe,Mateta,7.6,4.6,124,0.6052632
+João Pedro,Ferreira Silva,5.9,3.34,42,0.5661017
+Dan,Burn,4.4,2.38,75,0.5409091
+William,Saliba,6.3,3.12,116,0.49523807
+Murillo,Santiago Costa dos Santos,4.7,2.32,111,0.49361703
+Kai,Havertz,7.8,3.56,84,0.45641023
+Darwin,Nunez Ribeiro,7.0,3.06,60,0.43714285
+Adam,Wharton,4.7,1.84,23,0.3914894
+Bukayo,Saka,10.3,2.38,115,0.23106797
+Mitoma,Kaoru,6.5,1.48,120,0.2276923
+Patson,Daka,4.8,0.98,27,0.20416667
+Jadon,Sancho,6.2,1.24,68,0.2
+Ederson,Santana de Moraes,5.3,1.0,81,0.18867923
+Jamie,Vardy,5.3,0.98,100,0.18490566
+Sepp,van den Berg,4.1,0.71999997,39,0.17560975
+Matt,Doherty,4.3,0.72,60,0.16744186
+Adam,Webster,4.3,0.72,25,0.16744186
+Santiago,Bueno,4.3,0.71999997,42,0.16744184
+Lisandro,Martinez,4.4,0.72,66,0.16363637
+Victor,Kristiansen,4.4,0.72,32,0.16363637
+Calvin,Bassey,4.5,0.72,67,0.16000001
+Maxence,Lacroix,4.5,0.72,95,0.16000001
+Felipe,Rodrigues da Silva,4.5,0.72,35,0.16000001
+Joe,Gomez,4.7,0.72,14,0.1531915
+Joshua,Zirkzee,6.5,0.9800001,62,0.15076925
+Cristian,Romero,4.9,0.72,44,0.14693879
+Rasmus,Hjlund,6.9,0.9800001,58,0.142029
+Matheus,Santos Carneiro Da Cunha,6.9,0.98,141,0.14202899
+Omar,Marmoush,7.5,0.98,47,0.13066667
+Benjamin,White,6.1,0.72,29,0.11803279
+Mohamed,Salah,13.8,1.06,309,0.07681159
+Manuel,Ugarte,4.9,0.0,35,0.0
+Orel,Mangala,5.0,0.0,36,0.0
+Jack,Clarke,5.4,0.0,44,0.0
+Matt,O'Riley,5.5,0.0,26,0.0
+Carlos,Soler,5.0,0.0,40,0.0
+Bilal,El Khannouss,4.8,0.0,58,0.0
 André,Onana,4.9,0.0,103,0.0
-Sam,Morsy,4.8,0.0,51,0.0
+Sam,Morsy,4.8,0.0,53,0.0
 Bernd,Leno,5.0,0.0,96,0.0
+Jefferson,Lerma Solis,4.8,0.0,45,0.0
+Jacob,Murphy,5.0,0.0,106,0.0
 Anthony,Gordon,7.4,0.0,113,0.0
-Jacob,Murphy,5.0,0.0,101,0.0
-James,Garner,4.9,0.0,24,0.0
-Joe,Aribo,4.9,0.0,67,0.0
-Bryan,Mbeumo,8.1,0.0,179,0.0
-Jefferson,Lerma Solis,4.8,0.0,38,0.0
-Moisés,Caicedo Corozo,4.9,0.0,73,0.0
+Phil,Foden,9.2,0.0,99,0.0
+Joe,Aribo,4.9,0.0,68,0.0
+James,Garner,4.9,0.0,26,0.0
+José,Malheiro de Sa,4.4,0.0,71,0.0
 Christopher,Nkunku,5.7,0.0,58,0.0
-João Victor,Gomes da Silva,4.9,0.0,72,0.0
+Pedro,Lomba Neto,6.2,0.0,69,0.0
 James,Ward-Prowse,6.1,0.0,27,0.0
 Łukasz,Fabianski,4.0,0.0,36,0.0
-José,Malheiro de Sa,4.4,0.0,71,0.0
-Sávio 'Savinho',Moreira de Oliveira,6.2,0.0,91,0.0
+Moisés,Caicedo Corozo,4.9,0.0,73,0.0
+João Victor,Gomes da Silva,4.9,0.0,72,0.0
+Morgan,Rogers,5.5,0.0,124,0.0
+Bryan,Mbeumo,8.1,0.0,187,0.0
 Arijanet,Muric,4.4,0.0,49,0.0
-Pedro,Lomba Neto,6.2,0.0,69,0.0
-Morgan,Rogers,5.5,0.0,113,0.0
-Orel,Mangala,5.0,0.0,39,0.0
-Manuel,Ugarte,4.9,0.0,35,0.0
-Carlos,Soler,5.0,0.0,40,0.0
-Alex,Palmer,4.5,0.0,9,0.0
+Sávio 'Savinho',Moreira de Oliveira,6.2,0.0,100,0.0
+Yasin,Ayari,5.0,0.0,49,0.0
+Sander,Berge,5.0,0.0,43,0.0
+Alex,Palmer,4.5,0.0,12,0.0
+Nico,Gonzalez,6.0,0.0,14,0.0

@@ -1,3 +1,5 @@
+import { trackComparison } from './analytics.js';
+
 // DOMContentLoaded event handler
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOMContentLoaded event triggered');
@@ -42,30 +44,28 @@ const teamTshirts = {
     'Unknown': '/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg', // Default for unknown teams
 };
 
-// Update the initializeComparePage function to be reusable
 function initializeComparePage() {
-    console.log('initializeComparePage function called');
 
-    // Fetch and initialize pills
     Promise.all([
-        fetch('/get_players').then(response => response.json()),
-        fetch('/get_players_by_team').then(response => response.json()),
-        fetch('/get_players_by_position').then(response => response.json()),
-        fetch('/get_player_index_scores').then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
+        fetch('/get_players').then(r => r.json()),
+        fetch('/get_players_by_team').then(r => r.json()),
+        fetch('/get_players_by_position').then(r => r.json()),
+        fetch('/get_player_index_scores').then(r => {
+            if (!r.ok) throw new Error('Failed to fetch index scores');
+            return r.json();
         })
-    ]).then(([allPlayers, playersByTeam, playersByPosition, playerIndexScores]) => {
+    ])
+    .then(([allPlayers, playersByTeam, playersByPosition, playerIndexScores]) => {
+
+        if (!Array.isArray(allPlayers)) {
+            console.error('Expected array for allPlayers, got:', allPlayers);
+            return;
+        }
+
         // Merge index scores with player data
         allPlayers.forEach(player => {
             const indexScore = playerIndexScores.find(score => score.id === player.id);
-            if (indexScore) {
-                player.player_index_score = indexScore.player_score;
-            } else {
-                player.player_index_score = 'TBD';
-            }
+            player.player_index_score = indexScore ? indexScore.player_score : 'TBD';
         });
 
         const playerData = {
@@ -73,28 +73,38 @@ function initializeComparePage() {
             'By Team': playersByTeam,
             'By Position': playersByPosition
         };
+
+        console.log('playerData keys:', Object.keys(playerData));
         initializePills(playerData);
 
-        // Flatten players by team and position for the dropdowns
+        // Flatten players for dropdowns
         const flattenedPlayersByTeam = flattenPlayersData(playersByTeam);
         const flattenedPlayersByPosition = flattenPlayersData(playersByPosition);
 
-        // Make "All Players" pill active by default and populate the dropdowns
+        // Populate the default view
         populateDropdown('player1Dropdown', allPlayers);
         populateDropdown('player2Dropdown', allPlayers);
-        document.querySelector('.pill[data-structure="All Players"]').classList.add('active');
-        document.querySelector('.pill[data-structure="All Players"]').click();
+        const defaultPill = document.querySelector('.pill[data-structure="All Players"]');
+        if (defaultPill) {
+            defaultPill.classList.add('active');
+            defaultPill.click();
+        }
 
-        // Attach event listener to the compare button
+        // Compare button logic
         document.getElementById('compareButton').addEventListener('click', function () {
             comparePlayers(allPlayers);
         });
 
-        // Add event listeners for custom dropdowns with flattened players by team and position
+        // Set up dropdowns
         setupCustomDropdown('player1Dropdown', flattenedPlayersByTeam);
         setupCustomDropdown('player2Dropdown', flattenedPlayersByTeam);
-    }).catch(error => console.error('Error loading player data:', error));
+    })
+    .catch(error => {
+        console.error('Something went wrong loading comparison data:', error);
+    });
 }
+
+
 // Function to initialize pills for different player structures
 function initializePills(playerData) {
     console.log('initializePills function called');
@@ -418,6 +428,8 @@ function comparePlayers(allPlayers) {
 
     console.log('Comparing players:', player1, player2); // Updated log
 
+    trackComparison(id1, id2, player1.full_name, player2.full_name);
+
     fetch(`/compare_players?id1=${id1}&id2=${id2}`)
         .then(response => response.json())
         .then(data => {
@@ -549,131 +561,6 @@ function toggleControls(showControls) {
         editIcon.style.display = 'block';
         editButton.style.display = 'flex';
     }
-}
-
-// ===================================================================================
-
-// Initialize dropdowns with new simplified approach
-function initializeDropdown(dropdownId, players) {
-    console.log('initializeDropdown function called for', dropdownId);
-    const dropdown = document.getElementById(dropdownId);
-    const selected = dropdown.querySelector('.selected');
-    const options = dropdown.querySelector('.options');
-    const searchInput = dropdown.querySelector('.search-input');
-    let isDropdownOpen = false;
-
-    if (!selected || !options || !searchInput) {
-        console.error(`Dropdown elements not found for ${dropdownId}`);
-        return;
-    }
-
-    selected.addEventListener('click', function (e) {
-        e.stopPropagation();
-        toggleDropdown(dropdown, !isDropdownOpen);
-        isDropdownOpen = !isDropdownOpen;
-    });
-
-    options.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (e.target.classList.contains('option')) {
-            const category = e.target.dataset.category;
-            if (category) {
-                console.log('Option selected in', dropdownId, 'category:', category);
-                showCategoryItems(dropdownId, category, players[category]);
-            } else {
-                selected.textContent = e.target.textContent;
-                selected.dataset.id = e.target.dataset.id;
-                selected.dataset.team = e.target.dataset.team;
-                toggleDropdown(dropdown, false);
-                isDropdownOpen = false;
-            }
-        }
-    });
-
-    searchInput.addEventListener('input', function (e) {
-        e.stopPropagation();
-        const searchTerm = this.value.toLowerCase();
-        const items = options.querySelectorAll('.option');
-        items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(searchTerm) ? '' : 'none';
-        });
-    });
-
-    document.addEventListener('click', function (e) {
-        if (!dropdown.contains(e.target)) {
-            toggleDropdown(dropdown, false);
-            isDropdownOpen = false;
-        }
-    });
-}
-
-// Function to toggle dropdown open/close
-function toggleDropdown(dropdown, open) {
-    if (open) {
-        console.log('Dropdown is closed, adding "open" class');
-        document.querySelectorAll('.custom-dropdown').forEach(dd => dd.classList.remove('open'));
-        dropdown.classList.add('open');
-    } else {
-        console.log('Dropdown is open, removing "open" class');
-        dropdown.classList.remove('open');
-    }
-}
-
-// Function to show category items in dropdown
-function showCategoryItems(dropdownId, category, items) {
-    console.log('showCategoryItems function called for', dropdownId, 'and category', category);
-    const dropdown = document.getElementById(dropdownId);
-    const options = dropdown.querySelector('.options');
-    const searchBarHtml = options.querySelector('.search-container').outerHTML; // Get the existing search bar HTML
-    const firstLayerHtml = options.innerHTML.replace(searchBarHtml, ''); // Remove the search bar HTML from the first layer
-
-    if (!items) {
-        console.error(`No items found for category ${category}`);
-        return;
-    }
-
-    options.innerHTML = `
-        <div class="back-button-container" style="position: sticky; top: 0; background-color: white; z-index: 1;">
-            <span class="material-icons back-icon">chevron_left</span>
-            <div class="back-button">Back</div>
-            <span>//</span>
-            <span class="category-title">${category}</span>
-        </div>
-        ${searchBarHtml}
-        <div class="second-layer">
-            ${Object.entries(items).map(([playerName, playerData]) => `
-                <div class="option" data-id="${playerData.id}" data-team="${playerData.team}">${playerData.full_name}</div>
-            `).join('')}
-        </div>
-    `;
-
-    const backButton = dropdown.querySelector('.back-button');
-    backButton.addEventListener('click', function () {
-        options.innerHTML = `${searchBarHtml}${firstLayerHtml}`;
-        initializeDropdown(dropdownId, { category: items }); // Re-initialize the first layer correctly
-    });
-
-    const searchInput = dropdown.querySelector('.search-input');
-    searchInput.addEventListener('input', function () {
-        const searchTerm = this.value.toLowerCase();
-        const items = options.querySelectorAll('.second-layer .option');
-        items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(searchTerm) ? '' : 'none';
-        });
-    });
-
-    options.addEventListener('click', function (e) {
-        const option = e.target.closest('.option'); // Ensure we get the correct element
-        if (option && option.dataset.id) {
-            const selected = dropdown.querySelector('.selected');
-            selected.textContent = option.textContent;
-            selected.dataset.id = option.dataset.id;
-            selected.dataset.team = option.dataset.team;
-            toggleDropdown(dropdown, false); // Close the dropdown after selection
-        }
-    });
 }
 
 // Initialize general data on initial site load
