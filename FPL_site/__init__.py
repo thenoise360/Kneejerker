@@ -3,8 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from .config import current_config
 import cryptography
 import os
+from whitenoise import WhiteNoise
 
 app = Flask(__name__)
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
 
 # Set the secret key (must be unique and secret)
 app.secret_key = os.urandom(24)  # Generates a random secure key
