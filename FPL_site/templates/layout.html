@@ -124,18 +124,22 @@
         function showCookieBanner() {
             if (!document.getElementById("cookie-consent-banner")) {
                 const banner = document.createElement("div");
+                banner.id = "cookie-consent-banner";
                 banner.innerHTML = `
-                    <div id="cookie-consent-banner" class="cookie-banner">
-                        <span class="cookie-text">We use cookies to improve your experience and analyze traffic.</span>
+                    <div class="cookie-banner-inner">
+                        <span class="cookie-text">
+                            We use cookies to improve your experience and analyze traffic.
+                        </span>
                         <div class="cookie-buttons">
                             <button onclick="setConsent(true)" class="cookie-button-primary">Accept Analytics</button>
                             <button onclick="setConsent(false)" class="cookie-button-secondary">Decline</button>
                         </div>
-                    </div>`;
+                    </div>
+                `;
                 document.body.appendChild(banner);
             }
         }
-    
+
         window.addEventListener("load", () => {
             setTimeout(() => {
                 const consentCookie = getConsentCookie();
