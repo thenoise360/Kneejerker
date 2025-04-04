@@ -19,6 +19,192 @@
     box-sizing: border-box;
 }
 
+/* Cookie Banner Styling */
+.cookie-banner {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #fff;
+    border-top: 1px solid #ccc;
+    padding: 1rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+}
+
+.cookie-text {
+    flex: 1 1 60%;
+    text-align: left;
+}
+
+.cookie-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1 1 35%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.cookie-button-primary,
+.cookie-button-secondary {
+    border-radius: 3px;
+    border: none;
+    padding: 6px 10px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+    width: auto;
+    flex: 1 1 auto;
+}
+
+.cookie-button-primary {
+    background-color: var(--secondary-color);
+    color: var(--black-80);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.cookie-button-primary:hover {
+    background-color: var(--black-10);
+    color: var(--secondary-color);
+}
+
+.cookie-button-secondary {
+    background-color: var(--black-30);
+    color: var(--black-80);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.cookie-button-secondary:hover {
+    background-color: var(--black-20);
+    color: var(--black-70);
+}
+
+/* Responsive behavior for mobile */
+@media screen and (max-width: 600px) {
+    .cookie-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.25rem;
+    }
+
+    .cookie-text {
+        flex: 1 1 100%;
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+
+    .cookie-buttons {
+        justify-content: center;
+        flex: 1 1 100%;
+        gap: 1rem;
+    }
+
+    .cookie-button-primary,
+    .cookie-button-secondary {
+        width: 45%;
+        min-width: 100px;
+    }
+}
+
+/* ====================================================== */
+/* Analytics Toggle */
+
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1rem;
+  }
+  
+  .toggle {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    display: inline-block;
+  }
+  
+  .toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .toggle .slider {
+    all: unset;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 50px;
+    height: 28px;
+    background-color: var(--primary-color); /* OFF = pink */
+    border-radius: 28px;
+    cursor: pointer;
+    transition: background-color 0.4s ease;
+  }
+  
+  .toggle .slider::before {
+    content: "";
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    top: 4px;
+    left: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.4s ease;
+  }
+  
+  .toggle input:checked + .slider {
+    background-color: var(--secondary-color); /* ON = teal */
+  }
+  
+  .toggle input:checked + .slider::before {
+    transform: translateX(22px);
+  }
+  
+  /* =============================================================== */
+  /* Toast */
+  
+  .toast-message {
+    position: fixed;
+    bottom: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    opacity: 0;
+    z-index: 10000;
+    transition: bottom 0.5s ease, opacity 0.5s ease;
+  }
+  
+  .toast-message.show {
+    opacity: 1;
+    bottom: 30px;
+    animation: bounceIn 0.5s ease;
+  }
+  
+  @keyframes bounceIn {
+    0%   { transform: translateX(-50%) translateY(100%); }
+    60%  { transform: translateX(-50%) translateY(-10px); }
+    80%  { transform: translateX(-50%) translateY(5px); }
+    100% { transform: translateX(-50%) translateY(0); }
+  }
+  /* =============================================================== */
+  
+
 .team-loader {
     display: flex;
     width: -webkit-fill-available;

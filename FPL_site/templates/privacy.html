@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Privacy & Cookie Policy</h1>
+<p>We use cookies to enhance your experience, including analytics through Mixpanel. These cookies are only set if you accept them via our cookie banner.</p>
+<p>You can withdraw or update your consent at any time by clearing your browser's localStorage or by updating your preference below.</p>
+
+<div class="toggle-wrapper">
+  <label class="toggle">
+    <input type="checkbox" id="analytics-toggle">
+    <span class="slider"></span>
+  </label>
+  <span id="toggle-label">Analytics: <strong id="toggle-state">Off</strong></span>
+</div>
+
+<div id="toast" class="toast-message">✅ Saved!</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggle = document.getElementById('analytics-toggle');
+    const label = document.getElementById('toggle-state');
+    const toast = document.getElementById('toast');
+
+    function showToast() {
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    function updateConsentUI(consent) {
+      toggle.checked = consent;
+      label.textContent = consent ? 'On' : 'Off';
+
+      // Save to cookie & localStorage
+      const expiration = new Date();
+      expiration.setTime(expiration.getTime() + 90 * 24 * 60 * 60 * 1000);
+      document.cookie = `analyticsConsent=${consent}; expires=${expiration.toUTCString()}; path=/`;
+      localStorage.setItem('analyticsConsent', consent.toString());
+
+      // Clear Mixpanel if OFF
+      if (!consent) {
+        document.cookie.split(';').forEach(c => {
+          if (c.trim().startsWith('mp_')) {
+            const name = c.split('=')[0].trim();
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+          }
+        });
+      }
+
+      showToast();
+    }
+
+    // Initial load
+    const storedConsent = localStorage.getItem('analyticsConsent') === 'true';
+    updateConsentUI(storedConsent);
+
+    toggle.addEventListener('change', () => {
+      const isChecked = toggle.checked;
+      updateConsentUI(isChecked);
+      location.reload(); // Reload to re-init or remove Mixpanel
+    });
+  });
+</script>
+{% endblock %}

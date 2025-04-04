@@ -25,6 +25,12 @@ def my_team():
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     return render_template('my-team.html', is_ajax=is_ajax, title='My Team', mixpanel_token=current_config.MIXPANEL_TOKEN)
 
+@app.route('/privacy')
+def privacy():
+    logger.info("Request for privacy page")
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    return render_template('privacy.html', is_ajax=is_ajax, title='Privacy policy', mixpanel_token=current_config.MIXPANEL_TOKEN)
+
 @app.route('/login-fpl', methods=['POST'])
 def login_fpl():
     """

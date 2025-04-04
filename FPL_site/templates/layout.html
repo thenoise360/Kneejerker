@@ -75,12 +75,84 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
 
     <!-- Mixpanel tracking for making product decisions-->
-    <script src="{{ url_for('static', filename='scripts/analytics.js') }}" type="module"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mixpanel-browser/build/mixpanel.umd.min.js"></script>
+    <script type="module" src="{{ url_for('static', filename='scripts/analytics.js') }}"></script>
+    <script>window.MIXPANEL_TOKEN = "{{ mixpanel_token }}";</script>
 
     <!-- Custom Scripts -->
     <script src="{{ url_for('static', filename='scripts/script.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/compare.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/home.js') }}"></script> <!-- Ensure home.js is loaded last -->
+    <script type="module" src="{{ url_for('static', filename='scripts/compare.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='scripts/home.js') }}"></script>
+    
+
+
+    <!-- Cookie consent scripts-->
+    <script>
+        function hasConsent() {
+            return localStorage.getItem("analyticsConsent") === "true";
+        }
+    
+        function getConsentCookie() {
+            const match = document.cookie.match(/(^| )analyticsConsent=([^;]+)/);
+            return match ? match[2] : null;
+        }
+    
+        function setConsent(granted) {
+            localStorage.setItem("analyticsConsent", granted ? "true" : "false");
+            const expiry = new Date();
+            expiry.setTime(expiry.getTime() + (90 * 24 * 60 * 60 * 1000)); // 90 days
+            document.cookie = `analyticsConsent=${granted}; path=/; expires=${expiry.toUTCString()}`;
+    
+            console.log(`✅ Consent ${granted ? 'accepted' : 'declined'} and saved.`);
+    
+            if (granted) {
+                loadAnalytics();
+            }
+    
+            const banner = document.getElementById("cookie-consent-banner");
+            if (banner) banner.remove();
+        }
+    
+        function loadAnalytics() {
+            console.log("📊 Loading analytics...");
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = "/static/scripts/analytics.js";
+            document.head.appendChild(script);
+        }
+    
+        function showCookieBanner() {
+            if (!document.getElementById("cookie-consent-banner")) {
+                const banner = document.createElement("div");
+                banner.innerHTML = `
+                    <div id="cookie-consent-banner" class="cookie-banner">
+                        <span class="cookie-text">We use cookies to improve your experience and analyze traffic.</span>
+                        <div class="cookie-buttons">
+                            <button onclick="setConsent(true)" class="cookie-button-primary">Accept Analytics</button>
+                            <button onclick="setConsent(false)" class="cookie-button-secondary">Decline</button>
+                        </div>
+                    </div>`;
+                document.body.appendChild(banner);
+            }
+        }
+    
+        window.addEventListener("load", () => {
+            setTimeout(() => {
+                const consentCookie = getConsentCookie();
+    
+                if (consentCookie === "true") {
+                    console.log("✅ Consent previously granted.");
+                    loadAnalytics();
+                } else if (consentCookie === null) {
+                    console.log("⚠️ No consent cookie found. Showing banner.");
+                    showCookieBanner();
+                } else {
+                    console.log("❌ Consent declined. Banner hidden.");
+                }
+            }, 6500); // after overlay fades out
+        });
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
