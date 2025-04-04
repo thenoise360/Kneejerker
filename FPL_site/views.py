@@ -23,7 +23,7 @@ from .futurePerformanceModel import( team_optimization )
 def my_team():
     logger.info("Request for my-team page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('my-team.html', is_ajax=is_ajax, title='My Team',, mixpanel_token=current_config.MIXPANEL_TOKEN)
+    return render_template('my-team.html', is_ajax=is_ajax, title='My Team', mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/login-fpl', methods=['POST'])
 def login_fpl():
