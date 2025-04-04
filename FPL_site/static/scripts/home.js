@@ -27,42 +27,47 @@ document.addEventListener('DOMContentLoaded', function () {
     const dictionaryText = document.querySelector('.dictionary-content');
     const currentURL = window.location.href;
 
-    if (currentURL.includes('kneejerker.co.uk') || currentURL.includes('heroku') || currentURL.includes('localhost')) {
-        overlay.style.display = 'flex';  // Show the overlay
-    }
-
-    let overlayVisibleTime = 0;
     const minimumOverlayDuration = 6000;
+    let overlayVisibleTime = 0;
 
     function showOverlay() {
-        overlay.classList.remove('fade-out');
-        overlay.style.display = 'flex';
+        if (currentURL.includes('kneejerker.co.uk') || currentURL.includes('heroku') || currentURL.includes('localhost')) {
+            overlay.style.display = 'flex';
+        }
         dictionaryText.style.opacity = '0';
-
         setTimeout(() => {
             dictionaryText.style.opacity = '1';
         }, 100);
-
         overlayVisibleTime = Date.now();
     }
 
-    function hideOverlay() {
+    function hideOverlay(callback) {
         const elapsedTime = Date.now() - overlayVisibleTime;
         const remainingTime = minimumOverlayDuration - elapsedTime;
-
         setTimeout(() => {
             overlay.classList.add('fade-out');
             setTimeout(() => {
                 overlay.style.display = 'none';
                 overlay.classList.remove('fade-out');
+                if (callback) callback();
             }, 500);
         }, remainingTime > 0 ? remainingTime : 0);
     }
 
     showOverlay();
-    setTimeout(() => {
-        hideOverlay();
-    }, minimumOverlayDuration);
+    showLoader();
+
+    hideOverlay(() => {
+        const consent = localStorage.getItem("analyticsConsent");
+        if (consent === "true") {
+            import("./analytics.js").then(module => {
+                if (typeof module.initMixpanel === 'function') {
+                    module.initMixpanel(window.MIXPANEL_TOKEN);
+                }
+            });
+        }
+        hideLoader();
+    });
 
     /* ------------------ Global Vars & DOM Elements ------------------ */
 
