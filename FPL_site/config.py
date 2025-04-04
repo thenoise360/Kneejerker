@@ -28,6 +28,8 @@ class ProductionConfig(Config):
     DATABASE = os.getenv('DATABASE')
     MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
 
+    print(f"Production - MIXPANEL_TOKEN: {MIXPANEL_TOKEN}")
+
 def get_config():
     env = os.getenv('FLASK_ENV', 'development')
     if env == 'production':
