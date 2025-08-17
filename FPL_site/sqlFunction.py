@@ -14,7 +14,7 @@ user = current_config.USER
 password = current_config.PASSWORD
 db = current_config.DATABASE
 
-season_start = "2024"
+season_start = "2025"
 
 # Database connection
 def connect_to_db(user, password, database, host):

@@ -64,8 +64,8 @@ USER = current_config.USER
 PASSWORD = current_config.PASSWORD
 DB = current_config.DATABASE
 
-season = "2023_2024"
-season_start = 2024
+season = "2024_2025"
+season_start = 2025
 
 # Weighted array for last 5 GWs: newest=2.0 => older=1.8 => 1.6 => 1.4 => 1.2
 form_weights = [2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2]

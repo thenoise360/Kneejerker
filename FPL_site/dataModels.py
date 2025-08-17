@@ -46,8 +46,8 @@ user = current_config.USER
 password = current_config.PASSWORD
 db = current_config.DATABASE
 
-season = "2023_2024"
-season_start = 2024
+season = "2024_2025"
+season_start = 2025
 
 NULL = None
 
@@ -308,7 +308,7 @@ def get_player_index_scores():
         MIN((total_points / (now_cost / 10)) * (100 - selected_by_percent)) AS min_points_per_mill_per_perc_not_selected,
         MAX((total_points / (now_cost / 10)) * (100 - selected_by_percent)) AS max_points_per_mill_per_perc_not_selected
     FROM {db}.bootstrapstatic_elements
-    WHERE year_start = 2024
+    WHERE year_start = 2025
       AND gameweek = {gameweek}
       AND element_type IN (1, 2, 3, 4)
       AND total_points > 0
@@ -329,7 +329,7 @@ def get_player_index_scores():
         FROM {db}.bootstrapstatic_elements
         JOIN min_max_values AS min_max
         ON 1=1 -- Cartesian join to make min and max values available for every row
-        WHERE year_start = 2024
+        WHERE year_start = 2025
         AND gameweek = {gameweek}
         AND element_type IN (1, 2, 3, 4)
         
@@ -344,7 +344,7 @@ def get_player_index_scores():
             AVG((total_points / (now_cost / 10)) * (100 - selected_by_percent)) AS points_per_mill_per_perc_not_selected,
             50 AS player_score -- No player score for the mean row
         FROM {db}.bootstrapstatic_elements
-        WHERE year_start = 2024
+        WHERE year_start = 2025
         AND gameweek = {gameweek}
         AND element_type IN (1, 2, 3, 4)
         AND (minutes / {gameweek}) > 45
