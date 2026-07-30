@@ -7,6 +7,7 @@ vs-env/
 *.env
 *.sqlite3
 *.log
+.Kneejerker Tasks
 
 # Mac
 .DS_Store
@@ -20,3 +21,4 @@ node_modules/
 # Env files
 .env.*
 .env
+/Kneejerker Tasks/

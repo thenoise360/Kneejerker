@@ -9,5 +9,9 @@ if os.path.join(project_root, 'FPL_site') not in sys.path:
     sys.path.append(os.path.join(project_root, 'FPL_site'))
 
 from sqlFunction import update_all_tables
+from FPL_site.futurePerformanceModel import run_daily_predictions
+from FPL_site.matchPredictionEngine import run_daily_match_predictions
 
 update_all_tables()
+run_daily_predictions()
+run_daily_match_predictions()

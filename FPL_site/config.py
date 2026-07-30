@@ -17,7 +17,6 @@ class DevelopmentConfig(Config):
     # Print out the variables for debugging
     print(f"Development - HOST: {HOST}")
     print(f"Development - USER: {USER}")
-    print(f"Development - PASSWORD: {PASSWORD}")
     print(f"Development - DATABASE: {DATABASE}")
 
 class ProductionConfig(Config):

@@ -1,0 +1,43 @@
+{% if not is_ajax %}
+{% extends 'layout.html' %}
+{% endif %}
+
+{% block content %}
+<!-- 
+     Container for tray: #discovery-tray
+     Container for categories: #discovery-categories
+     Tickets 04.2-04.12 will hook into these.
+-->
+<div class="app-body">
+    <div class="discovery-header">
+        <div class="eyebrow-sm">discovery</div>
+        <h2 class="title">Discover</h2>
+        <p class="sub">Find players and compare options.</p>
+    </div>
+
+    <div class="search-container" style="margin-top: 16px; margin-bottom: 24px; position: relative;">
+        <input type="text" id="player-search" class="discovery-search-input" placeholder="Search players..." 
+               style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1.5px solid var(--black-20); font-family: var(--font); font-size: 14px;">
+        <div id="discovery-search-results" class="search-results-list" style="display: none;"></div>
+    </div>
+
+    <!-- Empty tray area (populated in 04.3) -->
+    <div id="discovery-tray" class="discovery-tray">
+    </div>
+
+    <!-- Mode Panel for single/comparison views (Ticket 04.13/04.14) -->
+    <div id="mode-panel-container" class="mode-panel-container" style="display: none;">
+    </div>
+
+    <!-- Empty categories area (populated in 04.4 onwards) -->
+    <div id="discovery-categories" class="discovery-categories">
+    </div>
+</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='content/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='content/discovery.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='scripts/discovery.js') }}" type="module"></script>
+{% endblock %}

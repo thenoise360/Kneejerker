@@ -54,8 +54,6 @@
     <Content Include="FPL_site\templates\compare.html" />
     <Content Include="FPL_site\templates\test_template.html" />
     <Content Include="requirements.txt" />
-    <Content Include="FPL_site\static\content\bootstrap.css" />
-    <Content Include="FPL_site\static\content\bootstrap.min.css" />
     <Content Include="FPL_site\static\fonts\glyphicons-halflings-regular.eot" />
     <Content Include="FPL_site\static\fonts\glyphicons-halflings-regular.svg" />
     <Content Include="FPL_site\static\fonts\glyphicons-halflings-regular.ttf" />

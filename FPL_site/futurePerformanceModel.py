@@ -15,6 +15,7 @@ Key Points:
 
 import pandas as pd
 import os
+from datetime import datetime
 from sqlalchemy import create_engine
 import pymysql
 from sklearn.ensemble import RandomForestRegressor
@@ -64,8 +65,10 @@ USER = current_config.USER
 PASSWORD = current_config.PASSWORD
 DB = current_config.DATABASE
 
-season = "2024_2025"
-season_start = 2025
+season = "2025_2026"
+season_start = 2026
+
+PREDICTIONS_TABLE = 'player_predictions'
 
 # Weighted array for last 5 GWs: newest=2.0 => older=1.8 => 1.6 => 1.4 => 1.2
 form_weights = [2.0, 1.8, 1.6, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2]
@@ -94,8 +97,127 @@ def fetch_mysql_data(query, database, chunksize=None):
     logging.info(f"Fetched {len(df)} rows from {database}.")
     return df
 
+def persist_predictions(players_df, gameweek):
+    """
+    Write per-player predictions for `gameweek` to PREDICTIONS_TABLE -
+    batched INSERT ... ON DUPLICATE KEY UPDATE, the same write pattern
+    sqlFunction.py uses for its other table updates. Replaces the old
+    to_csv() output; called once daily from run_daily_predictions().
+    """
+    required_cols = [
+        'id', 'predicted_performance', 'total_points', 'form',
+        'minutes', 'now_cost', 'element_type'
+    ]
+    missing = [c for c in required_cols if c not in players_df.columns]
+    if missing:
+        raise KeyError(f"Cannot persist predictions, missing columns: {missing}")
+
+    df = players_df.copy()
+    for col in ['web_name', 'team', 'team_code']:
+        if col not in df.columns:
+            df[col] = None
+
+    computed_at = datetime.utcnow()
+    records = []
+    for _, row in df.iterrows():
+        records.append((
+            int(row['id']),
+            int(gameweek),
+            float(row['predicted_performance']) if pd.notna(row['predicted_performance']) else None,
+            float(row['total_points']) if pd.notna(row['total_points']) else None,
+            float(row['form']) if pd.notna(row['form']) else None,
+            float(row['minutes']) if pd.notna(row['minutes']) else None,
+            float(row['now_cost']) if pd.notna(row['now_cost']) else None,
+            int(row['element_type']) if pd.notna(row['element_type']) else None,
+            row['web_name'] if pd.notna(row['web_name']) else None,
+            row['team'] if pd.notna(row['team']) else None,
+            int(row['team_code']) if pd.notna(row['team_code']) else None,
+            computed_at,
+        ))
+
+    if not records:
+        logging.warning("persist_predictions called with no rows to write.")
+        return
+
+    conn = pymysql.connect(host=HOST, user=USER, password=PASSWORD, database=DB)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(f"""
+                CREATE TABLE IF NOT EXISTS {PREDICTIONS_TABLE} (
+                    player_id INT NOT NULL,
+                    gameweek INT NOT NULL,
+                    predicted_performance FLOAT,
+                    total_points FLOAT,
+                    form FLOAT,
+                    minutes FLOAT,
+                    now_cost FLOAT,
+                    element_type INT,
+                    web_name VARCHAR(255),
+                    team VARCHAR(255),
+                    team_code INT,
+                    computed_at DATETIME,
+                    PRIMARY KEY (player_id, gameweek)
+                )
+            """)
+            sql = f"""
+                INSERT INTO {PREDICTIONS_TABLE}
+                    (player_id, gameweek, predicted_performance, total_points,
+                     form, minutes, now_cost, element_type, web_name, team,
+                     team_code, computed_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    predicted_performance = VALUES(predicted_performance),
+                    total_points = VALUES(total_points),
+                    form = VALUES(form),
+                    minutes = VALUES(minutes),
+                    now_cost = VALUES(now_cost),
+                    element_type = VALUES(element_type),
+                    web_name = VALUES(web_name),
+                    team = VALUES(team),
+                    team_code = VALUES(team_code),
+                    computed_at = VALUES(computed_at)
+            """
+            cursor.executemany(sql, records)
+        conn.commit()
+        logging.info(f"Persisted {len(records)} player predictions for gameweek {gameweek}.")
+    finally:
+        conn.close()
+
+def load_stored_predictions(gameweek=None):
+    """
+    Read back the predictions persist_predictions() wrote for `gameweek`
+    (default: current gameweek). Falls back to the most recent gameweek
+    actually stored if the daily job hasn't run yet for the requested one,
+    rather than erroring or blocking on a live retrain.
+    """
+    if gameweek is None:
+        gameweek = get_current_gameweek()
+
+    engine = create_engine(f'mysql+pymysql://{USER}:{PASSWORD}@{HOST}/{DB}')
+
+    df = pd.read_sql(
+        f"SELECT * FROM {PREDICTIONS_TABLE} WHERE gameweek = {int(gameweek)}",
+        engine
+    )
+
+    if df.empty:
+        fallback = pd.read_sql(f"SELECT MAX(gameweek) AS max_gw FROM {PREDICTIONS_TABLE}", engine)
+        max_gw = fallback['max_gw'].iloc[0]
+        if pd.isna(max_gw):
+            logging.error("No stored predictions available in the database.")
+            return pd.DataFrame(), None
+        gameweek = int(max_gw)
+        logging.warning(f"No predictions stored for the requested gameweek; falling back to gameweek {gameweek}.")
+        df = pd.read_sql(
+            f"SELECT * FROM {PREDICTIONS_TABLE} WHERE gameweek = {gameweek}",
+            engine
+        )
+
+    df = df.rename(columns={'player_id': 'id'})
+    return df, gameweek
+
 def get_current_gameweek():
-    """Fetch current gameweek from the official FPL API."""
+    """Fetch current gameweek from the official FPL API. Returns 0 for pre-season."""
     logging.info("Fetching current gameweek from the bootstrap-static API.")
     try:
         response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
@@ -107,15 +229,25 @@ def get_current_gameweek():
             if e.get('is_current', False):
                 current_gw = e.get('id', None)
                 break
+        
         if current_gw is not None:
             logging.info(f"Current gameweek determined to be: {current_gw}")
             return current_gw
-        else:
-            logging.error("Current gameweek not found in API response.")
-            raise ValueError("Current gameweek not found.")
+        
+        # Check for pre-season (no current, but next exists)
+        next_gw = next((e.get('id') for e in events if e.get('is_next', False)), None)
+        if next_gw == 1:
+            logging.info("Pre-season detected (next GW is 1). Returning GW 0.")
+            return 0
+        elif next_gw:
+            logging.info(f"Between gameweeks. Previous was {next_gw - 1}.")
+            return next_gw - 1
+            
+        logging.error("Current gameweek not found in API response.")
+        return 1 # Fallback
     except requests.exceptions.RequestException as e:
         logging.error(f"Failed fetching current gameweek: {e}")
-        raise
+        return 1 # Fallback
 
 #################################################
 #         Data Cleaning & Preparation           #
@@ -239,9 +371,52 @@ def validate_players_df(players_df):
             logging.info(f"Converted '{col}' to numeric in players_df.")
 
 def prepare_data():
-    """Fetch data from MySQL, clean, filter, compute form, etc."""
+    """Fetch data from Live FPL API and MySQL, clean, filter, compute form, etc."""
     logging.info("Preparing data by fetching events, fixtures, and player data.")
     current_gw = get_current_gameweek()
+
+    # Fetch players from live FPL API
+    try:
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
+        if response.status_code == 200:
+            live_data = response.json()
+            players_df = pd.DataFrame(live_data['elements'])
+            logging.info(f"Fetched {len(players_df)} players from live FPL API.")
+        else:
+            logging.error(f"Failed to fetch live FPL data: {response.status_code}")
+            players_df = None
+    except Exception as e:
+        logging.error(f"Error fetching live FPL data: {e}")
+        players_df = None
+
+    if players_df is None:
+        # Fallback to DB
+        players_query = (
+            f"SELECT id, first_name, second_name, web_name, element_type, now_cost, minutes, "
+            f"chance_of_playing_next_round, goals_scored, assists, clean_sheets, goals_conceded, "
+            f"own_goals, penalties_saved, penalties_missed, yellow_cards, red_cards, saves, bonus, "
+            f"bps, influence, creativity, threat, ict_index, starts, expected_goals, expected_assists, "
+            f"expected_goal_involvements, expected_goals_conceded, total_points, in_dreamteam, team_code, team "
+            f"FROM {DB}.bootstrapstatic_elements "
+            f"WHERE Year_start = {season_start};"
+        )
+        players_df = fetch_mysql_data(players_query, DB)
+        logging.info("Using DB fallback for player data.")
+    else:
+        # Map team names
+        teams_df = pd.DataFrame(live_data['teams'])
+        team_map = teams_df.set_index('id')['name'].to_dict()
+        players_df['team'] = players_df['team'].map(team_map)
+        
+        # Calculate relative ownership trend from live API
+        total_players = live_data.get('total_players', 1)
+        players_df['net_transfers_event'] = players_df['transfers_in_event'] - players_df['transfers_out_event']
+        players_df['net_selected_change'] = (players_df['net_transfers_event'] / total_players) * 100
+        players_df['relative_ownership_trend'] = players_df.apply(
+            lambda x: x['net_selected_change'] / float(x['selected_by_percent']) if float(x['selected_by_percent']) > 0.1 else 0,
+            axis=1
+        )
+        logging.info("Calculated relative ownership trend from live API.")
 
     # events
     events_query = f"SELECT * FROM {DB}.events_elements;"
@@ -250,18 +425,6 @@ def prepare_data():
     # fixtures
     fixtures_query = f"SELECT * FROM {DB}.elementsummary_fixtures;"
     fixtures_df = fetch_mysql_data(fixtures_query, DB)
-
-    # players
-    players_query = (
-        f"SELECT id, first_name, second_name, web_name, element_type, now_cost, minutes, "
-        f"chance_of_playing_next_round, goals_scored, assists, clean_sheets, goals_conceded, "
-        f"own_goals, penalties_saved, penalties_missed, yellow_cards, red_cards, saves, bonus, "
-        f"bps, influence, creativity, threat, ict_index, starts, expected_goals, expected_assists, "
-        f"expected_goal_involvements, expected_goals_conceded, total_points, in_dreamteam, team_code, team "
-        f"FROM {DB}.bootstrapstatic_elements "
-        f"WHERE Year_start = {season_start};"
-    )
-    players_df = fetch_mysql_data(players_query, DB)
 
     logging.info(f"Player data contains {players_df.shape[1]} columns and {players_df.shape[0]} rows.")
     logging.info(f"Columns in players_df: {players_df.columns.tolist()}")
@@ -283,17 +446,23 @@ def prepare_data():
     else:
         logging.warning("'chance_of_playing_next_round' column not found. Cannot set missing to 100%.")
 
-    # If gw <= 1 => can't average
+    # If gw <= 1 => can't average correctly from historical minutes in bootstrap
     if current_gw <= 1:
         players_df.loc[:, 'avg_minutes'] = players_df['minutes']
     else:
-        players_df.loc[:, 'avg_minutes'] = players_df['minutes'] / (current_gw - 1)
+        players_df.loc[:, 'avg_minutes'] = players_df['minutes'] / (current_gw)
 
     # Filter
-    players_df = players_df[
-        (players_df['avg_minutes'] >= 15)
-        & (players_df['chance_of_playing_next_round'] >= 50)
-    ]
+    if current_gw == 0:
+        # Pre-season: relax minutes filter as everyone is at 0
+        players_df = players_df[
+            players_df['chance_of_playing_next_round'] >= 50
+        ]
+    else:
+        players_df = players_df[
+            (players_df['avg_minutes'] >= 15)
+            & (players_df['chance_of_playing_next_round'] >= 50)
+        ]
     logging.info(f"Filtered players... Remaining players: {len(players_df)}")
 
     numeric_cols = [
@@ -520,8 +689,6 @@ def optimize_team(players_df, budget, weights):
     if not check_sufficient_players(players_df):
         logging.warning("Not enough players to meet formation constraints.")
         return pd.DataFrame(columns=players_df.columns)
-
-    logging.info(players_df[players_df['second_name'].str.contains('Salah', na=False)])
 
     required_cols = ['now_cost','total_points','form','minutes','predicted_performance']
     for col in required_cols:
@@ -755,4 +922,67 @@ def team_optimization(weights):
         return True, optimal_team.to_dict(orient='records')
     except Exception as e:
         logging.error(f"Team optimization failed: {e}")
+        return False, {}
+
+############################################
+#   Daily job / live-route split (05.1)     #
+############################################
+
+def run_daily_predictions():
+    """
+    Daily job entry point (called from run_update.py, alongside
+    update_all_tables()). Runs the expensive part - prepare_data ->
+    aggregate_gameweek_data -> train_and_predict - once, then persists the
+    result via persist_predictions() so get_optimized_team() never has to
+    retrain inside a web request.
+    """
+    logging.info("Starting daily predictive-picks training run.")
+    current_gameweek = get_current_gameweek()
+
+    players_df, events_df, fixtures_df = prepare_data()
+    current_agg, next_five_weeks_agg = aggregate_gameweek_data(events_df, current_gameweek, players_df)
+
+    predicted_df, _ = train_and_predict(current_agg, next_five_weeks_agg, players_df)
+
+    if 'predicted_performance' in players_df.columns:
+        players_df = players_df.drop(columns=['predicted_performance'])
+
+    agg_preds = (
+        predicted_df
+        .groupby('id', as_index=False)
+        .agg({'predicted_performance': 'mean'})
+        .rename(columns={'predicted_performance': 'pred_perf_agg'})
+    )
+
+    merged_df = pd.merge(players_df, agg_preds, on='id', how='left')
+    merged_df['predicted_performance'] = merged_df['pred_perf_agg'].fillna(0).astype('float32')
+    merged_df = merged_df.drop(columns=['pred_perf_agg'])
+    merged_df = merged_df.drop_duplicates(subset='id', keep='last').reset_index(drop=True)
+
+    persist_predictions(merged_df, current_gameweek)
+    logging.info(f"Daily predictive-picks run complete for gameweek {current_gameweek}.")
+    return merged_df
+
+def get_optimized_team(weights):
+    """
+    Live-route entry point for /run-team-optimization. Loads the stored
+    daily predictions and runs only the cheap optimize_team()
+    linear-programming step against the user's slider weights - no model
+    training happens here, ever.
+    """
+    try:
+        players_df, gameweek = load_stored_predictions()
+        if players_df.empty:
+            logging.error("get_optimized_team: no stored predictions to optimize against.")
+            return False, {}
+
+        optimal_team = optimize_team(players_df, budget, weights)
+        if optimal_team.empty:
+            logging.warning("get_optimized_team: optimize_team returned no team.")
+            return False, {}
+
+        logging.info(f"Optimized team built from gameweek {gameweek} stored predictions.")
+        return True, optimal_team.to_dict(orient='records')
+    except Exception as e:
+        logging.error(f"get_optimized_team failed: {e}")
         return False, {}
