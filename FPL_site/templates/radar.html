@@ -1,0 +1,55 @@
+{% if not is_ajax %}
+{% extends 'layout.html' %}
+{% endif %}
+
+{% block content %}
+<div class="app-body">
+    <div id="radar-content">
+        <!-- Market Movers (Sam's Lens) -->
+        <div class="sam-lens" id="sam-view">
+            <div class="eyebrow-sm">template vs. differential</div>
+            <h2 class="title" style="margin-bottom:4px;">Who's moving, and which way</h2>
+            <p class="sub">Real-time market movers from across the game.</p>
+
+            <div class="metric-toggle-container" id="sam-metric-toggle">
+                <button class="btn-pill" id="toggle-net">Net transfers</button>
+                <button class="btn-pill secondary" id="toggle-ownership">Ownership change</button>
+            </div>
+
+            <div class="mc-caption" id="sam-metric-caption" style="margin-top:0; margin-bottom:14px;"></div>
+
+            <div class="card">
+                <h3>Top 5 in</h3>
+                <div id="top-5-in-list">
+                    {% for i in range(3) %}
+                    <div class="action-card-skeleton">
+                        <div class="skeleton" style="width:110px; height:14px;"></div>
+                        <div class="skeleton" style="width:50px; height:14px;"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Top 5 out</h3>
+                <div id="top-5-out-list">
+                    {% for i in range(3) %}
+                    <div class="action-card-skeleton">
+                        <div class="skeleton" style="width:110px; height:14px;"></div>
+                        <div class="skeleton" style="width:50px; height:14px;"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="friend-note">Bar length = scale, colour = direction. Tap a name for goals, form, fixtures, and more.</div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='content/home.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='scripts/radar.js') }}"></script>
+{% endblock %}

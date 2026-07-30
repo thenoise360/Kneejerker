@@ -14,7 +14,7 @@ user = current_config.USER
 password = current_config.PASSWORD
 db = current_config.DATABASE
 
-season_start = "2025"
+season_start = "2026"
 
 # Database connection
 def connect_to_db(user, password, database, host):
@@ -34,15 +34,30 @@ def get_column_names(cursor, table_name):
     cursor.execute(f"SHOW COLUMNS FROM {table_name}")
     return [column[0] for column in cursor.fetchall()]
 
-# Function to generate the current gameweek
+# Function to generate the current gameweek.
+# api/entry/1/'s current_event is None for the entire close season, which
+# previously made update_bootstrap_static_tables() below abort completely -
+# silently skipping every daily update from the moment a season ends until
+# gameweek 1 of the next one kicks off. Mirrors dataModels.py's more robust
+# version, which reads bootstrap-static's own events list and explicitly
+# returns 0 for pre-season instead of None.
 def generateCurrentGameweek():
     try:
-        response = requests.get("https://fantasy.premierleague.com/api/entry/1/")
-        bootstrapStaticData = response.json()
-        return bootstrapStaticData.get('current_event', None)
+        response = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/")
+        if response.status_code == 200:
+            data = response.json()
+            current_gw = next((event['id'] for event in data.get('events', []) if event.get('is_current')), None)
+            if current_gw:
+                return current_gw
+
+            next_gw = next((event['id'] for event in data.get('events', []) if event.get('is_next')), None)
+            if next_gw == 1:
+                return 0  # Gameweek 0 represents pre-season
+            elif next_gw:
+                return next_gw - 1
     except requests.RequestException as err:
         print(f"Error fetching current gameweek: {err}")
-        return None
+    return None
 
 # Update bootstrap static tables with gameweek handling
 def update_bootstrap_static_tables(user, password, database, host):

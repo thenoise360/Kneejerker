@@ -68,19 +68,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 initializePage(url, mainContent); // Initialize page-specific elements and data
-                updateBreadcrumbs(url); // Update breadcrumbs
             })
             .catch(error => console.error('Error loading the content:', error));
     }
 
     // Function to initialize page-specific elements and data
     function initializePage(url, mainContent) {
-        if (url.includes('/compare')) {
-            initializeComparePage();
+        if (url.includes('/radar')) {
+            if (typeof initializeRadarPage === 'function') {
+                initializeRadarPage();
+            }
         }
 
-        if (url.includes('/players')) {
-            initializePlayerPage();
+        if (url === '/' || url.includes('/this-week') || url.endsWith('.com/') || url.endsWith('.com')) {
+            if (typeof initializeHomePage === 'function') {
+                initializeHomePage();
+            }
         }
 
         // Add more conditions for other pages as needed
@@ -111,32 +114,45 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => console.error('Error loading general data:', error));
     }
 
-    // Placeholder for initializePlayerPage function
-    function initializePlayerPage() {
-        console.log('Player page initialized');
+
+    // Renders a live "Deadline in Xd Yh Zm" countdown into `span`, ticking every minute
+    function startDeadlineCountdown(span, deadlineDate) {
+        const render = () => {
+            const diff = deadlineDate - new Date();
+            if (diff <= 0) {
+                span.textContent = 'Deadline passed';
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const mins = Math.floor((diff / (1000 * 60)) % 60);
+            span.textContent = `Deadline in ${days}d ${hours}h ${mins}m`;
+        };
+        render();
+        setInterval(render, 60000);
     }
 
-    // Function to update breadcrumbs based on URL
-    function updateBreadcrumbs(url) {
-        const breadcrumbs = document.getElementById('breadcrumbs');
-        let breadcrumbText = '';
-
-        if (url.includes('/compare')) {
-            breadcrumbText = 'Compare';
-        } else if (url.includes('/players') || url.includes('/player')) {
-            breadcrumbText = 'Player';
-        } else if (url.includes('/team')) {
-            breadcrumbText = 'Team';
-        } else {
-            breadcrumbText = 'Home';
-        }
-
-        if (breadcrumbs) {
-            breadcrumbs.innerHTML = `<span>${breadcrumbText}</span>`;
-        } else {
-            console.error('Breadcrumb element not found');
-        }
+    // Function to update header with GW and deadline
+    function updateHeaderInfo() {
+        fetch('/api/header-info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.current_gw) {
+                    const gwPill = document.getElementById('current-gw-pill');
+                    if (gwPill) gwPill.textContent = `GW ${data.current_gw}`;
+                }
+                
+                if (data.deadline) {
+                    const deadlineSpan = document.getElementById('deadline');
+                    if (deadlineSpan) {
+                        startDeadlineCountdown(deadlineSpan, new Date(data.deadline));
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching header info:', error));
     }
+
+    updateHeaderInfo();
 
     // General initialization on page load
     initializeGeneralData();

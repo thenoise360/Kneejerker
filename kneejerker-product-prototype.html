@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kneejerker — product prototype (Alex)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --plum:#4B145B; --plum-dark:#350f42; --plum-tint:#6a2a7c;
+    --teal:#29C2B2; --pink:#F67CB0; --charcoal:#333333;
+    --offwhite:#F9F9F9; --grey:#E5E5E5; --grey-mid:#c9c4cc;
+    --success:#2ecc71;
+    --font:'Plus Jakarta Sans', sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; font-family:var(--font); background:#e9e4ec; color:var(--charcoal); }
+
+  .stage{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 20px;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(75,20,91,.10), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(41,194,178,.12), transparent 40%),
+      #e9e4ec;
+  }
+
+  .demo-controls{
+    position:fixed; top:18px; left:18px; background:#1e1e1e; color:#fff; border-radius:12px;
+    padding:12px 14px; font-size:12px; z-index:200; max-width:230px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .demo-controls .label{ font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-size:10px; opacity:.6; margin-bottom:8px; }
+  .demo-controls .row{ display:flex; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
+  .demo-btn{ font-family:var(--font); font-size:11.5px; font-weight:600; background:#333; color:#fff; border:1px solid #555; border-radius:100px; padding:6px 10px; cursor:pointer; }
+  .demo-btn.active{ background:var(--teal); border-color:var(--teal); color:#0d3330; }
+  .demo-controls .note{ opacity:.55; font-size:10.5px; line-height:1.4; margin-top:6px; }
+
+  .phone{ width:390px; max-width:100%; height:844px; max-height:92vh; background:#000; border-radius:46px; padding:12px; box-shadow:0 30px 70px rgba(75,20,91,.35), 0 4px 14px rgba(0,0,0,.2); position:relative; }
+  .screen{ background:var(--offwhite); width:100%; height:100%; border-radius:34px; overflow:hidden; display:flex; flex-direction:column; position:relative; }
+  .notch{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:26px; background:#000; border-radius:0 0 16px 16px; z-index:30; }
+
+  .app-header{ 
+    padding:38px 20px 14px; 
+    background: rgba(255,255,255,0.92); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display:flex; 
+    align-items:center; 
+    justify-content:space-between; 
+    border-bottom:1px solid var(--grey); 
+    z-index: 100;
+  }
+  .brand-mini{ display:flex; align-items:center; gap:8px; }
+  .brand-mini .wm{ font-size:15px; font-weight:700; letter-spacing:-0.02em; color:var(--plum); }
+  .gw-pill{ font-size:11px; font-weight:700; color:var(--plum); background:rgba(75,20,91,.08); padding:4px 10px; border-radius:100px; }
+  .deadline{ font-size:11px; font-weight:600; color:var(--pink); font-variant-numeric:tabular-nums; }
+
+  .app-body{ flex:1; overflow-y:auto; padding:16px 18px 80px; -webkit-overflow-scrolling:touch; position:relative; }
+  .app-body::-webkit-scrollbar{ width:0; }
+  .tabbar{ 
+    display:flex; 
+    border-top:1px solid var(--grey); 
+    background: rgba(255,255,255,0.92); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    position:absolute; 
+    bottom:0; 
+    left:0; 
+    right:0; 
+    z-index:100; 
+    padding-bottom: 24px;
+  }
+  .tab{ flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:12px 0 4px; background:none; border:none; cursor:pointer; color:var(--grey-mid); font-family:var(--font); font-size:10px; font-weight:700; }
+  .tab svg{ width:20px; height:20px; stroke-width: 2.5px; }
+  .tab.active{ color:var(--plum); }
+  .tab.active svg{ stroke:var(--plum); stroke-width: 3px; }
+
+  .card{ background:#fff; border:1px solid var(--grey); border-radius:12px; padding:16px; margin-bottom:14px; box-shadow:0 2px 10px rgba(75,20,91,.05); }
+  .card h3{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--teal); margin-bottom:8px; }
+  .eyebrow-sm{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  h2.title{ font-size:19px; font-weight:700; line-height:1.25; margin-bottom:4px; }
+  p.sub{ font-size:13px; color:#666; line-height:1.5; margin-bottom:10px; }
+
+  .btn{ font-family:var(--font); display:inline-flex; align-items:center; justify-content:center; gap:6px; background:var(--plum); color:#fff; border:none; border-radius:100px; font-size:14px; font-weight:700; padding:12px 18px; cursor:pointer; transition:transform .15s ease, background .15s ease; width:100%; }
+  .btn:hover{ background:var(--plum-tint); }
+  .btn:active{ transform:scale(.98); }
+  .btn:disabled{ background:var(--grey-mid); cursor:default; }
+  .btn.secondary{ background:transparent; color:var(--plum); border:1.5px solid var(--plum); }
+  .btn.secondary:hover{ background:rgba(75,20,91,.06); }
+  .btn.ghost{ background:transparent; color:#666; border:none; font-weight:600; font-size:13px; width:auto; padding:6px 4px; }
+
+  .term{ border-bottom:1.5px dotted var(--plum); color:var(--plum); font-weight:600; cursor:pointer; }
+
+  .pill{ display:inline-block; font-size:11px; font-weight:700; padding:4px 10px; border-radius:100px; background:var(--teal); color:#0d3330; margin-right:6px; }
+  .pill.pink{ background:var(--pink); color:#5c1330; }
+  .pill.outline{ background:transparent; border:1.5px solid var(--grey-mid); color:#666; }
+
+  .reasons li{ list-style:none; font-size:13px; line-height:1.55; padding-left:18px; position:relative; margin-bottom:6px; color:#444; }
+  .reasons li::before{ content:''; position:absolute; left:0; top:7px; width:6px; height:6px; border-radius:50%; background:var(--pink); }
+
+  .accordion-head{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:4px 0; }
+  .accordion-head span.chev{ transition:transform .2s ease; display:inline-block; }
+  .accordion-item.open .accordion-head span.chev{ transform:rotate(180deg); }
+  .accordion-body{ max-height:0; overflow:hidden; transition:max-height .25s ease; }
+  .numbers-accordion.open .accordion-body{ max-height:460px; }
+  .totw-accordion.open .accordion-body{ max-height:400px; }
+
+  .alt-player{ padding:10px 0; border-top:1px solid var(--grey); }
+  .alt-player .name{ font-weight:700; font-size:13.5px; }
+  .alt-player .why{ font-size:12.5px; color:#666; margin-top:2px; }
+  .flip-hint{ font-size:11.5px; opacity:.6; margin-top:6px; }
+
+  .switch{ width:46px; height:26px; border-radius:100px; background:var(--pink); position:relative; cursor:pointer; transition:background .2s ease; flex-shrink:0; }
+  .switch.on{ background:var(--teal); }
+  .switch .knob{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s cubic-bezier(.68,-0.4,.4,1.4); }
+  .switch.on .knob{ left:23px; }
+
+  .banner{ background:linear-gradient(135deg, var(--plum), var(--plum-tint)); color:#fff; border-radius:12px; padding:16px; margin-bottom:14px; }
+  .banner h3{ color:#fff; font-size:14.5px; margin-bottom:6px; text-transform:none; letter-spacing:0; }
+  .banner p{ font-size:12.5px; opacity:.9; line-height:1.5; margin-bottom:12px; }
+  .banner .btn{ background:#fff; color:var(--plum); }
+
+  .notice{ font-size:11.5px; color:#665570; background:#f3eef5; border:1px solid var(--grey); border-radius:10px; padding:10px 12px; margin-bottom:14px; line-height:1.45; }
+
+  .progress-pill{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--plum); background:rgba(75,20,91,.08); padding:5px 12px; border-radius:100px; margin-bottom:14px; }
+
+  .action-card{ display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; }
+  .action-card .left{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .action-icon{ font-size:19px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:var(--grey); border-radius:10px; flex-shrink:0; }
+  .action-card .t{ font-weight:700; font-size:13.5px; }
+  .action-card .d{ font-size:11.5px; color:#777; margin-top:2px; }
+  .badge{ font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:100px; white-space:nowrap; flex-shrink:0; }
+  .badge.done{ background:var(--teal); color:#0d3330; }
+  .badge.pending{ background:var(--grey); color:#777; }
+
+  .choice-card{ border:1.5px solid var(--grey); border-radius:12px; padding:14px; margin-bottom:10px; cursor:pointer; transition:.15s; }
+  .choice-card:hover{ border-color:var(--plum-tint); }
+  .choice-card.selected{ border-color:var(--plum); background:rgba(75,20,91,.05); }
+  .choice-card .t{ font-weight:700; font-size:13.5px; }
+  .choice-card .d{ font-size:12px; color:#777; margin-top:3px; }
+
+  .back-row{ margin-bottom:6px; margin-left:-8px; }
+
+  .plan-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:14px 0; border-bottom:1px solid var(--grey); }
+  .plan-row:first-child{ border-top:1px solid var(--grey); }
+  .plan-row .t{ font-weight:700; font-size:13.5px; }
+  .plan-row .d{ font-size:12.5px; color:#777; margin-top:3px; }
+  .plan-row .change{ font-size:12px; font-weight:700; color:var(--plum); cursor:pointer; white-space:nowrap; }
+
+  .friend-row{ margin-bottom:14px; }
+  .friend-row .top{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:5px; }
+  .bar-track{ background:var(--grey); border-radius:100px; height:10px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:100px; background:var(--plum); transition:width .6s ease; }
+  .bar-fill.me{ background:var(--teal); }
+  .friend-note{ font-size:11.5px; color:#777; margin-top:4px; }
+
+  .onboarding{ position:absolute; inset:0; background:var(--plum); color:#fff; display:flex; flex-direction:column; z-index:40; border-radius:34px; }
+  .ob-body{ flex:1; display:flex; flex-direction:column; justify-content:center; padding:34px 26px; text-align:center; align-items:center; gap:16px; }
+  .ob-dots{ display:flex; gap:6px; justify-content:center; padding-bottom:22px; }
+  .ob-dot{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.35); }
+  .ob-dot.active{ background:#fff; width:18px; border-radius:4px; transition:.2s; }
+  .mode-choice{ display:flex; flex-direction:column; gap:12px; width:100%; margin-top:6px; }
+  .mode-card{ border:1.5px solid rgba(255,255,255,.35); border-radius:12px; padding:14px; text-align:left; cursor:pointer; transition:.15s; }
+  .mode-card:hover{ background:rgba(255,255,255,.08); }
+  .mode-card.selected{ border-color:var(--teal); background:rgba(41,194,178,.15); }
+  .mode-card .t{ font-weight:700; font-size:14px; }
+  .mode-card .d{ font-size:12px; opacity:.8; margin-top:3px; }
+
+  .sheet-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.4); z-index:50; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .sheet-backdrop.show{ opacity:1; pointer-events:auto; }
+  .sheet{ position:absolute; left:0; right:0; bottom:0; max-height:88%; overflow-y:auto; background:#fff; border-radius:20px 20px 0 0; padding:20px 22px 26px; transform:translateY(100%); transition:transform .28s cubic-bezier(.32,.72,0,1); z-index:51; }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet .handle{ width:36px; height:4px; background:var(--grey); border-radius:100px; margin:0 auto 14px; }
+  .sheet h4{ font-size:15px; margin-bottom:8px; color:var(--plum); }
+  .sheet p{ font-size:13.5px; line-height:1.55; color:#444; }
+
+  .toast{ position:absolute; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px); background:var(--success); color:#fff; font-size:13px; font-weight:600; padding:10px 16px; border-radius:100px; opacity:0; pointer-events:none; z-index:60; transition:opacity .25s ease, transform .25s ease; white-space:nowrap; max-width:280px; text-overflow:ellipsis; overflow:hidden; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ===== mini carousel (opt-in data, one metric per card) ===== */
+  .mini-carousel{ overflow:hidden; }
+  .mini-track{ display:flex; transition:transform .3s ease; }
+  .mini-card{ flex:0 0 100%; min-width:0; padding-right:6px; }
+  .mini-card .mc-title{ font-size:11px; font-weight:700; color:#777; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .mini-card .mc-caption{ font-size:13px; color:#444; line-height:1.5; margin-top:10px; }
+  .mini-nav{ display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+  .mini-nav-btn{ width:30px; height:30px; border-radius:50%; border:1.5px solid var(--grey); background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .mini-nav-btn:disabled{ opacity:.3; }
+  .mini-dots{ display:flex; gap:5px; }
+  .mini-dot{ width:6px; height:6px; border-radius:50%; background:var(--grey); }
+  .mini-dot.active{ background:var(--plum); width:16px; border-radius:4px; transition:.2s; }
+
+  .minute-bars{ display:flex; align-items:flex-end; gap:8px; height:70px; position:relative; border-bottom:1px solid var(--grey); }
+  .minute-bar{ width:22px; background:var(--teal); border-radius:4px 4px 0 0; }
+  .avg-line{ position:absolute; left:0; right:0; border-top:2px dashed var(--grey-mid); }
+
+  .fixture-compare-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .fixture-compare-row .lbl{ font-size:11px; width:78px; color:#777; flex-shrink:0; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+  :focus-visible{ outline:2px solid var(--teal); outline-offset:2px; }
+
+  @media (max-width:460px){
+    .stage{ padding:0; }
+    .phone{ width:100vw; height:100vh; max-height:100vh; border-radius:0; padding:0; }
+    .screen{ border-radius:0; }
+    .demo-controls{ top:auto; bottom:10px; left:10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-controls">
+  <div class="label">Prototype scenario</div>
+  <div class="row">
+    <button class="demo-btn active" data-scenario="active" id="scn-active">This week</button>
+    <button class="demo-btn" data-scenario="returning" id="scn-returning">Returning (missed 3 GWs)</button>
+  </div>
+  <div class="label" style="margin-top:8px;">Radar concept (go to Radar tab)</div>
+  <div class="row">
+    <button class="demo-btn active" data-concept="alex" id="radar-alex">Alex — social feed</button>
+    <button class="demo-btn" data-concept="sam" id="radar-sam">Sam — template vs. differential</button>
+  </div>
+  <button class="demo-btn" id="scn-clear-decisions" style="width:100%; margin-bottom:6px;">↺ Clear this week's decisions</button>
+  <button class="demo-btn" id="scn-reset" style="width:100%;">↺ Restart onboarding</button>
+  <div class="note">These controls aren't part of the product — they let us compare states for review.</div>
+</div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div class="notch"></div>
+      <div class="onboarding" id="onboarding"></div>
+
+      <div class="app-header">
+        <div class="brand-mini">
+          <svg width="32" height="20" viewBox="0 0 150 80" fill="none">
+            <path d="M5 44 L28 20 L52 58 L70 12" stroke="var(--plum)" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="88" cy="40" r="28" fill="var(--teal)"/>
+            <line x1="114" y1="40" x2="145" y2="40" stroke="var(--plum)" stroke-width="12" stroke-linecap="round"/>
+          </svg>
+          <span class="wm">kneejerker</span>
+        </div>
+        <span class="gw-pill">GW14</span>
+      </div>
+      <div style="padding:0 20px 10px; margin-top:-6px;">
+        <span class="deadline" id="deadline">Deadline in --:--:--</span>
+      </div>
+
+      <div class="app-body" id="app-body"></div>
+
+      <div class="tabbar">
+        <button class="tab active" data-tab="thisweek">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          This Week
+        </button>
+        <button class="tab" data-tab="compare">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+          Compare
+        </button>
+        <button class="tab" data-tab="radar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 019-9M12 3v9l6 3"/><circle cx="12" cy="12" r="9"/></svg>
+          Radar
+        </button>
+        <button class="tab" data-tab="plan">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+          Plan
+        </button>
+        <button class="tab" data-tab="you">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          You
+        </button>
+      </div>
+
+      <div class="sheet-backdrop" id="sheet-backdrop">
+        <div class="sheet">
+          <div class="handle"></div>
+          <h4 id="sheet-title">Term</h4>
+          <div id="sheet-body"></div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   KNEEJERKER PRODUCT PROTOTYPE
+   ================================================================ */
+
+// ---- GLOSSARY (still available, used less now that stats live in the carousel) ----
+const glossary = {
+  EO: "Effective Ownership — how much of the 'average' rival team a player counts for once captaincy is included.",
+  fixture: "How tough the run of upcoming opponents looks, based on recent form and home/away."
+};
+
+/* ================================================================
+   RAW DATA — hidden by default (pathos layer hides it), only shown
+   via the opt-in "show me the numbers" carousel (logos layer).
+   ================================================================ */
+const RAW_DATA = {
+  // ---- Forwards ----
+  Haaland: {
+    team:"Man City", price:"£14.0m", position:"FWD", seasonPoints:154, goals:22, assists:4,
+    last5:[9,14,6,11,18], avg5:[4,5,4,3,5],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,2,3],
+    fixtures5:[{opp:"BOU",venue:"H",diff:2},{opp:"FUL",venue:"A",diff:2},{opp:"WHU",venue:"H",diff:3},{opp:"AVL",venue:"A",diff:3},{opp:"TOT",venue:"H",diff:4}],
+    ownership:{from:63.9, to:62.5},
+    ownershipHistory5:[66.5, 65.8, 64.9, 63.9, 62.5],
+    bonus:22,
+    setPiece:{penalties:1}
+  },
+  Isak: {
+    team:"Newcastle", price:"£8.6m", position:"FWD", seasonPoints:148, goals:18, assists:3,
+    last5:[6,9,11,4,8], avg5:[4,5,4,3,5],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,3,3],
+    fixtures5:[{opp:"BHA",venue:"H",diff:2},{opp:"CRY",venue:"A",diff:3},{opp:"WOL",venue:"H",diff:3},{opp:"EVE",venue:"A",diff:2},{opp:"MCI",venue:"A",diff:4}],
+    ownership:{from:15.0, to:13.5},
+    ownershipHistory5:[19.0, 17.5, 16.2, 15.0, 13.5], // reflects the mass sell-off you saw in the app
+    bonus:14,
+    setPiece:{penalties:1}
+  },
+  Wood: {
+    team:"Nottm Forest", price:"£6.8m", position:"FWD", seasonPoints:120, goals:13, assists:2,
+    last5:[7,3,9,2,10], avg5:[4,5,4,3,5],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,2,3],
+    fixtures5:[{opp:"BUR",venue:"H",diff:2},{opp:"BRE",venue:"A",diff:2},{opp:"LEE",venue:"H",diff:3},{opp:"CHE",venue:"A",diff:3},{opp:"WHU",venue:"H",diff:3}],
+    ownership:{from:8.0, to:8.4},
+    ownershipHistory5:[7.2, 7.5, 7.8, 8.0, 8.4],
+    bonus:10,
+    setPiece:null
+  },
+
+  // ---- Midfielders ----
+  Salah: {
+    team:"Liverpool", price:"£13.0m", position:"MID", seasonPoints:130, goals:12, assists:9,
+    last5:[5,8,4,9,7], avg5:[4,5,4,3,5],
+    minutes5:[90,90,45,90,90],
+    fixtureDifficulty3:[3,3,2],
+    fixtures5:[{opp:"BOU",venue:"H",diff:3},{opp:"EVE",venue:"A",diff:3},{opp:"MUN",venue:"H",diff:2},{opp:"ARS",venue:"A",diff:4},{opp:"CHE",venue:"H",diff:3}],
+    ownership:{from:14.4, to:15.2},
+    ownershipHistory5:[13.0, 13.5, 14.0, 14.4, 15.2],
+    bonus:20,
+    setPiece:{penalties:1, corners:1, directFreeKicks:1}
+  },
+  Palmer: {
+    team:"Chelsea", price:"£11.0m", position:"MID", seasonPoints:121, goals:10, assists:7,
+    last5:[6,2,9,5,4], avg5:[4,5,4,3,5],
+    minutes5:[90,90,88,90,62], // taken off early last game
+    fixtureDifficulty3:[2,3,3],
+    fixtures5:[{opp:"BHA",venue:"A",diff:2},{opp:"WHU",venue:"H",diff:3},{opp:"TOT",venue:"A",diff:3},{opp:"LIV",venue:"A",diff:3},{opp:"NFO",venue:"H",diff:2}],
+    ownership:{from:9.0, to:8.6},
+    ownershipHistory5:[10.2, 9.8, 9.4, 9.0, 8.6],
+    doubt:"Knock picked up in that same game — not yet confirmed for the weekend.",
+    bonus:16,
+    setPiece:{penalties:2}
+  },
+  Saka: {
+    team:"Arsenal", price:"£9.2m", position:"MID", seasonPoints:150, goals:11, assists:10,
+    last5:[8,10,6,9,12], avg5:[4,5,4,3,5],
+    minutes5:[90,90,90,85,90],
+    fixtureDifficulty3:[2,2,2],
+    fixtures5:[{opp:"WOL",venue:"H",diff:2},{opp:"BOU",venue:"A",diff:2},{opp:"CRY",venue:"H",diff:2},{opp:"LIV",venue:"H",diff:3},{opp:"EVE",venue:"A",diff:2}],
+    ownership:{from:12.3, to:11.6},
+    ownershipHistory5:[13.5, 13.0, 12.6, 12.3, 11.6], // the real number from your ownership screenshot
+    bonus:19,
+    setPiece:{corners:1, directFreeKicks:2}
+  },
+  "B.Fernandes": {
+    team:"Man Utd", price:"£8.5m", position:"MID", seasonPoints:142, goals:9, assists:8,
+    last5:[5,5,3,9,14], avg5:[4,5,4,3,5], // mirrors the real "quiet, then spikes" shape you tracked
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,2,3],
+    fixtures5:[{opp:"SUN",venue:"H",diff:2},{opp:"BHA",venue:"A",diff:2},{opp:"LIV",venue:"A",diff:3},{opp:"BOU",venue:"H",diff:3},{opp:"WHU",venue:"A",diff:3}],
+    ownership:{from:10.0, to:11.2},
+    ownershipHistory5:[8.0, 8.8, 9.4, 10.0, 11.2],
+    bonus:17,
+    setPiece:{penalties:1, corners:1, directFreeKicks:1}
+  },
+  Gordon: {
+    team:"Newcastle", price:"£6.3m", position:"MID", seasonPoints:95, goals:5, assists:4,
+    last5:[3,4,2,5,3], avg5:[4,5,4,3,5],
+    minutes5:[75,60,90,45,80],
+    fixtureDifficulty3:[3,3,3],
+    fixtures5:[{opp:"BHA",venue:"H",diff:3},{opp:"CRY",venue:"A",diff:3},{opp:"WOL",venue:"H",diff:3},{opp:"EVE",venue:"A",diff:2},{opp:"MCI",venue:"A",diff:4}],
+    ownership:{from:6.0, to:5.8},
+    ownershipHistory5:[6.8, 6.5, 6.2, 6.0, 5.8],
+    bonus:8,
+    setPiece:null
+  },
+
+  // ---- Defenders ----
+  Gabriel: {
+    team:"Arsenal", price:"£6.0m", position:"DEF", seasonPoints:118, goals:3, assists:1, cleanSheets:7,
+    last5:[6,2,8,3,9], avg5:[3,4,3,3,4],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,2,3],
+    fixtures5:[{opp:"WOL",venue:"H",diff:2},{opp:"BOU",venue:"A",diff:2},{opp:"CRY",venue:"H",diff:3},{opp:"LIV",venue:"H",diff:3},{opp:"EVE",venue:"A",diff:2}],
+    ownership:{from:9.0, to:9.4},
+    ownershipHistory5:[8.2, 8.5, 8.8, 9.0, 9.4],
+    bonus:12,
+    setPiece:{corners:2}
+  },
+  Trippier: {
+    team:"Newcastle", price:"£6.5m", position:"DEF", seasonPoints:110, goals:1, assists:6, cleanSheets:6,
+    last5:[4,7,3,5,6], avg5:[3,4,3,3,4],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[3,3,2],
+    fixtures5:[{opp:"BHA",venue:"H",diff:3},{opp:"CRY",venue:"A",diff:3},{opp:"WOL",venue:"H",diff:2},{opp:"EVE",venue:"A",diff:2},{opp:"MCI",venue:"A",diff:4}],
+    ownership:{from:7.0, to:6.8},
+    ownershipHistory5:[7.8, 7.5, 7.2, 7.0, 6.8],
+    bonus:14,
+    setPiece:{corners:1, directFreeKicks:1}
+  },
+  Munoz: {
+    team:"Crystal Palace", price:"£5.4m", position:"DEF", seasonPoints:101, goals:2, assists:3, cleanSheets:5,
+    last5:[5,3,7,2,8], avg5:[3,4,3,3,4],
+    minutes5:[90,80,90,90,85],
+    fixtureDifficulty3:[2,3,3],
+    fixtures5:[{opp:"BUR",venue:"H",diff:2},{opp:"SUN",venue:"A",diff:3},{opp:"ARS",venue:"A",diff:3},{opp:"BHA",venue:"H",diff:3},{opp:"NFO",venue:"A",diff:2}],
+    ownership:{from:6.0, to:6.3},
+    ownershipHistory5:[5.2, 5.5, 5.8, 6.0, 6.3],
+    confirmedOut:"Confirmed out this week — hamstring injury picked up in training.",
+    bonus:9,
+    setPiece:null
+  },
+  "Lewis-Skelly": {
+    team:"Arsenal", price:"£5.0m", position:"DEF", seasonPoints:65, goals:0, assists:1, cleanSheets:6,
+    last5:[2,3,1,4,2], avg5:[3,4,3,3,4],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[3,3,3],
+    fixtures5:[{opp:"WOL",venue:"H",diff:3},{opp:"BOU",venue:"A",diff:3},{opp:"CRY",venue:"H",diff:3},{opp:"LIV",venue:"H",diff:3},{opp:"EVE",venue:"A",diff:2}],
+    ownership:{from:4.0, to:4.1},
+    ownershipHistory5:[3.6, 3.8, 3.9, 4.0, 4.1],
+    bookings:{ season:4, banAt:5, gamesPlayed:14, last5Array:[0,1,0,1,1] }, // 3 of his 4 cards came in the last 5 games
+    bonus:3,
+    setPiece:null
+  },
+  Estupinan: {
+    team:"Brighton", price:"£5.0m", position:"DEF", seasonPoints:58, goals:0, assists:1, cleanSheets:4,
+    last5:[0,1,2,0,1], avg5:[3,4,3,3,4], // deliberately your coldest player right now
+    minutes5:[90,45,90,60,90],
+    fixtureDifficulty3:[3,4,4],
+    fixtures5:[{opp:"LIV",venue:"A",diff:3},{opp:"MCI",venue:"H",diff:4},{opp:"TOT",venue:"A",diff:4},{opp:"NFO",venue:"H",diff:4},{opp:"WHU",venue:"A",diff:3}],
+    ownership:{from:3.0, to:2.7},
+    ownershipHistory5:[4.0, 3.6, 3.3, 3.0, 2.7],
+    bonus:1,
+    setPiece:null
+  },
+
+  // ---- Goalkeepers ----
+  Raya: {
+    team:"Arsenal", price:"£5.5m", position:"GK", seasonPoints:92, goals:0, assists:0, cleanSheets:6,
+    last5:[3,6,2,3,7], avg5:[3,4,3,3,4],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,2,3],
+    fixtures5:[{opp:"WOL",venue:"H",diff:2},{opp:"BOU",venue:"A",diff:2},{opp:"CRY",venue:"H",diff:3},{opp:"LIV",venue:"H",diff:3},{opp:"EVE",venue:"A",diff:2}],
+    ownership:{from:8.0, to:8.2},
+    ownershipHistory5:[7.2, 7.5, 7.8, 8.0, 8.2],
+    bonus:10,
+    setPiece:null
+  },
+  Pickford: {
+    team:"Everton", price:"£4.9m", position:"GK", seasonPoints:88, goals:0, assists:0, cleanSheets:5,
+    last5:[2,5,3,2,6], avg5:[3,4,3,3,4],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[3,3,3],
+    fixtures5:[{opp:"SUN",venue:"A",diff:3},{opp:"WHU",venue:"H",diff:3},{opp:"BRE",venue:"A",diff:3},{opp:"NEW",venue:"H",diff:3},{opp:"ARS",venue:"A",diff:4}],
+    ownership:{from:5.1, to:5.0},
+    ownershipHistory5:[5.5, 5.3, 5.2, 5.1, 5.0],
+    bonus:8,
+    setPiece:null
+  }
+};
+
+// Transfer targets NOT currently in your squad.
+const MARKET_TARGETS = {
+  Digne: { // similar price to Estupinan — the honest, straightforward swap
+    team:"Aston Villa", price:"£4.9m", position:"DEF", seasonPoints:96, goals:1, assists:4, cleanSheets:5,
+    last5:[6,8,5,7,9], avg5:[3,4,3,3,4],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,2,2],
+    fixtures5:[{opp:"FUL",venue:"A",diff:2},{opp:"MCI",venue:"H",diff:2},{opp:"WOL",venue:"A",diff:2},{opp:"BHA",venue:"H",diff:3},{opp:"CHE",venue:"A",diff:3}],
+    ownership:{from:5.0, to:6.2},
+    ownershipHistory5:[3.2, 3.8, 4.4, 5.0, 6.2],
+    bonus:11,
+    setPiece:{corners:2}
+  },
+  Bowen: { // the pricier leg of the "bigger move" option
+    team:"West Ham", price:"£7.5m", position:"MID", seasonPoints:132, goals:9, assists:6,
+    last5:[7,9,6,8,10], avg5:[4,5,4,3,5],
+    minutes5:[90,90,90,90,90],
+    fixtureDifficulty3:[2,2,2],
+    fixtures5:[{opp:"BUR",venue:"H",diff:2},{opp:"SUN",venue:"A",diff:2},{opp:"EVE",venue:"H",diff:2},{opp:"LIV",venue:"A",diff:3},{opp:"CRY",venue:"H",diff:2}],
+    ownership:{from:16.4, to:17.5},
+    ownershipHistory5:[13.5, 14.5, 15.5, 16.4, 17.5], // the real number from your ownership screenshot
+    bonus:15,
+    setPiece:{penalties:2, corners:2}
+  }
+};
+
+// Mirrors the GW pill in the header — used to derive points-per-game
+// rather than storing it separately and risking the two drifting apart.
+const CURRENT_GAMEWEEK = 14;
+
+const SQUAD = Object.keys(RAW_DATA);
+const BENCH = ["Pickford", "Estupinan", "Gordon", "Wood"];
+const BANK = 1.3; // £m left in the bank
+const AVAILABILITY_WATCH = ["Palmer", "Lewis-Skelly", "Munoz"];
+const UPCOMING_GW_FLAGS = { blank:false, double:true, doublePlayer:"Haaland" };
+
+function average(arr){ return arr.reduce((a,b) => a + b, 0) / arr.length; }
+function identifyColdest(){
+  return SQUAD.map(name => {
+    const d = getPlayer(name);
+    return { name, n: gamesAboveAverage(d.last5, d.avg5) };
+  })
+    .sort((a,b) => a.n - b.n)[0].name;
+}
+// If you've already flagged someone to transfer out on the Injuries screen,
+// that takes priority over the purely stats-based "coldest player" pick.
+function pickTransferOutCandidate(){
+  if (state.decisions.injuries){
+    const flagged = Object.entries(state.decisions.injuries).find(([, choice]) => choice === 'transfer');
+    if (flagged) return { name: flagged[0], fromInjuryFlag: true };
+  }
+  return { name: identifyColdest(), fromInjuryFlag: false };
+}
+
+// Each market target only makes sense as a replacement for its own position —
+// a MID shouldn't be offered as cover for a DEF you're moving on.
+const TARGETS_BY_POSITION = { DEF: 'Digne', MID: 'Bowen' };
+
+function buildTransferPlan(){
+  const pick = pickTransferOutCandidate();
+  const primaryPos = getPlayer(pick.name).position;
+  const primaryTargetKey = TARGETS_BY_POSITION[primaryPos];
+
+  // The "go further" leg comes from a different supported position, so it's
+  // never the same swap suggested twice.
+  const otherPositions = Object.keys(TARGETS_BY_POSITION).filter(p => p !== primaryPos);
+  const secondCandidate = SQUAD
+    .filter(n => n !== pick.name && otherPositions.includes(getPlayer(n).position))
+    .map(n => {
+      const d = getPlayer(n);
+      return { n, score: gamesAboveAverage(d.last5, d.avg5) };
+    })
+    .sort((a,b) => a.score - b.score)[0];
+
+  return {
+    cold: pick.name,
+    fromInjuryFlag: pick.fromInjuryFlag,
+    target: primaryTargetKey || null,
+    secondCold: secondCandidate ? secondCandidate.n : null,
+    secondTarget: secondCandidate ? TARGETS_BY_POSITION[getPlayer(secondCandidate.n).position] : null
+  };
+}
+
+/* Availability/discipline risk — each type of risk uses its own signal,
+   scaled to the same 3-tier scheme: yellow (50%), orange (75%), red (100%,
+   confirmed). No AI judgement call here either — just thresholds on data. */
+function assessRisk(name){
+  const d = getPlayer(name);
+  if (d.confirmedOut) return { pct:100, tier:'confirmed', reasons:[d.confirmedOut] };
+
+  let pct = 0;
+  const reasons = [];
+
+  if (d.minutes5){
+    const last = d.minutes5[d.minutes5.length - 1];
+    const priorAvg = average(d.minutes5.slice(0, -1));
+    if (last === 0){
+      pct = Math.max(pct, 75);
+      reasons.push(`Didn't feature at all last game, vs a normal ${Math.round(priorAvg)}-minute average.`);
+    } else if (last < priorAvg * 0.75){
+      pct = Math.max(pct, 50);
+      reasons.push(`Taken off early last game — ${last} mins, vs his normal ${Math.round(priorAvg)}.`);
+    }
+  }
+  if (d.doubt){
+    pct = Math.max(pct, 50);
+    reasons.push(d.doubt);
+  }
+  if (d.bookings){
+    const recentRate = average(d.bookings.last5Array);
+    const seasonRate = d.bookings.season / d.bookings.gamesPlayed;
+    if (recentRate > seasonRate * 1.5){
+      pct = Math.max(pct, 50);
+      reasons.push(`Booked more often recently than his season rate suggests.`);
+    }
+    if (d.bookings.season >= d.bookings.banAt - 1){
+      pct = Math.max(pct, 75);
+      reasons.push(`${d.bookings.season} yellow cards this season — one more triggers a ban.`);
+    }
+  }
+  const tier = pct >= 75 ? 'high' : pct >= 50 ? 'medium' : 'low';
+  return { pct, tier, reasons: reasons.length ? reasons : ['No real concerns — just keeping an eye on him.'] };
+}
+function riskColor(tier){
+  return tier === 'confirmed' ? '#c0392b' : tier === 'high' ? '#e0781f' : tier === 'medium' ? '#e8b93a' : 'var(--teal)';
+}
+function fitnessIcons(minutes5){
+  return minutes5.map(m => m === 0 ? '❌' : m < 70 ? '🟡' : '✅').join('');
+}
+function bookingIcons(bookingsArr){
+  return bookingsArr.map(b => b ? '🟨' : '⚪').join('');
+}
+function iconRow(label, icons){
+  if (!icons) return '';
+  return `<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+    <span style="font-size:10.5px; color:#888; width:64px; flex-shrink:0;">${label}</span>
+    <span style="font-size:15px; letter-spacing:3px;">${icons}</span>
+  </div>`;
+}
+
+// Position baselines — everything in the carousel compares against these,
+// not just against the player's own history.
+const POSITION_BASELINES = {
+  FWD: { minutesPerGame:75, ppm:9.0 },
+  MID: { minutesPerGame:78, ppm:10.5 },
+  DEF: { minutesPerGame:82, ppm:11.5 },
+  GK:  { minutesPerGame:90, ppm:8.0 }
+};
+const LEAGUE_AVG_FIXTURE = [3, 3, 3];
+const LEAGUE_AVG_FIXTURE5 = [3, 3, 3, 3, 3];
+
+/* ================================================================
+   METRICS — pure functions, no randomness. Same input, same tier,
+   same phrase, every time. That determinism is what lets people
+   trust the tone — it never drifts.
+   ================================================================ */
+function gamesAboveAverage(last5, avg5){ return last5.filter((v,i) => v > avg5[i]).length; }
+function consistencyTier(n){ return n >= 4 ? 'steady' : n >= 2 ? 'streaky' : n === 1 ? 'flash' : 'cold'; }
+
+function minutesShare(minutes5){ return (minutes5.reduce((a,b)=>a+b,0) / minutes5.length) / 90; }
+function minutesTier(share){ return share >= 0.85 ? 'nailed' : share >= 0.5 ? 'rotation' : 'fringe'; }
+
+function fixtureTrend(diffs){
+  if (diffs[diffs.length-1] < diffs[0]) return 'easing';
+  if (diffs[diffs.length-1] > diffs[0]) return 'toughening';
+  return 'steady';
+}
+function ownershipDelta(o){
+  const delta = +(o.to - o.from).toFixed(1);
+  return { delta, direction: delta > 0 ? 'rising' : delta < 0 ? 'falling' : 'flat' };
+}
+// FPL's own manager base — illustrative, not a live figure — used purely to
+// turn a percentage-point ownership swing into the same "net transfers"
+// language the official game (and your old mostNetTransfersIn/Out functions)
+// actually report. One source of truth (the ownership delta); two readings.
+const TOTAL_MANAGERS = 9_200_000;
+function netTransfersEvent(name){
+  const { delta } = ownershipDelta(getPlayer(name).ownership);
+  return Math.round((delta / 100) * TOTAL_MANAGERS);
+}
+// Big transfer counts are the whole point — but "142,384" isn't
+// mobile-glanceable. Round to a "k" figure the way any FPL site does.
+function formatTransferCount(n){
+  const abs = Math.abs(n);
+  if (abs >= 10000) return `${Math.round(abs / 1000)}k`;
+  if (abs >= 1000)  return `${(abs / 1000).toFixed(1)}k`;
+  return `${abs}`;
+}
+// The "quick glance" — scale AND direction in one small visual, no
+// reading required. Bar length = scale (capped so one huge mover
+// doesn't flatten everyone else), colour = direction, tiny number
+// underneath for the one person who wants the precise figure.
+const TRANSFER_GLANCE_SCALE = 200000; // widest net-transfer bar we'd expect to show
+function transferGlance(name, metric){
+  const { delta, direction } = ownershipDelta(getPlayer(name).ownership);
+  const transfers = netTransfersEvent(name);
+  const value = metric === 'percent' ? Math.abs(delta) : Math.abs(transfers);
+  const scale = metric === 'percent' ? PERCENT_GLANCE_SCALE : TRANSFER_GLANCE_SCALE;
+  const pct = Math.min(100, (value / scale) * 100);
+  const color = direction === 'rising' ? 'var(--teal)' : direction === 'falling' ? 'var(--pink)' : '#ccc';
+  const label = direction === 'flat' ? '—'
+    : metric === 'percent' ? `${Math.abs(delta)}pt ${direction === 'rising' ? 'in' : 'out'}`
+    : `${formatTransferCount(transfers)} ${direction === 'rising' ? 'in' : 'out'}`;
+  return `
+    <div style="width:88px; flex-shrink:0;">
+      <div class="bar-track" style="height:8px;"><div class="bar-fill" style="width:${pct.toFixed(0)}%; background:${color};"></div></div>
+      <div style="font-size:10.5px; color:#888; margin-top:3px; text-align:right;">${label}</div>
+    </div>
+  `;
+}
+function priceNumeric(priceStr){ return parseFloat(priceStr.replace('£','').replace('m','')); }
+const NULL_PLAYER = {
+  team: "-", price: "£0.0m", position: "MID", seasonPoints: 0,
+  last5: [0,0,0,0,0], avg5: [0,0,0,0,0], minutes5: [0,0,0,0,0],
+  fixtureDifficulty3: [3,3,3],
+  fixtures5: [{opp:"-",venue:"-",diff:3},{opp:"-",venue:"-",diff:3},{opp:"-",venue:"-",diff:3},{opp:"-",venue:"-",diff:3},{opp:"-",venue:"-",diff:3}],
+  ownership: { from: 0, to: 0 },
+  ownershipHistory5: [0,0,0,0,0],
+  bonus: 0
+};
+function getPlayer(name){ 
+  if (!name) return NULL_PLAYER;
+  return RAW_DATA[name] || MARKET_TARGETS[name] || NULL_PLAYER; 
+}
+function isPlayerReal(name){
+  return name && (RAW_DATA[name] || MARKET_TARGETS[name]);
+}
+function computePpm(name){
+  const d = getPlayer(name);
+  return +(d.seasonPoints / priceNumeric(d.price)).toFixed(1);
+}
+// Derived, not stored — points-per-game comes straight from
+// seasonPoints and the same CURRENT_GAMEWEEK the header pill shows,
+// so there's exactly one place that can go stale, not two.
+function pointsPerGame(name){
+  return +(getPlayer(name).seasonPoints / CURRENT_GAMEWEEK).toFixed(1);
+}
+// "1st / 2nd / 3rd / 4th..." — standard mod-100/mod-10 ordinal rule.
+function ordinal(n){
+  const suffixes = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+}
+function ppmTier(name){
+  const d = getPlayer(name);
+  const diff = computePpm(name) - POSITION_BASELINES[d.position].ppm;
+  return diff > 0.5 ? 'above' : diff < -0.5 ? 'below' : 'even';
+}
+function avgMinutesTier(name){
+  const d = getPlayer(name);
+  const avg = Math.round(d.minutes5.reduce((a,b)=>a+b,0) / d.minutes5.length);
+  const baseline = POSITION_BASELINES[d.position].minutesPerGame;
+  return { avg, tier: avg > baseline * 1.1 ? 'above' : avg < baseline * 0.9 ? 'below' : 'even' };
+}
+function fixtureVsLeagueTier(name){
+  const d = getPlayer(name);
+  const avg = +(d.fixtureDifficulty3.reduce((a,b)=>a+b,0) / d.fixtureDifficulty3.length).toFixed(1);
+  const leagueAvg = +(LEAGUE_AVG_FIXTURE.reduce((a,b)=>a+b,0) / LEAGUE_AVG_FIXTURE.length).toFixed(1);
+  return avg < leagueAvg - 0.3 ? 'kinder' : avg > leagueAvg + 0.3 ? 'tougher' : 'similar';
+}
+
+/* Player rating, out of 100 — a simple heuristic blend of recent points,
+   value, form consistency, and minutes trust, scaled so the single
+   strongest player we track (not necessarily true league-wide) gets 100.
+   This is illustrative, not a calibrated model — see the note we give you. */
+function allKnownPlayers(){ return [...SQUAD, ...Object.keys(MARKET_TARGETS)]; }
+function rawRatingScore(name){
+  const d = getPlayer(name);
+  const n = gamesAboveAverage(d.last5, d.avg5);
+  return average(d.last5) * 10 + computePpm(name) * 2 + n * 3 + minutesShare(d.minutes5) * 10;
+}
+function computePlayerRating(name){
+  const maxScore = Math.max(...allKnownPlayers().map(rawRatingScore));
+  return Math.max(1, Math.round((rawRatingScore(name) / maxScore) * 100));
+}
+// The same four ingredients that make up rawRatingScore, exposed
+// individually — so the rating badge next to a player's name isn't
+// a black box. Each is scaled to a 0-100 bar just for display; the
+// actual rating still comes from rawRatingScore itself.
+function ratingBreakdown(name){
+  const d = getPlayer(name);
+  const recentScoring = average(d.last5);
+  const value = computePpm(name);
+  const n = gamesAboveAverage(d.last5, d.avg5);
+  const minutesPct = Math.round(minutesShare(d.minutes5) * 100);
+  return [
+    { label: 'Recent scoring', pct: Math.min(100, (recentScoring / 20) * 100), caption: `${recentScoring.toFixed(1)} points a game, last 5` },
+    { label: 'Value for money', pct: Math.min(100, (value / 20) * 100), caption: `${value} points per £1m` },
+    { label: 'Consistency', pct: (n / 5) * 100, caption: `${n} of his last 5 beat the average` },
+    { label: 'Minutes trust', pct: minutesPct, caption: `${minutesPct}% of available minutes` }
+  ];
+}
+function groupFixtureTier(names){
+  const avgs = names.map(name => average(getPlayer(name).fixtureDifficulty3));
+  const groupAvg = +average(avgs).toFixed(1);
+  const leagueAvg = +average(LEAGUE_AVG_FIXTURE).toFixed(1);
+  return { groupAvg, tier: groupAvg < leagueAvg - 0.2 ? 'kinder' : groupAvg > leagueAvg + 0.2 ? 'tougher' : 'similar' };
+}
+
+/* Which chip the signals actually point to — checked in priority order.
+   Same rule as everywhere else: compute first, write the sentence after. */
+function recommendChip(){
+  if (UPCOMING_GW_FLAGS.blank) return { value:'free-hit', why:'A blank gameweek is coming up — Free Hit lets you field a full XI just for that week.' };
+  if (UPCOMING_GW_FLAGS.double){
+    const p = getPlayer(UPCOMING_GW_FLAGS.doublePlayer);
+    const n = gamesAboveAverage(p.last5, p.avg5);
+    if (consistencyTier(n) === 'steady'){
+      return { value:'triple-captain', why:`${UPCOMING_GW_FLAGS.doublePlayer} has a double gameweek coming up and is in genuinely good form — a strong week to consider Triple Captain.` };
+    }
+  }
+  const squadN = SQUAD.map(name => {
+    const d = getPlayer(name);
+    return gamesAboveAverage(d.last5, d.avg5);
+  });
+  if (average(squadN) < 2){
+    return { value:'wildcard', why:'Your squad\'s averaged fewer than 2 of 5 recent games above par — that\'s a squad-wide problem a single transfer won\'t fix.' };
+  }
+  const bench = groupFixtureTier(BENCH);
+  if (bench.tier === 'kinder'){
+    return { value:'bench-boost', why:'Your bench has an easier run than the league average right now — a fair week to make it count.' };
+  }
+  return { value:'hold', why:'Nothing in the signals is forcing your hand this week — holding costs you nothing.' };
+}
+
+/* ================================================================
+   PHRASE BANK — written once, by a human, in brand voice. The
+   engine only ever *selects*, never generates free text.
+   ================================================================ */
+const PHRASES = {
+  consistency: {
+    steady:  (n) => `Not a one-off — he's beaten the average pick in ${n} of his last 5 games.`,
+    streaky: (n) => `A mixed bag lately — ahead of the average in ${n} of his last 5, so it's there, just not every week.`,
+    flash:   ()  => `Mostly quiet recently, with one big game doing the heavy lifting — worth watching if it repeats.`,
+    cold:    ()  => `Hasn't beaten the average pick once in his last 5 — a genuinely cold patch, not bad luck.`
+  },
+  minutes: {
+    nailed:   () => `Nailed on to start — hasn't missed a minute to rotation recently.`,
+    rotation: () => `Started most weeks, but there's some rotation risk creeping in.`,
+    fringe:   () => `Minutes aren't guaranteed right now — worth checking team news before the deadline.`
+  },
+  fixture: {
+    easing:     () => `Fixtures are getting kinder over the next 3 gameweeks.`,
+    toughening: () => `The run gets tougher over the next 3 gameweeks — a good week to cash in if you're going to.`,
+    steady:     () => `A settled run over the next 3 gameweeks — nothing dramatic either way.`
+  },
+  vsAvgMinutes: {
+    above: () => `Playing more minutes than the average for his position.`,
+    even:  () => `Playing about as many minutes as the average for his position.`,
+    below: () => `Playing fewer minutes than the average for his position — worth watching.`
+  },
+  vsAvgFixture: {
+    kinder:  () => `An easier run than the average team faces right now.`,
+    similar: () => `About the same run as everyone else right now.`,
+    tougher: () => `A tougher run than the average team faces right now.`
+  },
+  // ---- Radar / Alex concept: last week's picks, revealed now
+  // they've locked. Never live/predictive — a mate's transfer or
+  // captain choice isn't knowable, or fair game, until the gameweek
+  // it applies to has actually started.
+  recap: {
+    captain: (name, player, pts) => pts >= 10
+      ? `${name} captained ${player} last week — paid off, ${pts} pts.`
+      : `${name} captained ${player} last week — a quieter ${pts} pts.`,
+    transfer: (name, into, outOf) => outOf
+      ? `${name} swapped ${outOf} for ${into} last week.`
+      : `${name} brought in ${into} last week.`,
+    quietWeek: () => `Quiet week in the group — everyone held their team.`
+  },
+  // ---- Radar / Sam concept, v2: template vs. differential ----
+  ownershipTier: {
+    template:     (name) => `${name}'s the popular pick — most of the league's on him too.`,
+    popular:      (name) => `${name}'s well-owned, but far from universal.`,
+    differential: (name) => `${name}'s a genuine differential — most managers don't have him.`,
+    punt:         (name) => `${name}'s a real punt — barely anyone's touched him.`
+  },
+  ownershipMomentum: {
+    rising:  (count) => `And the crowd's catching on — ${formatTransferCount(count)} net transfers in this week.`,
+    falling: (count) => `And he's quietly being dropped — ${formatTransferCount(count)} net transfers out this week.`
+  }
+};
+
+function buildFacts(name){
+  const d = getPlayer(name);
+  const n = gamesAboveAverage(d.last5, d.avg5);
+  const cTier = consistencyTier(n);
+  const mTier = minutesTier(minutesShare(d.minutes5));
+  const fTier = fixtureTrend(d.fixtureDifficulty3);
+  const oTier = ownershipTier(name);
+  const direction = ownershipDelta(d.ownership).direction;
+  const transfers = netTransfersEvent(name);
+  // Prefer the momentum line when transfers actually moved this week;
+  // otherwise fall back to the plain "where does he sit" tier line.
+  const ownershipFact = Math.abs(transfers) >= 20000
+    ? (direction === 'rising' ? PHRASES.ownershipMomentum.rising(transfers) : PHRASES.ownershipMomentum.falling(transfers))
+    : PHRASES.ownershipTier[oTier](name);
+  return {
+    team: d.team, price: d.price,
+    facts: [ PHRASES.minutes[mTier](), PHRASES.fixture[fTier](), PHRASES.consistency[cTier](n), ownershipFact ]
+  };
+}
+function buildShortWhy(name){
+  const d = getPlayer(name);
+  const mTier = minutesTier(minutesShare(d.minutes5));
+  if (mTier !== 'nailed') return PHRASES.minutes[mTier]();
+  return PHRASES.fixture[fixtureTrend(d.fixtureDifficulty3)]();
+}
+
+const weeklyPick = { player: "Haaland", alternatives: ["Salah", "Palmer"] };
+const lastWeek = { player: "Saka", delta: 6 };
+// captain / transferIn / transferOut are optional — not every friend
+// moves every week, and the feed should read that way, not pad it out.
+const friends = [
+  { name: "You",   points: 612, me: true },
+  { name: "Priya", points: 624, captain: "Haaland", transferIn: "Bowen",  transferOut: "Wood" },
+  { name: "Jamie", points: 598, captain: "Salah",   transferIn: null,     transferOut: null   },
+  { name: "Tom",   points: 560, captain: "Haaland", transferIn: "Digne",  transferOut: "Estupinan" }
+];
+
+/* ================================================================
+   RADAR — the "macro picture": what's happening outside your own
+   team. Two concepts, same underlying data, different lens:
+     - Alex concept: what your mates are doing (social, no stats)
+     - Sam concept: template vs. differential, across the wider game
+       (not just the mini-league) — because Sam's macro question
+       isn't "is this player good", it's "am I with the crowd or
+       against it, and is that paying off".
+   Both are pure functions — no DOM, no randomness — so they're easy
+   to unit-test and easy to reason about independently of render().
+   ================================================================ */
+// Only ever looks backwards: a captain choice or transfer is public
+// the moment its gameweek locks, never before. Outcome context comes
+// from the same last5 data every other screen already uses — no new
+// data source, just a different read of it.
+function buildLastWeekRecap(){
+  const others = friends.filter(f => !f.me);
+  const events = [];
+
+  others.forEach(f => {
+    if (f.captain){
+      const d = getPlayer(f.captain);
+      const pts = d.last5[d.last5.length - 1];
+      events.push({ emoji: '👑', text: PHRASES.recap.captain(f.name, f.captain, pts) });
+    }
+  });
+  others.forEach(f => {
+    if (f.transferIn) events.push({ emoji: '🔄', text: PHRASES.recap.transfer(f.name, f.transferIn, f.transferOut) });
+  });
+
+  if (events.length === 0) events.push({ emoji: '😴', text: PHRASES.recap.quietWeek() });
+  return events.slice(0, 4); // a recap, not a report — cap it so it stays glanceable
+}
+
+/* ================================================================
+   TEAM OF THE WEEK — the one part of "what's happening out there"
+   that IS fair to show live-ish, because it's the official game's
+   own calculation (FPL flags every gameweek's dream team itself, via
+   `in_dreamteam`), not a peek at anyone's private decision. In the
+   real app this reads straight from the API; here it's approximated
+   from the same last5 data everything else already uses.
+   ================================================================ */
+const TOTW_FORMATION = { GK: 1, DEF: 3, MID: 4, FWD: 3 };
+function lastWeekPoints(name){
+  const d = getPlayer(name);
+  return d.last5[d.last5.length - 1];
+}
+function buildTeamOfTheWeek(){
+  const byPosition = {};
+  allKnownPlayers().forEach(name => {
+    const pos = getPlayer(name).position;
+    (byPosition[pos] = byPosition[pos] || []).push(name);
+  });
+
+  const xi = [];
+  Object.entries(TOTW_FORMATION).forEach(([pos, count]) => {
+    (byPosition[pos] || [])
+      .slice()
+      .sort((a, b) => lastWeekPoints(b) - lastWeekPoints(a))
+      .slice(0, count)
+      .forEach(name => xi.push({ name, position: pos, pts: lastWeekPoints(name), mine: SQUAD.includes(name) }));
+  });
+  return xi;
+}
+
+// Ownership bands are deliberately coarse — Sam doesn't need a
+// precise percentile, just "am I with the herd or not". Thresholds
+// are tuned to this squad's actual numbers, not a universal rule.
+function ownershipTier(name){
+  const o = getPlayer(name).ownership.to;
+  if (o >= 30) return 'template';
+  if (o >= 12) return 'popular';
+  if (o >= 5)  return 'differential';
+  return 'punt';
+}
+
+const PERCENT_GLANCE_SCALE = 2; // widest ownership-point swing we'd expect to show
+
+// The top 5 movers in one direction, by whichever metric is selected.
+// 'net' sorts by actual transfer count; 'percent' sorts by ownership
+// percentage-point swing — these can disagree (a small-owned player's
+// count looks tiny even if their percentage move is sharp), which is
+// exactly why the toggle exists rather than picking one for you.
+function topMovers(direction, metric){
+  return allKnownPlayers()
+    .map(name => {
+      const p = getPlayer(name);
+      if (!p || !p.ownership) return null;
+      const { delta, direction: dir } = ownershipDelta(p.ownership);
+      return { name, delta, direction: dir, transfers: netTransfersEvent(name) };
+    })
+    .filter(p => p && (direction === 'in' ? p.direction === 'rising' : p.direction === 'falling'))
+    .sort((a, b) => metric === 'percent'
+      ? Math.abs(b.delta) - Math.abs(a.delta)
+      : Math.abs(b.transfers) - Math.abs(a.transfers))
+    .slice(0, 5);
+}
+
+// For a rising player: the biggest fallers right now are a plausible
+// source of the transfers in (people sell X to buy this one). For a
+// falling player: the biggest risers are a plausible destination for
+// the money leaving him. Same underlying data as topMovers, just
+// answering "at whose expense" rather than "how much".
+function swapPartners(name){
+  const { direction } = ownershipDelta(getPlayer(name).ownership);
+  const opposite = direction === 'falling' ? 'in' : 'out';
+  return topMovers(opposite, 'net').filter(p => p.name !== name).slice(0, 3);
+}
+
+// Plain-language set-piece duty, for the profile — no chips, no
+// acronyms, one line per duty. null on all three means genuinely no
+// duty (that's what the real API returns for non-takers), not a gap.
+function setPieceLines(name){
+  const sp = getPlayer(name).setPiece;
+  if (!sp) return [`Not on penalties, corners, or free-kicks for his side.`];
+  const lines = [];
+  if (sp.penalties)       lines.push(`${ordinal(sp.penalties)} in line for penalties`);
+  if (sp.directFreeKicks) lines.push(`${ordinal(sp.directFreeKicks)} in line for direct free-kicks`);
+  if (sp.corners)         lines.push(`${ordinal(sp.corners)} in line for corners`);
+  return lines;
+}
+
+
+
+/* ================================================================
+   THE FIVE WEEKLY ACTIONS + their decision options
+   ================================================================ */
+const ACTIONS = [
+  { key:'injuries',  icon:'🩹', title:'Deal with injuries',              blurb:'Check who\'s actually at risk before anything else.' },
+  { key:'transfers', icon:'🔄', title:'Bring in form, move on the cold', blurb:'Who should come in, who should go — and is it worth the hit?' },
+  { key:'chip',      icon:'🃏', title:'Chips: play one or hold',         blurb:'Wildcard, Bench Boost, Triple Captain, Free Hit.' },
+  { key:'captaincy', icon:'👑', title:'Captain & vice',                  blurb:'Your two most important picks of the week.' }
+];
+
+// Per-player choice for a flagged availability concern.
+const INJURY_CHOICES = [
+  { value:'bench',    label:'Bench him' },
+  { value:'transfer', label:'Transfer out' },
+  { value:'play',     label:'Play him' }
+];
+
+const CHOICE_OPTIONS = {
+  chip: [
+    { value:'wildcard',       label:'Play Wildcard',       desc:'Unlimited free transfers this week — a full reset.' },
+    { value:'bench-boost',    label:'Play Bench Boost',    desc:'Your bench scores too this week.' },
+    { value:'triple-captain', label:'Play Triple Captain', desc:'Your captain scores 3x instead of 2x.' },
+    { value:'free-hit',       label:'Play Free Hit',       desc:'One-week unlimited transfers, reverts after.' },
+    { value:'hold',           label:'Hold your chips',     desc:'Nothing forces your hand this week — save them.' }
+  ]
+};
+
+// ---- STATE ----
+const state = {
+  onboarded: false, obStep: 0, mode: 'guided',
+  tab: 'thisweek',
+  scenario: 'active',
+  radarConcept: 'alex', // 'alex' | 'sam' — which Radar lens is showing (prototype-testing toggle)
+  radarMetric: 'net', // 'net' | 'percent' — which way Sam's top-5 in/out is measured
+  activeAction: null,
+  tempChoice: null, tempCaptain: null, tempVice: null, tempInjuryChoices: {},
+  decisions: { injuries: null, transfers: null, chip: null, captaincy: null }
+};
+
+// ---- DOM refs ----
+const onboardingEl = document.getElementById('onboarding');
+const appBody       = document.getElementById('app-body');
+const tabs          = Array.from(document.querySelectorAll('.tab'));
+const sheetBackdrop = document.getElementById('sheet-backdrop');
+const sheetTitle    = document.getElementById('sheet-title');
+const sheetBody     = document.getElementById('sheet-body');
+const toastEl       = document.getElementById('toast');
+const deadlineEl    = document.getElementById('deadline');
+
+let currentPassportPlayer = null;
+let carouselMode = 'passport'; // 'passport' | 'compare'
+let comparePair = null;
+let miniIndex = 0;
+
+/* ================================================================
+   ONBOARDING
+   ================================================================ */
+function renderOnboarding(){
+  const step = state.obStep;
+  onboardingEl.style.display = state.onboarded ? 'none' : 'flex';
+  if (state.onboarded) return;
+
+  let body = '';
+  if (step === 0){
+    body = `
+      <svg width="120" height="64" viewBox="0 0 150 80" fill="none">
+        <path d="M5 44 L28 20 L52 58 L70 12" stroke="#F9F9F9" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="88" cy="40" r="26" fill="#F9F9F9"/>
+        <line x1="114" y1="40" x2="145" y2="40" stroke="#F9F9F9" stroke-width="8" stroke-linecap="round"/>
+      </svg>
+      <h2 style="font-size:22px;">Let's make your first pick feel smart.</h2>
+      <p style="opacity:.85; font-size:14px; max-width:26ch;">No spreadsheets. No jargon walls. Five short decisions a week, each with a reason.</p>
+      <button class="btn" style="background:#fff; color:var(--plum); max-width:220px;" data-action="ob-next">Let's go</button>
+    `;
+  } else if (step === 1){
+    body = `
+      <h2 style="font-size:20px;">How do you want us to talk to you?</h2>
+      <p style="opacity:.85; font-size:13.5px; margin-bottom:4px;">You can change this any time in Profile.</p>
+      <div class="mode-choice">
+        <div class="mode-card ${state.mode==='guided'?'selected':''}" data-action="set-mode" data-mode="guided" role="button" tabindex="0">
+          <div class="t">Show me the ropes</div>
+          <div class="d">We'll explain the "why" behind every pick.</div>
+        </div>
+        <div class="mode-card ${state.mode==='instinct'?'selected':''}" data-action="set-mode" data-mode="instinct" role="button" tabindex="0">
+          <div class="t">Just give me the picks</div>
+          <div class="d">Short and to the point — you'll dig deeper if you want to.</div>
+        </div>
+      </div>
+      <button class="btn" style="background:#fff; color:var(--plum); max-width:220px; margin-top:10px;" data-action="ob-next">Continue</button>
+    `;
+  } else {
+    body = `
+      <div class="eyebrow-sm" style="color:var(--teal);">Here's how it'll look every week</div>
+      <div class="card" style="text-align:left; color:#222; width:100%;">
+        <h3>This week's 5 decisions</h3>
+        <p style="font-size:13.5px; color:#444; line-height:1.5;">Injuries, transfers, your transfer call, chips, and captaincy — one focused screen each, with your reasoning right there.</p>
+      </div>
+      <p style="opacity:.9; font-size:13.5px;">We can't push changes to the official FPL app — but we'll help you land on the decision, every time.</p>
+      <button class="btn" style="background:#fff; color:var(--plum); max-width:220px;" data-action="ob-finish">Enter Kneejerker</button>
+    `;
+  }
+
+  onboardingEl.innerHTML = `
+    <div class="ob-body">${body}</div>
+    <div class="ob-dots">${[0,1,2].map(i=>`<div class="ob-dot ${i===step?'active':''}"></div>`).join('')}</div>
+  `;
+}
+
+/* ================================================================
+   HUB — "This Week" tab. Five actions, not one dashboard.
+   ================================================================ */
+function renderHub(){
+  const decidedCount = Object.values(state.decisions).filter(Boolean).length;
+  const returningBanner = state.scenario === 'returning' ? `
+    <div class="banner">
+      <h3>Welcome back 👋</h3>
+      <p>Missed 3 gameweeks — no drama. Here's a 2-minute catch-up so you're back on track before this week's deadline.</p>
+      <button class="btn" data-action="dismiss-returning">Show me the catch-up</button>
+    </div>
+  ` : '';
+
+  appBody.innerHTML = `
+    ${returningBanner}
+    <div class="notice">Since FPL locked down write access, we can't make these changes for you — decide here, then set it in the official app before the deadline.</div>
+    <div class="progress-pill">${decidedCount} of ${ACTIONS.length} decided this week</div>
+
+    ${ACTIONS.map(a => {
+      const decided = !!state.decisions[a.key];
+      return `
+        <div class="card action-card" data-action="open-action" data-key="${a.key}" role="button" tabindex="0">
+          <div class="left">
+            <div class="action-icon">${a.icon}</div>
+            <div>
+              <div class="t">${a.title}</div>
+              <div class="d">${a.blurb}</div>
+            </div>
+          </div>
+          <span class="badge ${decided?'done':'pending'}">${decided ? '✓ Decided' : 'Not started'}</span>
+        </div>
+      `;
+    }).join('')}
+
+    <div class="card">
+      <h3>Last week, you got this right</h3>
+      <p class="sub" style="margin-bottom:0;">You backed <strong>${lastWeek.player}</strong> — he outscored the average pick by <strong style="color:var(--teal);">+${lastWeek.delta} pts</strong>.</p>
+    </div>
+  `;
+}
+
+/* ================================================================
+   ACTION SCREENS
+   ================================================================ */
+function backRow(){
+  return `<div class="back-row"><button class="btn ghost" data-action="close-action">← Back</button></div>`;
+}
+
+/* ================================================================
+   ACTION INFO — the real numbers behind each decision, not just a
+   blurb. This is what was missing: a choice with nothing to weigh
+   isn't an informed decision.
+   ================================================================ */
+/* ================================================================
+   ACTION INFO — the real numbers behind each decision, not just a
+   blurb. A choice with nothing to weigh isn't an informed decision.
+   ================================================================ */
+function buildActionInfo(key){
+  if (key === 'transfers'){
+    const plan = buildTransferPlan();
+    const cold = plan.cold;
+    const coldD = getPlayer(cold);
+
+    if (!plan.target){
+      return `<div class="card">
+        <p class="sub" style="margin-bottom:0;">${cold} is your coldest pick right now, but we don't have a similarly-priced ${coldD.position} alternative lined up in this prototype yet — that's a data gap, not a real recommendation to hold.</p>
+      </div>`;
+    }
+
+    const target = getPlayer(plan.target);
+    const coldN = gamesAboveAverage(coldD.last5, coldD.avg5);
+    const targetN = gamesAboveAverage(target.last5, target.avg5);
+    const priceDiff = +(priceNumeric(target.price) - priceNumeric(coldD.price)).toFixed(1);
+    const bankAfterFirst = +(BANK - Math.max(priceDiff, 0)).toFixed(1);
+
+    let secondBlock = '';
+    if (plan.secondCold && plan.secondTarget){
+      const secondD = getPlayer(plan.secondCold);
+      const secondTargetD = getPlayer(plan.secondTarget);
+      const bowenGap = +(priceNumeric(secondTargetD.price) - priceNumeric(secondD.price)).toFixed(1);
+      const diff2 = +(average(secondTargetD.last5) - average(secondD.last5)).toFixed(1);
+      const breakeven2 = diff2 > 0 ? Math.ceil(4 / diff2) : null;
+      secondBlock = `
+        <div style="border-top:1px dashed var(--grey); margin-top:16px; padding-top:14px;">
+          <h3 style="color:var(--pink);">Want to go further?</h3>
+          <p class="sub" style="margin-bottom:8px;">
+            On top of that, also swap <strong>${plan.secondCold}</strong> for <strong>${plan.secondTarget}</strong> — he's outscored him by about <strong>${diff2} pts/game</strong> recently.
+            That second move needs its own <strong>-4 hit</strong>, which ${breakeven2 ? `breaks even in about ${breakeven2} gameweek${breakeven2 > 1 ? 's' : ''} if the gap holds` : `doesn't clearly pay for itself right now`} — and costs £${bowenGap.toFixed(1)}m, ${bowenGap > bankAfterFirst ? `which is more than the £${bankAfterFirst.toFixed(1)}m you'd have left` : `comfortably inside the £${bankAfterFirst.toFixed(1)}m you'd have left`}.
+          </p>
+          <button class="btn secondary" style="width:auto; padding:6px 12px; font-size:12px;" data-action="open-compare" data-a="${plan.secondCold}" data-b="${plan.secondTarget}">See why →</button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="card">
+        <p class="sub" style="margin-bottom:12px;">You've got <strong>£${BANK.toFixed(1)}m</strong> in the bank.</p>
+        ${plan.fromInjuryFlag ? `<p class="sub" style="margin-bottom:12px; color:var(--plum); font-weight:600;">You flagged ${cold} to transfer out on the Injuries screen — starting there.</p>` : ''}
+
+        <h3>Suggested move</h3>
+        <div style="display:flex; gap:16px; margin-bottom:10px;">
+          <div style="flex:1;">
+            <div class="name term" role="button" tabindex="0" data-action="open-player" data-player="${cold}">${cold}</div>
+            <div style="font-size:11px; color:#999; margin-top:1px;">${coldD.team}</div>
+            <div class="sub" style="margin:4px 0 0;">${coldN}/5 above average · ${coldD.price}</div>
+          </div>
+          <div style="flex:1;">
+            <div class="name term" role="button" tabindex="0" data-action="open-player" data-player="${plan.target}">${plan.target}</div>
+            <div style="font-size:11px; color:#999; margin-top:1px;">${target.team}</div>
+            <div class="sub" style="margin:4px 0 0;">${targetN}/5 above average · ${target.price}</div>
+          </div>
+        </div>
+        <p class="sub" style="margin-bottom:8px;">${priceDiff <= 0 ? `Actually frees up £${Math.abs(priceDiff).toFixed(1)}m.` : `Costs £${priceDiff.toFixed(1)}m — leaves £${bankAfterFirst.toFixed(1)}m in the bank.`} Free — no hit needed.</p>
+        <button class="btn secondary" style="width:auto; padding:6px 12px; font-size:12px;" data-action="open-compare" data-a="${cold}" data-b="${plan.target}">See why →</button>
+        ${secondBlock}
+      </div>
+    `;
+  }
+  if (key === 'chip'){
+    const ns = SQUAD.map(name => {
+      const d = getPlayer(name);
+      return gamesAboveAverage(d.last5, d.avg5);
+    });
+    const avgN = +(average(ns)).toFixed(1);
+    const bench = groupFixtureTier(BENCH);
+    const rec = recommendChip();
+    const gwNote = UPCOMING_GW_FLAGS.blank
+      ? 'A blank gameweek is flagged in the next 3 weeks.'
+      : UPCOMING_GW_FLAGS.double
+        ? `${UPCOMING_GW_FLAGS.doublePlayer} has a double gameweek coming up.`
+        : 'No blank or double gameweek flagged in the next 3 weeks.';
+    return `
+      <div class="card">
+        <h3>This week's signals</h3>
+        <ul class="reasons">
+          <li>Squad form: averaging ${avgN} of 5 recent games above par${avgN < 2 ? ' — a genuinely rough patch' : ''}.</li>
+          <li>Bench fixtures: ${bench.tier === 'kinder' ? 'easier than the league average' : bench.tier === 'tougher' ? 'tougher than the league average' : 'about average'} over the next 3 weeks.</li>
+          <li>${gwNote}</li>
+          <li>${AVAILABILITY_WATCH.length} availability concern${AVAILABILITY_WATCH.length !== 1 ? 's' : ''} flagged (see Injuries).</li>
+        </ul>
+        <p class="sub" style="margin-top:10px; margin-bottom:0; font-weight:600; color:var(--plum);">Our lean this week: ${CHOICE_OPTIONS.chip.find(o => o.value === rec.value).label}. ${rec.why}</p>
+      </div>
+    `;
+  }
+  return '';
+}
+
+function getOptionsFor(key){
+  if (key === 'transfers'){
+    const plan = buildTransferPlan();
+    if (!plan.target){
+      return [{ value:'hold', label:'Hold your transfer this week', desc:'No similarly-priced alternative lined up for this position yet — safest to wait.' }];
+    }
+    const target = getPlayer(plan.target);
+    const coldD = getPlayer(plan.cold);
+    const diff = +(average(target.last5) - average(coldD.last5)).toFixed(1);
+    const breakeven = diff > 0 ? Math.ceil(4 / diff) : null;
+    const opts = [
+      { value:'bring-in-free', label:`Bring in ${plan.target} for ${plan.cold} (free transfer)`, desc:'No points cost — the straightforward, similar-price swap.' },
+      { value:'bring-in-hit',  label:`Do it now with a -4 hit instead of waiting`, desc: breakeven ? `${plan.target}'s outscored ${plan.cold} by ~${diff} pts/game — a hit breaks even in about ${breakeven} gameweek${breakeven > 1 ? 's' : ''}.` : `The numbers don't clearly favour a hit right now.` }
+    ];
+    if (plan.secondCold && plan.secondTarget){
+      opts.push({ value:'bigger-move', label:`Do both: ${plan.target} now, plus ${plan.secondCold} → ${plan.secondTarget}`, desc:`The ${plan.target} move stays free — the second swap adds a -4 hit on top. See the "want to go further?" note above for whether it pays for itself.` });
+    }
+    opts.push({ value:'hold', label:'Hold your transfer this week', desc:'Bank it for a blank or double gameweek coming up.' });
+    return opts;
+  }
+  return CHOICE_OPTIONS[key];
+}
+
+function renderChoiceAction(key){
+  const meta = ACTIONS.find(a => a.key === key);
+  const opts = getOptionsFor(key);
+
+  appBody.innerHTML = `
+    ${backRow()}
+    <h2 class="title">${meta.title}</h2>
+    <p class="sub">${meta.blurb}</p>
+    ${buildActionInfo(key)}
+    ${opts.map(o => `
+      <div class="choice-card ${state.tempChoice === o.value ? 'selected' : ''}" data-action="select-choice" data-value="${o.value}" role="button" tabindex="0">
+        <div class="t">${o.label}</div>
+        <div class="d">${o.desc}</div>
+      </div>
+    `).join('')}
+    <button class="btn" style="margin-top:10px;" data-action="confirm-choice" data-key="${key}" ${!state.tempChoice ? 'disabled' : ''}>
+      Confirm this decision
+    </button>
+  `;
+}
+
+/* ================================================================
+   INJURIES — its own screen: one risk-coded card per flagged
+   player, each with an independent Bench / Transfer / Play choice.
+   ================================================================ */
+function renderInjuriesAction(){
+  appBody.innerHTML = `
+    ${backRow()}
+    <h2 class="title">Deal with injuries</h2>
+    <p class="sub">Check who's actually at risk before anything else.</p>
+    ${AVAILABILITY_WATCH.map(name => {
+      const d = getPlayer(name);
+      const risk = assessRisk(name);
+      const chosen = state.tempInjuryChoices[name];
+      return `
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <div class="name term" role="button" tabindex="0" data-action="open-player" data-player="${name}" style="font-size:15px;">${name}</div>
+            <span class="badge" style="background:${riskColor(risk.tier)}; color:#fff;">${risk.tier === 'confirmed' ? 'Confirmed out' : risk.pct + '% risk'}</span>
+          </div>
+          <div style="margin-bottom:10px;">
+            ${d.minutes5 ? iconRow('Fitness', fitnessIcons(d.minutes5)) : ''}
+            ${d.bookings ? iconRow('Bookings', bookingIcons(d.bookings.last5Array)) : ''}
+          </div>
+          <ul class="reasons">${risk.reasons.map(r => `<li>${r}</li>`).join('')}</ul>
+          <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
+            ${INJURY_CHOICES.map(c => `
+              <button class="btn ${chosen === c.value ? '' : 'secondary'}" style="width:auto; padding:7px 12px; font-size:12px;" data-action="set-injury-choice" data-player="${name}" data-value="${c.value}">${c.label}</button>
+            `).join('')}
+          </div>
+          ${chosen === 'transfer' ? `<p style="font-size:11.5px; color:#777; margin-top:8px;">We'll bring this into the Transfers screen as your starting point.</p>` : ''}
+        </div>
+      `;
+    }).join('')}
+    <button class="btn" data-action="confirm-injuries" ${AVAILABILITY_WATCH.some(n => !state.tempInjuryChoices[n]) ? 'disabled' : ''}>
+      Confirm this week's plan
+    </button>
+  `;
+}
+
+function renderCaptaincyAction(){
+  const cap = state.tempCaptain;
+  const vice = state.tempVice;
+  const capFacts = buildFacts(cap);
+  const ppm = computePpm(cap);
+  const ppmT = ppmTier(cap);
+
+  const remaining = SQUAD.filter(n => n !== cap && n !== vice);
+  const shortlist = remaining
+    .map(n => {
+      const d = getPlayer(n);
+      return { n, score: average(d.last5) };
+    })
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 3)
+    .map(o => o.n);
+  const rest = remaining.filter(n => !shortlist.includes(n));
+
+  appBody.innerHTML = `
+    ${backRow()}
+    <h2 class="title">Captain &amp; vice</h2>
+    <p class="sub">Your two most important picks of the week.</p>
+
+    <div class="card">
+      <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+        <span class="pill">${capFacts.team}</span>
+        <span class="pill pink">${capFacts.price}</span>
+        <span class="pill ${ppmT === 'above' ? '' : ppmT === 'below' ? 'pink' : 'outline'}">${ppm} pts/£m</span>
+      </div>
+      <h3>Captain</h3>
+      <h2 class="title" style="margin-bottom:8px;"><span class="term" role="button" tabindex="0" data-action="open-player" data-player="${cap}">${cap}</span></h2>
+      <ul class="reasons">${capFacts.facts.map(f => `<li>${f}</li>`).join('')}</ul>
+      <div class="flip-hint">Tap the name above for the full breakdown.</div>
+    </div>
+
+    <div class="card">
+      <h3>Vice-captain</h3>
+      <div class="title" style="font-size:16px; margin-bottom:2px;"><span class="term" role="button" tabindex="0" data-action="open-player" data-player="${vice}">${vice}</span></div>
+      <p class="sub" style="margin-bottom:0;">Steps in if ${cap} doesn't play.</p>
+    </div>
+
+    <div class="card">
+      <h3>Top alternatives</h3>
+      ${shortlist.map(name => `
+        <div class="alt-player">
+          <div class="name term" role="button" tabindex="0" data-action="open-player" data-player="${name}">${name}</div>
+          <div class="why">${buildShortWhy(name)}</div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn secondary" style="width:auto; padding:6px 12px; font-size:12px;" data-action="set-captain" data-player="${name}">Make captain</button>
+            <button class="btn secondary" style="width:auto; padding:6px 12px; font-size:12px;" data-action="set-vice" data-player="${name}">Make vice</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="card">
+      <h3>Rest of your squad</h3>
+      <p class="sub">Not typical captain picks, but fully your call — tap a name to check the numbers first.</p>
+      ${rest.map(name => `
+        <div class="alt-player" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div>
+            <div class="name term" role="button" tabindex="0" data-action="open-player" data-player="${name}">${name}</div>
+            <div class="why" style="margin-top:2px;">${getPlayer(name).position} · ${getPlayer(name).team}</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-shrink:0;">
+            <button class="btn secondary" style="width:auto; padding:5px 10px; font-size:11.5px;" data-action="set-captain" data-player="${name}">C</button>
+            <button class="btn secondary" style="width:auto; padding:5px 10px; font-size:11.5px;" data-action="set-vice" data-player="${name}">VC</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <button class="btn" data-action="confirm-captaincy">Save ${cap} (C) and ${vice} (VC)</button>
+    <p style="font-size:11.5px; color:#777; margin-top:8px; line-height:1.4;">We can't set this in the official FPL app for you yet — this saves your plan here so you don't forget before the deadline.</p>
+  `;
+}
+
+function renderActionScreen(key){
+  if (key === 'captaincy') { renderCaptaincyAction(); return; }
+  if (key === 'injuries') { renderInjuriesAction(); return; }
+  renderChoiceAction(key);
+}
+
+/* ================================================================
+   PLAN TAB — the editable summary. Come back, see everything,
+   change anything.
+   ================================================================ */
+function planDetail(action, d){
+  if (!d) return `<p class="sub" style="margin:0;">Not decided yet.</p>`;
+  if (action.key === 'captaincy'){
+    return `<div style="display:flex; align-items:center; gap:10px; margin-top:2px;">
+      <span style="font-size:22px;">👑</span>
+      <div><div style="font-weight:700; font-size:14px;">${d.captain}</div><div style="font-size:11.5px; color:#777;">Vice: ${d.vice}</div></div>
+    </div>`;
+  }
+  if (action.key === 'injuries'){
+    return `<div style="display:flex; flex-direction:column; gap:5px; margin-top:2px;">
+      ${Object.entries(d).map(([player, choice]) => {
+        const risk = assessRisk(player);
+        return `<div style="display:flex; align-items:center; gap:8px; font-size:12.5px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:${riskColor(risk.tier)}; display:inline-block; flex-shrink:0;"></span>
+          <strong>${player}</strong> → ${INJURY_CHOICES.find(c => c.value === choice).label}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+  if (action.key === 'chip'){
+    const emoji = { wildcard:'🃏', 'bench-boost':'🚀', 'triple-captain':'⭐', 'free-hit':'🎯', hold:'✋' };
+    return `<div style="display:flex; align-items:center; gap:8px; margin-top:2px;"><span style="font-size:22px;">${emoji[d.value] || '🃏'}</span><strong style="font-size:13.5px;">${d.label}</strong></div>`;
+  }
+  return `<p class="sub" style="margin:2px 0 0;">${d.label}</p>`;
+}
+
+function renderPlan(){
+  const decidedCount = Object.values(state.decisions).filter(Boolean).length;
+  const total = ACTIONS.length;
+  const headline = decidedCount === total ? "Kickoff's covered. Go be smug." : decidedCount === 0 ? "Nothing decided yet — let's fix that." : `${decidedCount} of ${total} decided — nearly there.`;
+
+  appBody.innerHTML = `
+    <div class="banner">
+      <h3>${headline}</h3>
+      <p style="margin-bottom:10px;">These decisions live here only — make the real change in the official FPL app before the deadline.</p>
+      <div style="display:flex; gap:8px;">
+        ${ACTIONS.map(a => `
+          <div style="width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px;
+            background:${state.decisions[a.key] ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.10)'};
+            opacity:${state.decisions[a.key] ? '1' : '.45'};">${a.icon}</div>
+        `).join('')}
+      </div>
+    </div>
+
+    ${ACTIONS.map(a => {
+      const d = state.decisions[a.key];
+      return `
+        <div class="card" style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div style="min-width:0; flex:1;">
+            <div class="eyebrow-sm" style="margin-bottom:4px;">${a.title}</div>
+            ${planDetail(a, d)}
+          </div>
+          <button class="btn ${d ? 'secondary' : ''}" style="width:auto; padding:7px 14px; font-size:12px; flex-shrink:0;" data-action="open-action" data-key="${a.key}">${d ? 'Change' : 'Decide'}</button>
+        </div>
+      `;
+    }).join('')}
+  `;
+}
+
+/* ================================================================
+   COMPARE TAB
+   ================================================================ */
+function renderCompare(){
+  const max = Math.max(...friends.map(f => f.points));
+  const me = friends.find(f => f.me);
+  const ahead = friends.filter(f => f.points > me.points).sort((a,b) => a.points - b.points)[0];
+
+  appBody.innerHTML = `
+    <div class="eyebrow-sm">your mini-league</div>
+    <h2 class="title" style="margin-bottom:14px;">How you stack up</h2>
+    ${ahead ? `
+      <div class="card"><p class="sub" style="margin-bottom:0;">You're <strong>${ahead.points - me.points} pts</strong> behind <strong>${ahead.name}</strong> — a strong captain pick this week could close that gap.</p></div>
+    ` : `<div class="card"><p class="sub" style="margin-bottom:0;">You're clear at the top of your group this week. Nice.</p></div>`}
+    ${friends.slice().sort((a,b) => b.points - a.points).map(f => `
+      <div class="friend-row">
+        <div class="top"><span>${f.name}</span><span>${f.points} pts</span></div>
+        <div class="bar-track"><div class="bar-fill ${f.me ? 'me' : ''}" style="width:${(f.points/max*100).toFixed(0)}%"></div></div>
+      </div>
+    `).join('')}
+    <div class="friend-note">Season total · updated after Monday's bonus points confirm.</div>
+  `;
+}
+
+/* ================================================================
+   RADAR TAB — the macro picture. state.radarConcept picks which
+   lens renders; both read the same underlying data (see the RADAR
+   functions above), just through a different, persona-shaped filter.
+   ================================================================ */
+function renderRadar(){
+  if (state.radarConcept === 'sam') renderRadarSam();
+  else renderRadarAlex();
+}
+
+// Concept A — Alex: last week's picks, revealed now they're locked
+// and fair game — never a live look at what mates are deciding this
+// week, which isn't something any FPL tool can actually see.
+function renderRadarAlex(){
+  const feed = buildLastWeekRecap();
+  const totw = buildTeamOfTheWeek();
+  const mineInTotw = totw.filter(p => p.mine).length;
+  const totwHeadline = mineInTotw > 0
+    ? `${mineInTotw} of your players made Team of the Week!`
+    : `Nobody from your squad made Team of the Week this time.`;
+
+  appBody.innerHTML = `
+    <div class="eyebrow-sm">last week, in your league</div>
+    <h2 class="title" style="margin-bottom:4px;">What your mates called last week</h2>
+    <p class="sub">Now it's locked in — here's how your group played it.</p>
+
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="action-icon" style="font-size:22px;">🏆</div>
+        <div class="t" style="font-size:14px;">${totwHeadline}</div>
+      </div>
+      <div class="accordion-item totw-accordion" id="totw-accordion">
+        <div class="accordion-head" data-action="toggle-totw" role="button" tabindex="0" style="margin-top:12px; border-top:1px solid var(--grey); padding-top:10px;">
+          <span style="font-size:12.5px; font-weight:700; color:var(--plum);">See the full XI</span>
+          <span class="chev">▾</span>
+        </div>
+        <div class="accordion-body">
+          ${(() => {
+            const maxPts = Math.max(...totw.map(p => p.pts));
+            return totw.map(p => `
+              <div style="padding:7px 0; border-bottom:1px solid var(--grey);">
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;">
+                  <span>${p.mine ? '⭐ ' : ''}${p.name} <span style="color:#999; font-size:11px;">${p.position}</span></span>
+                  <span style="font-weight:700;">${p.pts} pts</span>
+                </div>
+                <div class="bar-track" style="height:6px;"><div class="bar-fill ${p.mine ? 'me' : ''}" style="width:${((p.pts / maxPts) * 100).toFixed(0)}%;"></div></div>
+              </div>
+            `).join('');
+          })()}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      ${feed.map((e, i) => `
+        <div class="action-card" style="padding:11px 0; ${i < feed.length - 1 ? 'border-bottom:1px solid var(--grey);' : ''} cursor:default;">
+          <div class="left">
+            <div class="action-icon">${e.emoji}</div>
+            <div class="t">${e.text}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="friend-note">Based on your mini-league group · refreshes once each gameweek locks.</div>
+  `;
+}
+
+// Concept B — Sam: template vs. differential. This is the pride
+// loop, not an advisory one — the point isn't "here's a stat", it's
+// "here's where you stand against the wider game, and whether that
+// stance is being rewarded." One headline per player (see
+// radarStory), same tap-through into the player passport as
+// everywhere else — no new UI pattern, and the deeper "why" behind
+// the headline lives one tap away rather than crowding this screen.
+function renderRadarSam(){
+  const metric = state.radarMetric;
+  const inRows = topMovers('in', metric);
+  const outRows = topMovers('out', metric);
+
+  const rowHtml = (p, i, total) => `
+    <div class="action-card" data-action="open-player" data-player="${p.name}" role="button" tabindex="0"
+         style="padding:11px 0; ${i < total - 1 ? 'border-bottom:1px solid var(--grey);' : ''}">
+      <div class="left">
+        <div>
+          <div class="t">${p.name}</div>
+          <span class="pill ${ownershipTier(p.name) === 'template' ? '' : 'outline'}" style="margin-top:3px;">${ownershipTier(p.name)}</span>
+        </div>
+      </div>
+      ${transferGlance(p.name, metric)}
+    </div>
+  `;
+
+  appBody.innerHTML = `
+    <div class="eyebrow-sm">template vs. differential</div>
+    <h2 class="title" style="margin-bottom:4px;">Who's moving, and which way</h2>
+    <p class="sub">Tap a name for the full profile.</p>
+
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <button class="btn ${metric === 'net' ? '' : 'secondary'}" style="padding:8px 0; font-size:12.5px;" data-action="set-radar-metric" data-metric="net">Net transfers</button>
+      <button class="btn ${metric === 'percent' ? '' : 'secondary'}" style="padding:8px 0; font-size:12.5px;" data-action="set-radar-metric" data-metric="percent">Ownership %</button>
+    </div>
+
+    <div class="card">
+      <h3>Top 5 in</h3>
+      ${inRows.length ? inRows.map((p, i) => rowHtml(p, i, inRows.length)).join('') : `<p class="sub" style="margin-bottom:0;">Nobody's moving in much right now.</p>`}
+    </div>
+
+    <div class="card">
+      <h3>Top 5 out</h3>
+      ${outRows.length ? outRows.map((p, i) => rowHtml(p, i, outRows.length)).join('') : `<p class="sub" style="margin-bottom:0;">Nobody's moving out much right now.</p>`}
+    </div>
+
+    <div class="friend-note">Bar length = scale, colour = direction. Tap a name for goals, form, fixtures, and more.</div>
+  `;
+}
+
+/* ================================================================
+   YOU TAB
+   ================================================================ */
+function renderYou(){
+  appBody.innerHTML = `
+    <div class="eyebrow-sm">your settings</div>
+    <div class="card">
+      <h3>Explanation depth</h3>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+        <div>
+          <div style="font-weight:700; font-size:13.5px;">${state.mode === 'guided' ? 'Show me the ropes' : 'Just give me the picks'}</div>
+          <div style="font-size:12px; color:#777;">Change any time — no penalty either way.</div>
+        </div>
+        <div class="switch ${state.mode === 'instinct' ? 'on' : ''}" data-action="toggle-mode" role="switch" tabindex="0" aria-checked="${state.mode === 'instinct'}">
+          <div class="knob"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Season so far</h3>
+      <p class="sub" style="margin-bottom:0;">Gameweek 14 of 38 · Rank improving.</p>
+    </div>
+    <button class="btn secondary" data-action="restart-onboarding">Replay onboarding</button>
+  `;
+}
+
+/* ================================================================
+   MASTER RENDER
+   ================================================================ */
+function render(){
+  renderOnboarding();
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab));
+
+  if (state.activeAction) { renderActionScreen(state.activeAction); return; }
+  if (state.tab === 'thisweek') renderHub();
+  if (state.tab === 'compare') renderCompare();
+  if (state.tab === 'radar') renderRadar();
+  if (state.tab === 'plan') renderPlan();
+  if (state.tab === 'you') renderYou();
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+let toastTimer = null;
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3000);
+}
+
+/* ================================================================
+   OPT-IN DATA VISUALS — the "logos" layer, one metric per card,
+   swipeable, building to a verdict. Deliberately minimal data-ink:
+   no gridlines, no axis chrome. A 2-point ownership move is shown
+   as text, not a chart — charting two numbers is decoration.
+   ================================================================ */
+function buildSparkline(last5, avg5){
+  const w = 260, h = 60, padTop = 6, padBottom = 14, padLeft = 22, padRight = 4;
+  const max = Math.max(...last5, ...avg5);
+  const innerW = w - padLeft - padRight, innerH = h - padTop - padBottom;
+  const x = i => padLeft + i * (innerW / (last5.length - 1));
+  // Anchored at 0, not the data's own minimum — an axis only means
+  // something if the floor is a real, fixed number.
+  const y = v => (h - padBottom) - (v / (max || 1)) * innerH;
+  const playerPts = last5.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+  const avgPts    = avg5.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${h-padBottom}" stroke="#e5e5e5" stroke-width="1"/>
+    <text x="0" y="${h-padBottom+3}" font-size="9" fill="#999">0</text>
+    <text x="0" y="${padTop+8}" font-size="9" fill="#999">${max}</text>
+    <polyline points="${avgPts}" fill="none" stroke="#c9c4cc" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <polyline points="${playerPts}" fill="none" stroke="#29C2B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+// One shared chart for two players — same axis, same scale, a legend
+// instead of two disconnected mini-charts side by side.
+function buildComparisonSparkline(nameA, last5A, nameB, last5B){
+  const w = 300, h = 70, pad = 6;
+  const all = [...last5A, ...last5B];
+  const max = Math.max(...all), min = Math.min(...all);
+  const len = Math.max(last5A.length, last5B.length);
+  const x = i => pad + i * ((w - 2*pad) / (len - 1));
+  const y = v => (h - pad) - ((v - min) / ((max - min) || 1)) * (h - 2*pad);
+  const ptsA = last5A.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+  const ptsB = last5B.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+  return `
+    <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <polyline points="${ptsB}" fill="none" stroke="var(--pink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${ptsA}" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div style="display:flex; gap:16px; margin-top:6px;">
+      <div style="display:flex; align-items:center; gap:6px; font-size:12px;"><span style="width:10px; height:10px; border-radius:50%; background:var(--teal); display:inline-block;"></span>${nameA}</div>
+      <div style="display:flex; align-items:center; gap:6px; font-size:12px;"><span style="width:10px; height:10px; border-radius:50%; background:var(--pink); display:inline-block;"></span>${nameB}</div>
+    </div>
+  `;
+}
+function difficultyColor(n){ return n <= 2 ? '#7fd88f' : n === 3 ? '#c9c4cc' : n === 4 ? '#F67CB0' : '#8f1e46'; }
+function buildFixtureRow(diffs){
+  return `<div style="display:flex; gap:6px;">${diffs.map(d =>
+    `<div title="Difficulty ${d}/5" style="width:14px; height:14px; border-radius:50%; background:${difficultyColor(d)};"></div>`
+  ).join('')}</div>`;
+}
+// Opponent + venue, not just a coloured dot — the difficulty colour
+// is still there as the chip background, so you get both at a glance.
+function buildFixtureRow5(fixtures){
+  return `<div style="display:flex; gap:6px; flex-wrap:wrap;">${fixtures.map(f =>
+    `<div style="font-size:10.5px; font-weight:700; padding:4px 7px; border-radius:6px; background:${difficultyColor(f.diff)}; color:#222; white-space:nowrap;">${f.opp} (${f.venue})</div>`
+  ).join('')}</div>`;
+}
+// A real trend, not a single number — filled area under the line so
+// the direction reads at a glance, on the same 0-anchored axis logic
+// as the points sparkline.
+function buildOwnershipArea(history){
+  const w = 260, h = 70, padTop = 6, padBottom = 16, padLeft = 24, padRight = 4;
+  const max = Math.max(...history);
+  const innerW = w - padLeft - padRight, innerH = h - padTop - padBottom;
+  const x = i => padLeft + i * (innerW / (history.length - 1));
+  const y = v => (h - padBottom) - (v / (max || 1)) * innerH;
+  const linePts = history.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  const areaPts = `${x(0)},${h - padBottom} ${linePts} ${x(history.length - 1)},${h - padBottom}`;
+  const rising = history[history.length - 1] >= history[0];
+  const color = rising ? '#29C2B2' : '#F67CB0';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${h-padBottom}" stroke="#e5e5e5" stroke-width="1"/>
+    <text x="0" y="${h-padBottom+3}" font-size="9" fill="#999">0%</text>
+    <text x="0" y="${padTop+8}" font-size="9" fill="#999">${max}%</text>
+    <polygon points="${areaPts}" fill="${color}" opacity="0.18"/>
+    <polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function buildMiniCards(name){
+  const d = getPlayer(name);
+  const baseline = POSITION_BASELINES[d.position];
+  const maxBar = 90;
+
+  const { avg: avgMinutes, tier: minTier } = avgMinutesTier(name);
+  const minutesBarsHtml = d.minutes5.map(m => `<div class="minute-bar" style="height:${(m/maxBar*70).toFixed(0)}px;" title="${m} mins"></div>`).join('');
+  const avgLineBottom = (baseline.minutesPerGame / maxBar * 70).toFixed(0);
+
+  // Verdict still checks the next-3 tier, matching the rest of the app —
+  // the 5-game fixture card below is a richer *view*, not a different
+  // underlying judgement.
+  const fixTier = fixtureVsLeagueTier(name);
+  const n = gamesAboveAverage(d.last5, d.avg5);
+  const cTier = consistencyTier(n);
+  const od = ownershipDelta(d.ownership);
+  const partners = swapPartners(name);
+
+  const positives = [minTier !== 'below', fixTier !== 'tougher', cTier === 'steady'].filter(Boolean).length;
+  const verdict = positives === 3 ? "Every signal points the same way — about as strong a pick as it gets this week."
+    : positives === 2 ? "Two of the three signals are in his favour — solid, not a certainty."
+    : positives === 1 ? "Only one signal's really backing this pick — more of a gut call."
+    : "Not much in the numbers backing this one — a pure instinct play if you go for it.";
+
+  return [
+    `<div class="mini-card">
+      <div class="mc-title">Minutes, last 5 — vs. ${d.position} average</div>
+      <div class="minute-bars"><div class="avg-line" style="bottom:${avgLineBottom}px;"></div>${minutesBarsHtml}</div>
+      <div class="mc-caption">${PHRASES.vsAvgMinutes[minTier]()} Averaging ${avgMinutes} mins vs. ${baseline.minutesPerGame} for the position.</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Fixture run, next 5 — vs. league average</div>
+      <div class="fixture-compare-row"><span class="lbl">Him</span>${buildFixtureRow5(d.fixtures5)}</div>
+      <div class="fixture-compare-row"><span class="lbl">League avg</span>${buildFixtureRow(LEAGUE_AVG_FIXTURE5)}</div>
+      <div class="mc-caption">${PHRASES.vsAvgFixture[fixTier]()}</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Points, last 5 gameweeks — vs. ${d.position} average</div>
+      ${buildSparkline(d.last5, d.avg5)}
+      <div class="mc-caption">${PHRASES.consistency[cTier](n)}</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Season numbers</div>
+      <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:8px;">
+        <div><div style="font-size:20px; font-weight:700;">${d.seasonPoints}</div><div style="font-size:11px; color:#777;">Points</div></div>
+        <div><div style="font-size:20px; font-weight:700;">${d.goals}</div><div style="font-size:11px; color:#777;">Goals</div></div>
+        <div><div style="font-size:20px; font-weight:700;">${d.assists}</div><div style="font-size:11px; color:#777;">Assists</div></div>
+        ${d.cleanSheets !== undefined ? `<div><div style="font-size:20px; font-weight:700;">${d.cleanSheets}</div><div style="font-size:11px; color:#777;">Clean sheets</div></div>` : ''}
+        <div><div style="font-size:20px; font-weight:700;">${d.bonus}</div><div style="font-size:11px; color:#777;">Bonus points</div></div>
+        <div><div style="font-size:20px; font-weight:700;">${computePpm(name)}</div><div style="font-size:11px; color:#777;">Points per £1m</div></div>
+      </div>
+      <div class="mc-caption">The raw numbers, no dressing up.</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">What his rating's made of</div>
+      ${ratingBreakdown(name).map(r => `
+        <div style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:#777; margin-bottom:2px;"><span>${r.label}</span><span>${r.caption}</span></div>
+          <div class="bar-track" style="height:6px;"><div class="bar-fill" style="width:${r.pct.toFixed(0)}%;"></div></div>
+        </div>
+      `).join('')}
+      <div class="mc-caption">This is exactly what feeds the ${computePlayerRating(name)} rating next to his name — nothing hidden in it.</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Set-piece duty</div>
+      <ul class="reasons">${setPieceLines(name).map(l => `<li>${l}</li>`).join('')}</ul>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Ownership trend</div>
+      ${buildOwnershipArea(d.ownershipHistory5)}
+      <div class="mc-caption">${od.direction==='rising' ? `Rising from ${d.ownership.from}%` : od.direction==='falling' ? `Falling from ${d.ownership.from}%` : `Steady at around ${d.ownership.from}%`} to ${d.ownership.to}% — that's ${formatTransferCount(netTransfersEvent(name))} ${od.direction === 'falling' ? 'transfers out' : 'net transfers in'} this week.</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">${od.direction === 'falling' ? "Where the money might be going" : "Who might be funding this"}</div>
+      ${partners.length ? partners.map(p => `
+        <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--grey); font-size:13px;">
+          <span>${p.name}</span>
+          <span style="font-weight:700; color:${p.direction==='rising'?'var(--teal)':'var(--pink)'};">${formatTransferCount(p.transfers)} ${p.direction==='rising'?'in':'out'}</span>
+        </div>
+      `).join('') : `<p class="mc-caption" style="margin-top:0;">Nothing else moving enough this week to call a clear pattern.</p>`}
+      <div class="mc-caption">${od.direction === 'falling' ? "The biggest risers right now — a plausible next home for the money leaving him." : "The biggest fallers right now — a plausible source of funds for bringing him in."}</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Put together</div>
+      <div style="display:flex; gap:6px; margin-bottom:4px;">${[0,1,2].map(i => `<div style="width:26px;height:8px;border-radius:4px;background:${i<positives?'var(--teal)':'var(--grey)'};"></div>`).join('')}</div>
+      <div class="mc-caption" style="font-weight:600; color:var(--plum);">${verdict}</div>
+    </div>`
+  ];
+}
+
+function disciplineLine(name){
+  const d = getPlayer(name);
+  if (!d.bookings) return `${name}: no disciplinary concerns right now.`;
+  return `${name}: ${d.bookings.season} yellow cards this season${d.bookings.season >= d.bookings.banAt - 1 ? ' — close to a ban.' : '.'}`;
+}
+
+function buildCompareCards(a, b){
+  const da = getPlayer(a), db = getPlayer(b);
+  const nA = gamesAboveAverage(da.last5, da.avg5), nB = gamesAboveAverage(db.last5, db.avg5);
+  const ppmA = computePpm(a), ppmB = computePpm(b);
+  const minA = avgMinutesTier(a), minB = avgMinutesTier(b);
+  const fixA = fixtureVsLeagueTier(a), fixB = fixtureVsLeagueTier(b);
+
+  let scoreA = 0, scoreB = 0;
+  if (nA > nB) scoreA++; else if (nB > nA) scoreB++;
+  if (ppmA > ppmB) scoreA++; else if (ppmB > ppmA) scoreB++;
+  if (fixA === 'kinder') scoreA++; if (fixB === 'kinder') scoreB++;
+  const verdict = scoreA === scoreB
+    ? `Close call — both have a case here, it comes down to preference.`
+    : `${scoreA > scoreB ? a : b} comes out ahead on more of the signals.`;
+
+  return [
+    `<div class="mini-card">
+      <div class="mc-title">Form, last 5 games</div>
+      ${buildComparisonSparkline(a, da.last5, b, db.last5)}
+      <div class="mc-caption">${a}: ${nA}/5 above average · ${b}: ${nB}/5 above average</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Fixtures, next 3 — vs. league average</div>
+      <div class="fixture-compare-row"><span class="lbl">${a}</span>${buildFixtureRow(da.fixtureDifficulty3)}</div>
+      <div class="fixture-compare-row"><span class="lbl">${b}</span>${buildFixtureRow(db.fixtureDifficulty3)}</div>
+      <div class="mc-caption">${fixA === fixB ? 'A similar run for both.' : `${fixA === 'kinder' ? a : b} has the kinder run.`}</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Value — points per £m</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+        <div><div style="font-weight:700; font-size:13.5px;">${a}</div><div style="font-size:22px; font-weight:700;">${ppmA}</div></div>
+        <div><div style="font-weight:700; font-size:13.5px;">${b}</div><div style="font-size:22px; font-weight:700;">${ppmB}</div></div>
+      </div>
+      <div class="mc-caption">${ppmA > ppmB ? a : b} gets you more points per million right now.</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Minutes trust</div>
+      <div class="mc-caption">${a}: ${PHRASES.vsAvgMinutes[minA.tier]()}<br><br>${b}: ${PHRASES.vsAvgMinutes[minB.tier]()}</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Discipline</div>
+      <div class="mc-caption">${disciplineLine(a)}<br><br>${disciplineLine(b)}</div>
+    </div>`,
+    `<div class="mini-card">
+      <div class="mc-title">Put together</div>
+      <div class="mc-caption" style="font-weight:600; color:var(--plum);">${verdict}</div>
+    </div>`
+  ];
+}
+
+function renderMiniCarousel(){
+  const cards = carouselMode === 'compare' ? buildCompareCards(comparePair[0], comparePair[1]) : buildMiniCards(currentPassportPlayer);
+  if (miniIndex > cards.length - 1) miniIndex = cards.length - 1;
+  if (miniIndex < 0) miniIndex = 0;
+
+  const track = document.getElementById('mini-track');
+  const dotsWrap = document.getElementById('mini-dots');
+  if (!track) return;
+  track.innerHTML = cards.join('');
+  track.style.transform = `translateX(-${miniIndex * 100}%)`;
+  dotsWrap.innerHTML = cards.map((_,i) => `<div class="mini-dot ${i===miniIndex?'active':''}"></div>`).join('');
+  document.getElementById('mini-prev').disabled = miniIndex === 0;
+  document.getElementById('mini-next').disabled = miniIndex === cards.length - 1;
+}
+
+/* ================================================================
+   BOTTOM SHEET — glossary + player passport + head-to-head compare,
+   all sharing one sliding-sheet component.
+   ================================================================ */
+function openGlossary(term){
+  sheetTitle.textContent = term;
+  sheetBody.innerHTML = `<p>${glossary[term] || 'No definition yet.'}</p>`;
+  sheetBackdrop.classList.add('show');
+}
+function openPlayerPassport(name){
+  if (!isPlayerReal(name)){ sheetTitle.textContent = name; sheetBody.innerHTML = `<p>No details yet for this player in this prototype.</p>`; sheetBackdrop.classList.add('show'); return; }
+
+  carouselMode = 'passport';
+  currentPassportPlayer = name;
+  miniIndex = 0;
+  const p = buildFacts(name);
+  const ppm = computePpm(name);
+  const ppmT = ppmTier(name);
+  const rating = computePlayerRating(name);
+
+  sheetTitle.innerHTML = `
+    <span style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <span>${name}</span>
+      <span style="font-size:12px; font-weight:700; background:var(--plum); color:#fff; padding:4px 9px; border-radius:100px; letter-spacing:0;">${rating}/100</span>
+    </span>
+  `;
+  sheetBody.innerHTML = `
+    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+      <span class="pill">${p.team}</span>
+      <span class="pill pink">${p.price}</span>
+      <span class="pill ${ppmT === 'above' ? '' : ppmT === 'below' ? 'pink' : 'outline'}">${ppm} pts/£m</span>
+    </div>
+    <ul class="reasons">${p.facts.map(f => `<li>${f}</li>`).join('')}</ul>
+    <div class="accordion-item numbers-accordion" id="numbers-accordion">
+      <div class="accordion-head" data-action="toggle-numbers" role="button" tabindex="0" style="margin-top:14px; border-top:1px solid var(--grey); padding-top:12px;">
+        <span style="font-size:13px; font-weight:700; color:var(--plum);">Show me the numbers</span>
+        <span class="chev">⌄</span>
+      </div>
+      <div class="accordion-body">
+        <div class="mini-carousel" style="padding-top:10px;">
+          <div class="mini-track" id="mini-track"></div>
+          <div class="mini-nav">
+            <button class="mini-nav-btn" id="mini-prev" data-action="mini-prev">‹</button>
+            <div class="mini-dots" id="mini-dots"></div>
+            <button class="mini-nav-btn" id="mini-next" data-action="mini-next">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  sheetBackdrop.classList.add('show');
+  renderMiniCarousel();
+}
+function openCompareSheet(a, b){
+  if (!isPlayerReal(a) || !isPlayerReal(b)){
+    sheetTitle.textContent = "Comparison unavailable";
+    sheetBody.innerHTML = `<p>One or both of these players (${a}, ${b}) are missing data in this prototype.</p>`;
+    sheetBackdrop.classList.add('show');
+    return;
+  }
+  carouselMode = 'compare';
+  comparePair = [a, b];
+  miniIndex = 0;
+  sheetTitle.textContent = `${a} vs ${b}`;
+  sheetBody.innerHTML = `
+    <div class="mini-carousel">
+      <div class="mini-track" id="mini-track"></div>
+      <div class="mini-nav">
+        <button class="mini-nav-btn" id="mini-prev" data-action="mini-prev">‹</button>
+        <div class="mini-dots" id="mini-dots"></div>
+        <button class="mini-nav-btn" id="mini-next" data-action="mini-next">›</button>
+      </div>
+    </div>
+  `;
+  sheetBackdrop.classList.add('show');
+  renderMiniCarousel();
+}
+function closeGlossary(){ sheetBackdrop.classList.remove('show'); }
+
+/* ================================================================
+   EVENT DELEGATION — one click listener, data-action driven.
+   ================================================================ */
+document.getElementById('screen').addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) { if (e.target === sheetBackdrop) closeGlossary(); return; }
+  const action = el.dataset.action;
+
+  switch(action){
+    case 'ob-next': state.obStep++; render(); break;
+    case 'set-mode': state.mode = el.dataset.mode; render(); break;
+    case 'set-radar-metric': state.radarMetric = el.dataset.metric; render(); break;
+    case 'ob-finish': state.onboarded = true; render(); break;
+    case 'restart-onboarding': state.onboarded = false; state.obStep = 0; render(); break;
+    case 'toggle-mode': state.mode = state.mode === 'guided' ? 'instinct' : 'guided'; render(); break;
+    case 'toggle-numbers': document.getElementById('numbers-accordion').classList.toggle('open'); break;
+    case 'toggle-totw': document.getElementById('totw-accordion').classList.toggle('open'); break;
+    case 'dismiss-returning': state.scenario = 'active'; render(); showToast('Caught up — you\'re good to go'); break;
+    case 'open-glossary': openGlossary(el.dataset.term); break;
+    case 'open-player': openPlayerPassport(el.dataset.player); break;
+    case 'open-compare': openCompareSheet(el.dataset.a, el.dataset.b); break;
+    case 'mini-prev': miniIndex -= 1; renderMiniCarousel(); break;
+    case 'mini-next': miniIndex += 1; renderMiniCarousel(); break;
+
+    case 'open-action': {
+      const key = el.dataset.key;
+      state.activeAction = key;
+      if (key === 'captaincy'){
+        const cur = state.decisions.captaincy;
+        state.tempCaptain = cur ? cur.captain : weeklyPick.player;
+        state.tempVice = cur ? cur.vice : weeklyPick.alternatives[0];
+      } else if (key === 'injuries'){
+        state.tempInjuryChoices = state.decisions.injuries ? { ...state.decisions.injuries } : {};
+      } else {
+        state.tempChoice = state.decisions[key] ? state.decisions[key].value : null;
+      }
+      render();
+      break;
+    }
+    case 'close-action': state.activeAction = null; state.tempChoice = null; state.tempInjuryChoices = {}; render(); break;
+    case 'select-choice': state.tempChoice = el.dataset.value; render(); break;
+    case 'set-injury-choice':
+      state.tempInjuryChoices[el.dataset.player] = el.dataset.value;
+      render();
+      break;
+    case 'confirm-injuries':
+      state.decisions.injuries = { ...state.tempInjuryChoices };
+      state.activeAction = null;
+      render();
+      showToast('Injury plan saved');
+      break;
+    case 'confirm-choice': {
+      const key = el.dataset.key;
+      const opt = getOptionsFor(key).find(o => o.value === state.tempChoice);
+      if (opt) state.decisions[key] = { value: opt.value, label: opt.label };
+      state.activeAction = null; state.tempChoice = null;
+      render();
+      showToast(`${ACTIONS.find(a => a.key === key).title} — decided`);
+      break;
+    }
+    case 'set-captain':
+      if (state.tempVice === el.dataset.player) state.tempVice = state.tempCaptain;
+      state.tempCaptain = el.dataset.player;
+      render();
+      break;
+    case 'set-vice':
+      if (state.tempCaptain === el.dataset.player) break;
+      state.tempVice = el.dataset.player;
+      render();
+      break;
+    case 'confirm-captaincy':
+      state.decisions.captaincy = { captain: state.tempCaptain, vice: state.tempVice };
+      state.activeAction = null;
+      render();
+      showToast(`${state.tempCaptain} (C), ${state.tempVice} (VC) — saved to your plan`);
+      break;
+  }
+});
+
+// Generic keyboard support: any role="button"/role="switch" data-action element.
+document.getElementById('screen').addEventListener('keydown', (e) => {
+  const el = e.target.closest('[role="button"][data-action], [role="switch"][data-action]');
+  if (el && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); el.click(); }
+});
+
+// Tab bar
+tabs.forEach(t => t.addEventListener('click', () => {
+  state.tab = t.dataset.tab;
+  state.activeAction = null;
+  render();
+}));
+
+// Demo controls (outside the phone — not part of the product)
+document.getElementById('scn-active').addEventListener('click', () => {
+  state.scenario = 'active';
+  document.getElementById('scn-active').classList.add('active');
+  document.getElementById('scn-returning').classList.remove('active');
+  render();
+});
+document.getElementById('scn-returning').addEventListener('click', () => {
+  state.scenario = 'returning';
+  document.getElementById('scn-returning').classList.add('active');
+  document.getElementById('scn-active').classList.remove('active');
+  state.tab = 'thisweek'; state.activeAction = null;
+  render();
+});
+document.getElementById('radar-alex').addEventListener('click', () => {
+  state.radarConcept = 'alex';
+  document.getElementById('radar-alex').classList.add('active');
+  document.getElementById('radar-sam').classList.remove('active');
+  render();
+});
+document.getElementById('radar-sam').addEventListener('click', () => {
+  state.radarConcept = 'sam';
+  document.getElementById('radar-sam').classList.add('active');
+  document.getElementById('radar-alex').classList.remove('active');
+  render();
+});
+document.getElementById('scn-clear-decisions').addEventListener('click', () => {
+  state.decisions = { injuries: null, transfers: null, chip: null, captaincy: null };
+  render();
+});
+document.getElementById('scn-reset').addEventListener('click', () => {
+  state.onboarded = false; state.obStep = 0; state.activeAction = null;
+  render();
+});
+
+/* ================================================================
+   LIVE DEADLINE COUNTDOWN
+   ================================================================ */
+const deadline = new Date(Date.now() + (1000*60*60*27) + (1000*60*14));
+function pad(n){ return String(n).padStart(2, '0'); }
+function tickDeadline(){
+  const diff = deadline - new Date();
+  if (diff <= 0){ deadlineEl.textContent = 'Deadline passed'; return; }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  deadlineEl.textContent = `Deadline in ${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+tickDeadline();
+setInterval(tickDeadline, 1000);
+
+render();
+</script>
+</body>
+</html>

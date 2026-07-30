@@ -1,210 +1,91 @@
-﻿{% extends 'layout.html' %}
+{% if not is_ajax %}
+{% extends 'layout.html' %}
+{% endif %}
+
 {% block content %}
-<div id="dictionary-overlay" class="dictionary-overlay">
-    <div id="dictionary-text" class="dictionary-content">
-        <h1>Kneejerker</h1>
-        <p class="phonetics">[ˈˈniːʤɜːkə] noun</p>
-        <hr class="separator">
-        <p class="definition">A person who makes transfer decisions before the gameweek is complete. Use this site to better understand why.</p>
+<div class="app-body">
+    <div class="metric-toggle-container" id="week-lens-toggle" style="margin-bottom: 20px;">
+        <button class="btn-pill" id="lens-this-week">This week</button>
+        <button class="btn-pill secondary" id="lens-last-week">Last week</button>
     </div>
-</div>
 
+    <div id="week-content">
+        <!-- This week: live/closed state controller (06.0). State comes from
+             the FPL API's finished + data_checked flags, computed server-side
+             in the home() view - see get_gameweek_state() in dataModels.py. -->
+        <div class="this-week-view"
+             id="this-week-view"
+             data-gw-state="{{ gw_state.state }}"
+             data-gw-number="{{ gw_state.gameweek if gw_state.gameweek is not none else '' }}">
 
-<div class="content-container text-center-height">
-    <!-- Live player transfers-->
-    <div class="card">
-        <div class="update-row">
-            <div class="live-pill">
-                <div class="live-dot"></div><div class="live-text">LIVE</div>
+            <div id="gw-transition-banner" class="pill pink" style="display:none;"></div>
+
+            <!-- Live: gameweek's deadline has passed but it's not yet both
+                 finished and data_checked. Content built out in 06.1. -->
+            <div class="gw-panel" id="gw-panel-live" style="display:none;">
+                <div class="eyebrow-sm">gameweek {{ gw_state.gameweek }} is live</div>
+                <h2 class="title" style="margin-bottom:4px;">Live score</h2>
+                <p class="sub">Matches are still being played.</p>
+
+                <!-- 06.1: shown until we know which FPL team is the visitor's.
+                     No login needed - standings, picks and live stats are all
+                     public once the deadline passes. -->
+                <div class="card" id="live-team-id-card">
+                    <h3>Which team's yours?</h3>
+                    <p class="sub">Find it in your FPL team page web address - the number after "/entry/".</p>
+                    <form id="live-team-id-form" style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" inputmode="numeric" min="1" id="live-team-id-input" placeholder="e.g. 1234567" required
+                               style="flex:1; min-width:0; padding:10px 12px; border-radius:8px; border:1.5px solid var(--black-20); font-family:var(--font); font-size:14px;">
+                        <button type="submit" class="btn-pill" style="width:auto; padding:10px 18px;">Save</button>
+                    </form>
+                </div>
+
+                <!-- Populated by liveGameweek.js once a team id is known -->
+                <div id="live-gameweek-content" style="display:none;"></div>
             </div>
-            <div><span class="last-updated">Last updated:</span><span style="font-weight: 600;" id="last-updated-time"></span></div>
-        </div>
-        <div class="pill-container-home">
-            <button class="pill active" data-target="net-transfers-in">In</button>
-            <button class="pill" data-target="net-transfers-out">Out</button>
-            <button class="pill" data-target="relative-ownership">Ownership</button>
-        </div>
-        <p id="description-net-transfers-in" class="description"><b>Net transfers in</b>: the sum of the transfers in.</p>
-        <p id="description-net-transfers-out" class="description" style="display: none;"><b>Net transfers out</b>: the sum of the transfers out.</p>
-        <p id="description-relative-ownership" class="description" style="display: none;">Ranked by <b>change in ownership</b> for players with more than 3% ownership.</p>
-        <div class="chart-container">
-            <div id="net-transfers-in" class="chart active" style="width: 100%; height: 400px;"></div>
-            <div id="net-transfers-out" class="chart" style="width: 100%; height: 400px;"></div>
-            <div id="relative-ownership" class="chart" style="width: 100%; height: 400px;"></div>
-        </div>
-    </div>
-    <!-- Player summary card-->
-    <div class="card fixtures-card">
-        <div id="chance-next-round" class="" style="display: none;">
-            -
-        </div>
-        <div class="player-summary-wrapper">
-            <div class="player-summary-home">
-                <div class="player-summary-area">
-                    <div class="supporting-metrics">
-                        <div class="supporting-metrics-values" id="player-value">£-.-</div>
-                        <div id="metric-text">value</div>
-                    </div>
-                    <div class="player-details">
-                        <div id="player-summary-name" class="players-name">-</div>
-                        <div class="coat-hanger">
-                            <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
-                            <div class="player-team-name">-</div>
-                        </div>
-                    </div>
-                    <div class="supporting-metrics">
-                        <div id="yellow-cards" class="player-yellow-cards"></div>
-                    </div>
-                </div>
-                <div id="summaryCarousel" class="carousel slide" data-bs-interval="false">
-                    <div class="carousel-indicators" id="carouselIndicators"></div>
-                    <div class="carousel-inner" id="summaryCarouselInner">
-                        <!-- Carousel items will be injected here by JavaScript -->
-                    </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#summaryCarousel" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#summaryCarousel" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
-                </div>
-                <div class="position-average-title">
-                    <div id="position-name">Position</div>
-                    <div>&nbspaverage</div>
+
+            <!-- Closed: gameweek is fully settled (finished and data_checked).
+                 06.2's real decision content isn't designed yet, so this is a
+                 plain stub rather than inventing a screen. -->
+            <div class="gw-panel" id="gw-panel-closed" style="display:none;">
+                <div class="eyebrow-sm">this week</div>
+                <h2 class="title" style="margin-bottom:4px;">Next week's picks</h2>
+                <p class="sub">Your plan for the upcoming deadline.</p>
+
+                <div class="card" style="margin-top: 12px;">
+                    <h3>This week's 5 decisions</h3>
+                    <p class="sub">Coming soon.</p>
                 </div>
             </div>
-            <div class="footer" id="suspensions-yellows-left">
+
+            <!-- No gameweek has passed its deadline yet (off-season,
+                 pre-Gameweek-1) - a sensible fallback, never a blank screen. -->
+            <div class="gw-panel" id="gw-panel-none" style="display:none;">
+                <div class="eyebrow-sm">between gameweeks</div>
+                <h2 class="title" style="margin-bottom:4px;">Nothing live right now</h2>
+                <p class="sub">Check back once the next gameweek's deadline passes.</p>
             </div>
         </div>
-    </div>
-    <!-- Upcoming fixtures-->
-    <div class="card fixtures-card">
-        <div class="fixture-heading">Upcoming fixtures</div>
-        <div class="fixture-details">
-            <div class="fixtures">
-                <div id="fixture-1" class="difficulty-3">-</div>
-                <div id="fixture-2" class="difficulty-3">-</div>
-                <div id="fixture-3" class="difficulty-3">-</div>
-                <div id="fixture-4" class="difficulty-3">-</div>
-                <div id="fixture-5" class="difficulty-3">-</div>
+
+        <!-- Last week (moved from Radar's Alex lens) -->
+        <div class="last-week-view" id="last-week-view" style="display: none;">
+            <div class="eyebrow-sm">last week, in your league</div>
+            <h2 class="title" style="margin-bottom:4px;">What your mates called last week</h2>
+            <p class="sub">Now it's locked in — here's how your group played it.</p>
+
+            <div class="card" id="alex-recap-card">
+                <h3>Last Week Recap</h3>
+                <p class="sub">Friend activity feed will appear here (04.1).</p>
             </div>
-            <div class="team-shirts">
-                <div class="coat-hanger">
-                    <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
-                </div>
-                <div class="coat-hanger">
-                    <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
-                </div>
-                <div class="coat-hanger">
-                    <img class="shirt" src="/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg" />
-                </div>
-                <div class="coat-hanger">
-                    <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
-                </div>
-                <div class="coat-hanger">
-                    <img class="shirt" src='/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg' />
-                </div>
+            <div class="card" id="alex-totw-card">
+                <h3>Team of the Week</h3>
+                <p class="sub">Top scorers accordion will appear here (04.2).</p>
             </div>
-            <div class="venue-row">
-                <div id="venue-1" class="venue">-</div>
-                <div id="venue-2" class="venue">-</div>
-                <div id="venue-3" class="venue">-</div>
-                <div id="venue-4" class="venue">-</div>
-                <div id="venue-5" class="venue">-</div>
-            </div>
-        </div>
-        <div class="legend">
-            <div class="legend-title">Difficulty</div>
-            <div style="display: flex;">
-                <div class="difficulty-2">2</div>
-                <div class="difficulty-3">3</div>
-                <div class="difficulty-4">4</div>
-                <div class="difficulty-5">5</div>
-            </div>
-        </div>
-    </div>
-    <!-- 5 alternatives -->
-    <div class="card alternatives-card">
-        <div class="alternatives-heading">Top players within £1m</div>
-        <div class="alternatives-details">
-            <div id="name-1" class="alternative-player">
-                <div class="alt-player">-</div>
-                <div class="coat-hanger">
-                    <img class="shirt alternatives-shirt" src="/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg">
-                    <div class="alt-player-team-name">-</div>
-                    <div class="alt-player-data">
-                        <div class="alt-player-value">-</div>
-                        <div class="alt-player-form">-</div>
-                    </div>
-                </div>
-            </div>
-            <div id="name-2" class="alternative-player">
-                <div class="alt-player">-</div>
-                <div class="coat-hanger">
-                    <img class="shirt alternatives-shirt" src="/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg">
-                    <div class="alt-player-team-name">-</div>
-                    <div class="alt-player-data">
-                        <div class="alt-player-value">-</div>
-                        <div class="alt-player-form">-</div>
-                    </div>
-                </div>
-            </div>
-            <div id="name-3" class="alternative-player">
-                <div class="alt-player">-</div>
-                <div class="coat-hanger">
-                    <img class="shirt alternatives-shirt" src="/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg">
-                    <div class="alt-player-team-name">-</div>
-                    <div class="alt-player-data">
-                        <div class="alt-player-value">-</div>
-                        <div class="alt-player-form">-</div>
-                    </div>
-                </div>
-            </div>
-            <div id="name-4" class="alternative-player">
-                <div class="alt-player">-</div>
-                <div class="coat-hanger">
-                    <img class="shirt alternatives-shirt" src="/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg">
-                    <div class="alt-player-team-name">-</div>
-                    <div class="alt-player-data">
-                        <div class="alt-player-value">-</div>
-                        <div class="alt-player-form">-</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr style="width: -webkit-fill-available; border: 0.5px solid var(--black-20);" />
-        <div class="alternative-player-placeholder">
-            <div class="alt-player" style="opacity: 0.6;">Player</div>
-            <div class="coat-hanger">
-                <img class="shirt alternatives-shirt" src="/static/content/Tshirts/unknown-football-shirt-svgrepo-com.svg" style="opacity: 0.6;">
-                <div class="alt-player-team-name" style="opacity: 0.6;">Team</div>
-                <div class="alt-player-data" style="opacity: 0.6;">
-                    <div class="alt-player-value" style="opacity: 0.6;">Value</div>
-                    <div class="alt-player-form" style="opacity: 0.6;">Form</div>
-                </div>
-            </div>
+            <div class="friend-note">Based on your mini-league group · refreshes once each gameweek locks.</div>
         </div>
     </div>
 </div>
 
-<!-- LOADER -->
-<div id="loader" style="display: none;">
-    <div class="loader-content">
-        <div class="spinner"></div>
-    </div>
-</div>
-
-<script src="{{ url_for('static', filename='scripts/chartUtils.js') }}" type="module"></script>
-<script src="{{ url_for('static', filename='scripts/utils.js') }}" type="module"></script>
-<script src="{{ url_for('static', filename='scripts/netTransfersChart.js') }}" type="module"></script>
-<script src="{{ url_for('static', filename='scripts/relativeOwnershipChart.js') }}" type="module"></script>
-<script src="{{ url_for('static', filename='scripts/topPlayersChart.js') }}" type="module"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='content/home.css') }}">
 <script type="module" src="{{ url_for('static', filename='scripts/home.js') }}"></script>
-<!-- Bootstrap JS (Ensure this is loaded) -->
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-
 {% endblock %}

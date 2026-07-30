@@ -1,0 +1,22 @@
+{% if not is_ajax %}
+{% extends 'layout.html' %}
+{% endif %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='content/home.css') }}">
+<div class="app-body">
+    <div class="eyebrow-sm">fixture outlook</div>
+    <h2 class="title" style="margin-bottom:4px;">Clubs</h2>
+    <p class="sub">Pick a club to see how its next few gameweeks look.</p>
+
+    <div class="card">
+        <div id="clubs-list">
+            <div class="loader-small"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='scripts/clubs.js') }}"></script>
+{% endblock %}

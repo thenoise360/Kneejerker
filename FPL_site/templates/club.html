@@ -1,0 +1,27 @@
+{% if not is_ajax %}
+{% extends 'layout.html' %}
+{% endif %}
+
+{% block content %}
+<!-- layout.html has no head/styles block, and a link tag placed outside
+     the content block below is silently dropped when this template
+     extends layout.html (Jinja only renders content inside named
+     blocks) - so the stylesheet has to live in-block, even though a
+     link tag in the body is unconventional. -->
+<link rel="stylesheet" href="{{ url_for('static', filename='content/home.css') }}">
+<div class="app-body">
+    <div id="club-content" data-team-id="{{ team_id }}">
+        <div class="eyebrow-sm">fixture outlook</div>
+        <h2 class="title" id="club-title" style="margin-bottom:4px;">Loading...</h2>
+        <p class="sub">A plain-language read on the next few gameweeks - tap a fixture for the full picture.</p>
+
+        <div id="club-fixture-list">
+            <div class="card"><div class="loader-small"></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='scripts/club.js') }}"></script>
+{% endblock %}

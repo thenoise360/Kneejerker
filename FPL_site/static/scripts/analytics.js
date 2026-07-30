@@ -92,3 +92,7 @@ export function trackTeamOptimization(sliders) {
     minutesWeight: sliders[2]
   });
 }
+
+export function trackFixtureOutlookTap(teamId, opponentName, gameweek) {
+  safeTrack("Fixture Outlook Row Tapped", { teamId, opponent: opponentName, gameweek });
+}
