@@ -3,6 +3,7 @@
 // decisions about *what* to show live in the pure modules under lib/; this
 // file only reads the page, fetches data, and puts HTML on the page.
 import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, RECAP_LOAD_FAILED } from './lib/recapView.js';
+import { safeLocalStorage } from './lib/safeStorage.js';
 import { readTeamId, saveTeamId } from './lib/teamId.js';
 import { welcomeBackMessage, readLastVisit, recordVisit } from './lib/returningUser.js';
 
@@ -18,12 +19,12 @@ function showWelcomeBack(lastWeekView) {
     const banner = document.getElementById('welcome-back-banner');
     // Read the previous visit *before* recording this one.
     const message = welcomeBackMessage({
-        lastVisitIso: readLastVisit(window.localStorage),
+        lastVisitIso: readLastVisit(safeLocalStorage(window)),
         lastWeekGameweek: lastWeekView.dataset.gameweek ? Number(lastWeekView.dataset.gameweek) : null,
         lastWeekDeadlineIso: lastWeekView.dataset.deadline || null,
         thisWeekGameweek: lastWeekView.dataset.thisWeekGameweek ? Number(lastWeekView.dataset.thisWeekGameweek) : null,
     });
-    recordVisit(window.localStorage, new Date());
+    recordVisit(safeLocalStorage(window), new Date());
     if (banner && message) {
         banner.textContent = message;  // textContent never interprets HTML
         banner.hidden = false;
@@ -36,7 +37,7 @@ async function loadLastWeekRecap(lastWeekView) {
     const personalSlot = document.getElementById('personal-recap-slot');
     if (!gameweek || !guestSlot) return;  // server already rendered a friendly message
 
-    const teamId = readTeamId(window.localStorage);
+    const teamId = readTeamId(safeLocalStorage(window));
     const query = new URLSearchParams({ gameweek });
     if (teamId !== null) query.set('team_id', String(teamId));
 
@@ -69,7 +70,7 @@ function bindTeamForm(lastWeekView) {
     if (!form || !input) return;
     form.addEventListener('submit', (event) => {
         event.preventDefault();  // stop the browser reloading the page
-        if (saveTeamId(window.localStorage, input.value) === null) {
+        if (saveTeamId(safeLocalStorage(window), input.value) === null) {
             input.setCustomValidity('Please enter the number only, for example 1234567.');
             input.reportValidity();
             return;

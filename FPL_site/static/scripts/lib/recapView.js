@@ -59,7 +59,7 @@ export function renderTeamPrompt() {
     return `
         <div class="card" id="recap-team-card">
             <h3 class="recap-verdict">See how your team did</h3>
-            <form id="recap-team-form" class="recap-team-form">
+            <form id="recap-team-form" class="recap-team-form" novalidate>
                 <label for="recap-team-input" class="sub">
                     Your team number is in the web address of your Fantasy Premier League team page,
                     after "/entry/".
@@ -80,11 +80,15 @@ export function renderPersonalRecap(personal, gameweek) {
         return renderMessage(personal.message) + renderTeamPrompt();
     }
     const call = personal.right_call;
+    // Only draw the "one thing done right" line if the server sent one.
+    const callLine = call
+        ? `<p><strong>${escapeHtml(call.title)}:</strong> ${escapeHtml(call.reason)}</p>`
+        : '';
     return `
         <div class="card" id="personal-recap">
             <div class="eyebrow-sm">your gameweek ${escapeHtml(gameweek)}</div>
             <h3 class="recap-verdict">${escapeHtml(personal.verdict)}</h3>
-            <p><strong>${escapeHtml(call.title)}:</strong> ${escapeHtml(call.reason)}</p>
+            ${callLine}
             <details class="recap-details">
                 <summary>See the numbers</summary>
                 <p class="sub">You scored ${escapeHtml(personal.score)} points. The average was ${escapeHtml(personal.average_score)} points.</p>

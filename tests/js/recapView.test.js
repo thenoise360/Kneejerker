@@ -88,3 +88,14 @@ test('team prompt has an accessible labelled input', () => {
     assert.match(html, /inputmode="numeric"/);
     assert.doesNotMatch(html, /\bFPL\b/);
 });
+
+test('team prompt form skips native validation so our warm message shows', () => {
+    assert.match(renderTeamPrompt(), /<form id="recap-team-form"[^>]*\bnovalidate\b/);
+    assert.match(renderTeamPrompt(), /pattern="\[0-9\]\*"/);
+});
+
+test('personal recap: missing right call still renders without throwing', () => {
+    const html = renderPersonalRecap({ ...personal, right_call: null }, 5);
+    assert.match(html, /Above average\. Nicely done\./);
+    assert.doesNotMatch(html, /undefined|<strong>/);
+});

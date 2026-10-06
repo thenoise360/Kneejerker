@@ -108,7 +108,8 @@ def test_flag_on_home_uses_partial():
 
 def test_v2_has_welcome_banner_and_personal_slot():
     html = render(_state('upcoming', gw=6, last='final', last_gw=5))
-    assert 'id="welcome-back-banner"' in html and 'hidden' in html
+    banner = re.search(r'<div id="welcome-back-banner"[^>]*>', html)
+    assert banner and 'hidden' in banner.group(0)
     assert 'id="personal-recap-slot"' in html
 
 
