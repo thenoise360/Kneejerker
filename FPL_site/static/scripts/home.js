@@ -5,6 +5,8 @@ import {
 } from './utils.js';
 import { planWeekRender } from './weekState.js';
 import { initializeLiveGameweek, stopLiveGameweekPolling } from './liveGameweek.js';
+import { initializeWeekV2 } from './weekV2.js';
+import { safeLocalStorage } from './lib/safeStorage.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeHome();
@@ -22,7 +24,7 @@ function initializeWeekState() {
         gameweek: container.dataset.gwNumber ? parseInt(container.dataset.gwNumber, 10) : null,
     };
 
-    const plan = planWeekRender(gwState, window.localStorage);
+    const plan = planWeekRender(gwState, safeLocalStorage(window));
 
     ['live', 'closed', 'none'].forEach((panelName) => {
         const panel = document.getElementById(`gw-panel-${panelName}`);
@@ -46,8 +48,29 @@ function initializeWeekState() {
     }
 }
 
+// sessionStorage can throw in some browsers (blocked site data), so every
+// access is wrapped in try/catch. Without it we simply start on 'this-week'.
+function readLens() {
+    try {
+        return sessionStorage.getItem('weekLens') || 'this-week';
+    } catch {
+        return 'this-week';
+    }
+}
+
+function saveLens(lens) {
+    try {
+        sessionStorage.setItem('weekLens', lens);
+    } catch {
+        // Not remembered, but the toggle still works for this page view.
+    }
+}
+
 // We need to handle both initial load and AJAX navigation
 function initializeHome() {
+    // Run the recap first: it already copes with blocked storage, so nothing
+    // that throws further down can stop the recap loading.
+    initializeWeekV2();
     initializeWeekState();
 
     const toggleThisWeek = document.getElementById('lens-this-week');
@@ -57,7 +80,7 @@ function initializeHome() {
     if (!toggleThisWeek || !toggleLastWeek || !thisWeekView || !lastWeekView) return;
 
     const state = {
-        weekLens: sessionStorage.getItem('weekLens') || 'this-week'
+        weekLens: readLens()
     };
 
     function updateUI() {
@@ -78,13 +101,13 @@ function initializeHome() {
     toggleThisWeek.onclick = () => {
         if (state.weekLens === 'this-week') return;
         state.weekLens = 'this-week';
-        sessionStorage.setItem('weekLens', 'this-week');
+        saveLens('this-week');
         updateUI();
     };
     toggleLastWeek.onclick = () => {
         if (state.weekLens === 'last-week') return;
         state.weekLens = 'last-week';
-        sessionStorage.setItem('weekLens', 'last-week');
+        saveLens('last-week');
         updateUI();
     };
 

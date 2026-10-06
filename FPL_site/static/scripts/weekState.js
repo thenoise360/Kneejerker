@@ -23,6 +23,12 @@ export function planWeekRender(gwState, storage) {
         return { panel: state, showTransition: false, message: null };
     }
 
+    // Blocked storage arrives as null. Treat it as "nothing stored": show the
+    // panel, but we can't remember anything, so there is no transition message.
+    if (!storage) {
+        return { panel: state, showTransition: false, message: null };
+    }
+
     const lastStateKey = LAST_STATE_KEY_PREFIX + gw;
     const shownKey = TRANSITION_SHOWN_KEY_PREFIX + gw;
 

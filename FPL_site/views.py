@@ -15,8 +15,12 @@ from .dataModels import (
     get_momentum_players, get_new_manager_players, get_player_ownership_history,
     next_5_gameweeks, fetch_player_summary, get_alternative_players, top_5_players_last_5_weeks,
     get_player_last_5_points, generateCurrentGameweek,
-    get_gameweek_state, get_live_gameweek_view, get_comparison_averages_last_5
+    get_gameweek_state, get_live_gameweek_view, get_comparison_averages_last_5,
+    get_week_view_state
 )
+from .weekCopy import this_week_empty_copy, last_week_empty_copy
+from .lastWeekRecap import get_last_week_recap
+from .weekResolver import DEADLINE_FORMAT
 
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
 
@@ -59,8 +63,72 @@ def home():
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     # Computed server-side (06.0) since it's cheap and changes infrequently -
     # no need for the client to poll for it.
-    gw_state = get_gameweek_state()
-    return render_template('home.html', is_ajax=is_ajax, title='This Week', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN, gw_state=gw_state)
+    week_v2 = getattr(current_config, 'FEATURE_WEEK_V2', False)
+    # Only fetch the state the page will actually use: each call is a round
+    # trip to the Fantasy Premier League API, which hurts on a cold start.
+    if week_v2:
+        gw_state = None
+        week_context = _week_v2_context()
+    else:
+        gw_state = get_gameweek_state()
+        week_context = {}
+    return render_template('home.html', is_ajax=is_ajax, title='This Week', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN, gw_state=gw_state, week_v2=week_v2, **week_context)
+
+
+def _hours_since(deadline):
+    """Hours between a deadline string and now, or None if it can't be read."""
+    try:
+        deadline_dt = datetime.strptime(deadline, DEADLINE_FORMAT)
+    except (TypeError, ValueError):
+        return None
+    return (datetime.utcnow() - deadline_dt).total_seconds() / 3600
+
+
+def _week_v2_context():
+    """Template context for the Week tab rebuild (behind FEATURE_WEEK_V2)."""
+    week_state = get_week_view_state()
+    this_week = week_state['this_week']
+    last_week = week_state['last_week']
+    return {
+        'week_state': week_state,
+        'this_week_copy': this_week_empty_copy(this_week['mode'], _hours_since(this_week['deadline'])),
+        'last_week_copy': last_week_empty_copy(last_week['status'], last_week['gameweek']),
+    }
+
+GAMEWEEKS_IN_SEASON = 38
+
+
+def _parse_gameweek(raw):
+    """A gameweek number from a query string, or None if it isn't 1-38."""
+    if not raw or not (raw.isascii() and raw.isdigit()):
+        return None
+    gameweek = int(raw)
+    return gameweek if 1 <= gameweek <= GAMEWEEKS_IN_SEASON else None
+
+
+MAX_TEAM_ID_DIGITS = 10
+
+
+def _parse_team_id(raw):
+    """None if absent, an int if valid, or 'invalid' so the page can say so kindly."""
+    if raw is None or raw == '':
+        return None
+    if not (raw.isascii() and raw.isdigit()) or len(raw) > MAX_TEAM_ID_DIGITS or int(raw) < 1:
+        return 'invalid'
+    return int(raw)
+
+
+@app.route('/api/week/last-week-recap')
+def week_last_week_recap():
+    logger.info("Request for last week recap")
+    gameweek = _parse_gameweek(request.args.get('gameweek', ''))
+    if gameweek is None:
+        return jsonify({'error': 'invalid_gameweek'}), 400
+    try:
+        return jsonify(get_last_week_recap(gameweek, team_id=_parse_team_id(request.args.get('team_id'))))
+    except Exception as e:
+        logger.error(f"Error building last week recap: {e}")
+        return jsonify({'error': 'server_error'}), 500
 
 @app.route('/radar')
 def radar():
