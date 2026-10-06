@@ -119,6 +119,11 @@ def pick_one_thing_right(squad):
                 'reason': f"Having {best['name']} in your team paid off.",
                 'name': best['name'], 'points': best['points']}
 
+    if best and best['points'] >= SOLID_PICK_FROM:
+        return {'tier': 'solid_pick', 'title': 'A solid pick',
+                'reason': f"{best['name']} came through for you.",
+                'name': best['name'], 'points': best['points']}
+
     sound = [p for p in starters if p['minutes'] > 0 and p['difficulty'] is not None
              and p['difficulty'] <= KIND_FIXTURE_UP_TO and p['points'] <= BLANK_UP_TO]
     if sound:
@@ -127,11 +132,6 @@ def pick_one_thing_right(squad):
                 'reason': f"Backing {pick['name']} for a kind fixture was the right idea, even "
                           f"though it didn't land this time. Keep trusting that logic.",
                 'name': pick['name'], 'points': None}
-
-    if best and best['points'] >= SOLID_PICK_FROM:
-        return {'tier': 'solid_pick', 'title': 'A solid pick',
-                'reason': f"{best['name']} came through for you.",
-                'name': best['name'], 'points': best['points']}
 
     return {'tier': 'showed_up', 'title': 'You showed up',
             'reason': "Weeks like this happen to everyone. The next deadline is a fresh start, "

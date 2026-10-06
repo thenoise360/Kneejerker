@@ -212,3 +212,11 @@ def test_personal_unavailable_copy_is_calm_and_acronym_free():
     text = copy['title'] + copy['body']
     assert 'Nothing is wrong on your side' in copy['body'] and 'Try again' in copy['body']
     assert not ACRONYMS.search(text) and 'error' not in text.lower()
+
+
+def test_a_solid_pick_beats_a_sound_blank():
+    squad = [squad_player('Cap', 1, captain=True, difficulty=5),
+             squad_player('Starter', 7, difficulty=3),
+             squad_player('Blanker', 1, difficulty=2)]
+    result = pick_one_thing_right(squad)
+    assert result['tier'] == 'solid_pick' and result['name'] == 'Starter'
