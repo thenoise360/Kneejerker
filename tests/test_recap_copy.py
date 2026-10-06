@@ -95,7 +95,7 @@ def test_captain_threshold(points, tier):
 
 def test_triple_captain_wording():
     result = pick_one_thing_right([squad_player('Cap', 10, captain=True, multiplier=3)])
-    assert 'triple' in result['reason']
+    assert result['reason'] == 'Captaining Cap paid off, and you got the points triple.'
 
 
 @pytest.mark.parametrize('points,tier', [(7, 'solid_pick'), (8, 'big_pick')])
@@ -131,14 +131,14 @@ def test_empty_squad_is_kind():
 
 def test_captain_double_wording():
     result = pick_one_thing_right([squad_player('Cap', 10, captain=True, multiplier=2)])
-    assert result['reason'].endswith('and you got them double.')
+    assert result['reason'] == 'Captaining Cap paid off, and you got the points double.'
 
 
 def test_captain_with_unexpected_multiplier_has_no_double_claim():
     result = pick_one_thing_right([squad_player('Cap', 10, captain=True, multiplier=1)])
     assert result['tier'] == 'captain'
     assert 'double' not in result['reason'] and 'triple' not in result['reason']
-    assert result['reason'] == 'Captaining Cap paid off: 10 points.'
+    assert result['reason'] == 'Captaining Cap paid off.'
 
 
 @pytest.mark.parametrize('points,tier', [(3, 'showed_up'), (4, 'solid_pick')])
@@ -169,3 +169,38 @@ def test_score_verdict_copy_is_kind_and_acronym_free():
 def test_team_not_found_copy():
     copy = team_not_found_copy(5)
     assert 'gameweek 5' in copy['body'] and not ACRONYMS.search(copy['title'] + copy['body'])
+
+
+def test_no_reason_in_any_tier_contains_a_digit():
+    squads = [
+        [squad_player('Cap', 12, captain=True, multiplier=3)],
+        [squad_player('Cap', 12, captain=True, multiplier=2)],
+        [squad_player('Cap', 12, captain=True, multiplier=1)],
+        [squad_player('Cap', 1, captain=True, difficulty=5), squad_player('Star', 9)],
+        [squad_player('Cap', 0, captain=True, difficulty=5, minutes=0), squad_player('Pick', 1, difficulty=2)],
+        [squad_player('Cap', 0, captain=True, difficulty=5, minutes=0), squad_player('Pick', 5, difficulty=3)],
+        [],
+    ]
+    seen = set()
+    for squad in squads:
+        result = pick_one_thing_right(squad)
+        seen.add(result['tier'])
+        assert not re.search(r'\d', result['reason']), result
+    assert seen == {'captain', 'big_pick', 'sound_blank', 'solid_pick', 'showed_up'}
+
+
+def test_points_and_name_travel_in_their_own_keys():
+    captain = pick_one_thing_right([squad_player('Cap', 12, captain=True)])
+    assert captain['points'] == 12 and captain['name'] == 'Cap'
+    big = pick_one_thing_right([squad_player('Cap', 1, captain=True, difficulty=5), squad_player('Star', 9)])
+    assert big['points'] == 9 and big['name'] == 'Star'
+    solid = pick_one_thing_right([squad_player('Cap', 0, captain=True, minutes=0, difficulty=5),
+                                  squad_player('Pick', 5)])
+    assert solid['points'] == 5 and solid['name'] == 'Pick'
+
+
+def test_tiers_without_a_meaningful_number_have_no_points():
+    blank = pick_one_thing_right([squad_player('Cap', 0, captain=True, minutes=0, difficulty=5),
+                                  squad_player('Pick', 1, difficulty=2)])
+    assert blank['tier'] == 'sound_blank' and blank['points'] is None and blank['name'] == 'Pick'
+    assert pick_one_thing_right([])['points'] is None

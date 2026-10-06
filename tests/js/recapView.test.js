@@ -60,7 +60,7 @@ import { renderPersonalRecap, renderTeamPrompt } from '../../FPL_site/static/scr
 const personal = {
     status: 'ok', score: 61, average_score: 48, verdict: 'Above average. Nicely done.',
     verdict_tier: 'above',
-    right_call: { tier: 'captain', title: 'Your captain call', reason: 'Captaining Salah paid off.' },
+    right_call: { tier: 'captain', title: 'Your captain call', reason: 'Captaining Salah paid off.', name: 'Salah', points: 12 },
 };
 
 test('personal recap: verdict and right call by default, numbers in details', () => {
@@ -98,4 +98,22 @@ test('personal recap: missing right call still renders without throwing', () => 
     const html = renderPersonalRecap({ ...personal, right_call: null }, 5);
     assert.match(html, /Above average\. Nicely done\./);
     assert.doesNotMatch(html, /undefined|<strong>/);
+});
+
+test('personal recap: nothing before the details expander contains a digit', () => {
+    const html = renderPersonalRecap(personal, 5);
+    const beforeDetails = html.split('<details')[0];
+    // The "your gameweek 5" label is the one allowed number; strip it, then no digits may remain.
+    const visible = beforeDetails.replace(/<[^>]+>/g, ' ').replace(/gameweek \d+/g, 'gameweek');
+    assert.doesNotMatch(visible, /\d/);
+});
+
+test('personal recap: the right-call points sit inside the details', () => {
+    const insideDetails = renderPersonalRecap(personal, 5).split('<details')[1];
+    assert.match(insideDetails, /Salah scored 12 points\./);
+});
+
+test('personal recap: no right-call points line when points is not set', () => {
+    const html = renderPersonalRecap({ ...personal, right_call: { ...personal.right_call, points: null } }, 5);
+    assert.doesNotMatch(html, /scored null|scored undefined|Salah scored/);
 });

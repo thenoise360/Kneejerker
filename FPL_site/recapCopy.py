@@ -101,19 +101,23 @@ def pick_one_thing_right(squad):
     starters = _starters(squad)
     captain = next((p for p in starters if p['is_captain']), None)
     if captain and captain['points'] >= CAPTAIN_PAID_OFF_FROM:
-        reason = f"Captaining {captain['name']} paid off: {captain['points']} points"
+        # Reasons are shown by default, so they never contain a number. The
+        # points travel in their own key and are shown behind "See the numbers".
+        reason = f"Captaining {captain['name']} paid off"
         if captain['multiplier'] == 3:
-            reason += ", and you got them triple."
+            reason += ", and you got the points triple."
         elif captain['multiplier'] == 2:
-            reason += ", and you got them double."
+            reason += ", and you got the points double."
         else:
             reason += "."
-        return {'tier': 'captain', 'title': 'Your captain call', 'reason': reason}
+        return {'tier': 'captain', 'title': 'Your captain call', 'reason': reason,
+                'name': captain['name'], 'points': captain['points']}
 
     best = _best(starters)
     if best and best['points'] >= BIG_PICK_FROM:
         return {'tier': 'big_pick', 'title': 'A smart pick',
-                'reason': f"Having {best['name']} in your team paid off with {best['points']} points."}
+                'reason': f"Having {best['name']} in your team paid off.",
+                'name': best['name'], 'points': best['points']}
 
     sound = [p for p in starters if p['minutes'] > 0 and p['difficulty'] is not None
              and p['difficulty'] <= KIND_FIXTURE_UP_TO and p['points'] <= BLANK_UP_TO]
@@ -121,15 +125,18 @@ def pick_one_thing_right(squad):
         pick = min(sound, key=lambda p: p['name'])
         return {'tier': 'sound_blank', 'title': 'Sound thinking',
                 'reason': f"Backing {pick['name']} for a kind fixture was the right idea, even "
-                          f"though it didn't land this time. Keep trusting that logic."}
+                          f"though it didn't land this time. Keep trusting that logic.",
+                'name': pick['name'], 'points': None}
 
     if best and best['points'] >= SOLID_PICK_FROM:
         return {'tier': 'solid_pick', 'title': 'A solid pick',
-                'reason': f"{best['name']} came through for you with {best['points']} points."}
+                'reason': f"{best['name']} came through for you.",
+                'name': best['name'], 'points': best['points']}
 
     return {'tier': 'showed_up', 'title': 'You showed up',
             'reason': "Weeks like this happen to everyone. The next deadline is a fresh start, "
-                      "and we'll help you make the most of it."}
+                      "and we'll help you make the most of it.",
+            'name': None, 'points': None}
 
 
 WELL_ABOVE_FROM = 15   # points above the average

@@ -84,6 +84,10 @@ export function renderPersonalRecap(personal, gameweek) {
     const callLine = call
         ? `<p><strong>${escapeHtml(call.title)}:</strong> ${escapeHtml(call.reason)}</p>`
         : '';
+    // The player's points are a number, so they live inside the expander.
+    const callPoints = call && call.points != null && call.name
+        ? `<p class="sub">${escapeHtml(call.name)} scored ${escapeHtml(call.points)} points.</p>`
+        : '';
     return `
         <div class="card" id="personal-recap">
             <div class="eyebrow-sm">your gameweek ${escapeHtml(gameweek)}</div>
@@ -92,6 +96,7 @@ export function renderPersonalRecap(personal, gameweek) {
             <details class="recap-details">
                 <summary>See the numbers</summary>
                 <p class="sub">You scored ${escapeHtml(personal.score)} points. The average was ${escapeHtml(personal.average_score)} points.</p>
+                ${callPoints}
             </details>
         </div>`;
 }
