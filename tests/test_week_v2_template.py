@@ -57,10 +57,16 @@ def test_closed_panel_content():
     assert 'Coming soon' in html
 
 
-def test_last_week_fallback_shows_gameweek():
-    html = render(_state('upcoming', gw=9, last='final', last_gw=8))
-    assert 'Gameweek 8 recap' in html
-    assert 'Your recap for gameweek 8 is on its way.' in html
+def test_last_week_final_renders_recap_slot():
+    html = render(_state('upcoming', gw=9, last='final', last_gw=5))
+    assert 'id="last-week-recap-slot"' in html
+    assert 'data-gameweek="5"' in html
+    assert 'How gameweek 5 went' in html
+
+
+def test_last_week_confirming_has_no_gameweek_to_fetch():
+    html = render(_state('upcoming', gw=9, last='confirming', last_gw=5))
+    assert 'data-gameweek=""' in html
 
 
 def test_last_week_copy_rendered_when_not_final():

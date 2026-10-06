@@ -637,3 +637,14 @@
     padding-top: 12px;
     border-top: 1px solid var(--black-10);
 }
+
+/* Week v2: numbers-on-demand layer and recap rows */
+.recap-details { margin-top: 12px; border-top: 1px solid var(--grey); padding-top: 10px; }
+.recap-details summary { cursor: pointer; font-weight: 700; color: var(--plum); font-size: 14px; }
+.recap-details summary:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; border-radius: 4px; }
+.recap-details[open] summary { margin-bottom: 8px; }
+.recap-standouts { list-style: none; padding: 0; margin: 0; }
+.recap-standout { padding: 8px 0; border-bottom: 1px solid var(--grey); }
+.recap-standout:last-child { border-bottom: none; }
+.recap-standout-head { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.recap-points { font-weight: 700; white-space: nowrap; }

@@ -15,7 +15,10 @@ WEEK_STATE = {
 
 # path -> (name of the function in views to stub, the value the stub returns).
 # Each release adds its new data routes here so they stay covered forever.
-DATA_ROUTE_STUBS = {}
+DATA_ROUTE_STUBS = {
+    '/api/week/last-week-recap?gameweek=5': ('get_last_week_recap', {
+        'gameweek': 5, 'status': 'ready', 'guest': None, 'message': None, 'personal': None}),
+}
 
 
 @pytest.fixture

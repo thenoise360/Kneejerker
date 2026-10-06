@@ -5,6 +5,7 @@ is pure, so the recap logic is tested without a database.
 """
 import logging
 
+from FPL_site.dataModels import connect_db, season_start
 from FPL_site.recapCopy import average_headline, standout_reason, standout_sentence, recap_not_ready_copy
 
 logger = logging.getLogger(__name__)
@@ -130,3 +131,22 @@ def recap_payload(gameweek, summary, players):
                 'message': recap_not_ready_copy(gameweek), 'personal': None}
     return {'gameweek': gameweek, 'status': 'ready', 'guest': guest,
             'message': None, 'personal': None}
+
+
+#################################################
+#          Live-route entry point               #
+#################################################
+
+def get_last_week_recap(gameweek):
+    """Reads the finished gameweek from the database and builds the recap."""
+    conn = connect_db()
+    if conn is None:
+        logger.error("get_last_week_recap: could not connect to the database.")
+        return recap_payload(gameweek, None, {})
+    try:
+        cursor = conn.cursor(dictionary=True)
+        summary = summarise_event(fetch_event_rows(cursor, season_start, gameweek))
+        players = aggregate_player_rows(fetch_history_rows(cursor, season_start, gameweek))
+    finally:
+        conn.close()
+    return recap_payload(gameweek, summary, players)

@@ -19,6 +19,7 @@ from .dataModels import (
     get_week_view_state
 )
 from .weekCopy import this_week_empty_copy, last_week_empty_copy
+from .lastWeekRecap import get_last_week_recap
 from .weekResolver import DEADLINE_FORMAT
 
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
@@ -93,6 +94,29 @@ def _week_v2_context():
         'this_week_copy': this_week_empty_copy(this_week['mode'], _hours_since(this_week['deadline'])),
         'last_week_copy': last_week_empty_copy(last_week['status'], last_week['gameweek']),
     }
+
+GAMEWEEKS_IN_SEASON = 38
+
+
+def _parse_gameweek(raw):
+    """A gameweek number from a query string, or None if it isn't 1-38."""
+    if not raw or not raw.isdigit():
+        return None
+    gameweek = int(raw)
+    return gameweek if 1 <= gameweek <= GAMEWEEKS_IN_SEASON else None
+
+
+@app.route('/api/week/last-week-recap')
+def week_last_week_recap():
+    logger.info("Request for last week recap")
+    gameweek = _parse_gameweek(request.args.get('gameweek', ''))
+    if gameweek is None:
+        return jsonify({'error': 'invalid_gameweek'}), 400
+    try:
+        return jsonify(get_last_week_recap(gameweek))
+    except Exception as e:
+        logger.error(f"Error building last week recap: {e}")
+        return jsonify({'error': 'server_error'}), 500
 
 @app.route('/radar')
 def radar():

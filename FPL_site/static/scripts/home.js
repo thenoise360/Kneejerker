@@ -5,6 +5,7 @@ import {
 } from './utils.js';
 import { planWeekRender } from './weekState.js';
 import { initializeLiveGameweek, stopLiveGameweekPolling } from './liveGameweek.js';
+import { initializeWeekV2 } from './weekV2.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeHome();
@@ -49,6 +50,7 @@ function initializeWeekState() {
 // We need to handle both initial load and AJAX navigation
 function initializeHome() {
     initializeWeekState();
+    initializeWeekV2();
 
     const toggleThisWeek = document.getElementById('lens-this-week');
     const toggleLastWeek = document.getElementById('lens-last-week');

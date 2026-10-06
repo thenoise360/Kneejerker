@@ -34,7 +34,7 @@ def test_flag_on_renders_off_season_copy(client, monkeypatch):
     html = resp.get_data(as_text=True)
     assert resp.status_code == 200
     assert 'taking a breather' in html
-    assert 'Gameweek 38 recap' in html
+    assert 'How gameweek 38 went' in html
     assert 'Friend activity feed' not in html
 
 
