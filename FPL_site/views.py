@@ -15,8 +15,11 @@ from .dataModels import (
     get_momentum_players, get_new_manager_players, get_player_ownership_history,
     next_5_gameweeks, fetch_player_summary, get_alternative_players, top_5_players_last_5_weeks,
     get_player_last_5_points, generateCurrentGameweek,
-    get_gameweek_state, get_live_gameweek_view, get_comparison_averages_last_5
+    get_gameweek_state, get_live_gameweek_view, get_comparison_averages_last_5,
+    get_week_view_state
 )
+from .weekCopy import this_week_empty_copy, last_week_empty_copy
+from .weekResolver import DEADLINE_FORMAT
 
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
 
@@ -60,7 +63,30 @@ def home():
     # Computed server-side (06.0) since it's cheap and changes infrequently -
     # no need for the client to poll for it.
     gw_state = get_gameweek_state()
-    return render_template('home.html', is_ajax=is_ajax, title='This Week', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN, gw_state=gw_state)
+    week_v2 = getattr(current_config, 'FEATURE_WEEK_V2', False)
+    week_context = _week_v2_context() if week_v2 else {}
+    return render_template('home.html', is_ajax=is_ajax, title='This Week', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN, gw_state=gw_state, week_v2=week_v2, **week_context)
+
+
+def _hours_since(deadline):
+    """Hours between a deadline string and now, or None if it can't be read."""
+    try:
+        deadline_dt = datetime.strptime(deadline, DEADLINE_FORMAT)
+    except (TypeError, ValueError):
+        return None
+    return (datetime.utcnow() - deadline_dt).total_seconds() / 3600
+
+
+def _week_v2_context():
+    """Template context for the Week tab rebuild (behind FEATURE_WEEK_V2)."""
+    week_state = get_week_view_state()
+    this_week = week_state['this_week']
+    last_week = week_state['last_week']
+    return {
+        'week_state': week_state,
+        'this_week_copy': this_week_empty_copy(this_week['mode'], _hours_since(this_week['deadline'])),
+        'last_week_copy': last_week_empty_copy(last_week['status'], last_week['gameweek']),
+    }
 
 @app.route('/radar')
 def radar():

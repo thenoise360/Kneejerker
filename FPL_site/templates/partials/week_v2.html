@@ -1,0 +1,82 @@
+{# Week tab v2 shell. Rendered from week_state (resolver output), this_week_copy
+   and last_week_copy (phrase bank dicts or None). Keeps the container ids that
+   home.js depends on. Included inside home.html's content block, so it must not
+   contain link/script tags itself. #}
+{% set this_week = week_state.this_week %}
+{% set last_week = week_state.last_week %}
+{% set mode = this_week.mode %}
+{% if mode == 'live' %}{% set gw_state_attr = 'live' %}
+{% elif mode == 'upcoming' %}{% set gw_state_attr = 'closed' %}
+{% else %}{% set gw_state_attr = 'none' %}{% endif %}
+<div class="app-body">
+    <div class="metric-toggle-container" id="week-lens-toggle" style="margin-bottom: 20px;">
+        <button class="btn-pill" id="lens-this-week">This week</button>
+        <button class="btn-pill secondary" id="lens-last-week">Last week</button>
+    </div>
+
+    <div id="week-content">
+        <div class="this-week-view"
+             id="this-week-view"
+             data-gw-state="{{ gw_state_attr }}"
+             data-gw-number="{{ this_week.gameweek if this_week.gameweek is not none else '' }}">
+
+            <div id="gw-transition-banner" class="pill pink" style="display:none;"></div>
+
+            <div class="gw-panel" id="gw-panel-live" style="display:none;">
+                <div class="eyebrow-sm">gameweek {{ this_week.gameweek }} is live</div>
+                <h2 class="title" style="margin-bottom:4px;">Live score</h2>
+                <p class="sub">Matches are still being played.</p>
+
+                <!-- 06.1: shown until we know which FPL team is the visitor's.
+                     No login needed - standings, picks and live stats are all
+                     public once the deadline passes. -->
+                <div class="card" id="live-team-id-card">
+                    <h3>Which team's yours?</h3>
+                    <p class="sub">Find it in the web address of your Fantasy Premier League team page - the number after "/entry/".</p>
+                    <form id="live-team-id-form" style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" inputmode="numeric" min="1" id="live-team-id-input" placeholder="e.g. 1234567" required
+                               style="flex:1; min-width:0; padding:10px 12px; border-radius:8px; border:1.5px solid var(--black-20); font-family:var(--font); font-size:14px;">
+                        <button type="submit" class="btn-pill" style="width:auto; padding:10px 18px;">Save</button>
+                    </form>
+                </div>
+
+                <!-- Populated by liveGameweek.js once a team id is known -->
+                <div id="live-gameweek-content" style="display:none;"></div>
+            </div>
+
+            {# Upcoming gameweek. The decision hub lands in release 1.4. #}
+            <div class="gw-panel" id="gw-panel-closed" style="display:none;">
+                <div class="eyebrow-sm">gameweek {{ this_week.gameweek }}</div>
+                <h2 class="title" style="margin-bottom:4px;">Your decisions for gameweek {{ this_week.gameweek }}</h2>
+
+                <div class="card" style="margin-top: 12px;">
+                    <h3>This week's 5 decisions</h3>
+                    <p class="sub">Coming soon. We'll walk through them with you.</p>
+                </div>
+            </div>
+
+            {# Nothing live or upcoming: calm phrase-bank copy, never a blank screen. #}
+            <div class="gw-panel" id="gw-panel-none" style="display:none;">
+                {% if this_week_copy %}
+                <div class="eyebrow-sm">{{ this_week_copy.eyebrow }}</div>
+                <h2 class="title" style="margin-bottom:4px;">{{ this_week_copy.title }}</h2>
+                <p class="sub">{{ this_week_copy.body }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="last-week-view" id="last-week-view" style="display: none;">
+            {% if last_week_copy %}
+            <div class="eyebrow-sm">{{ last_week_copy.eyebrow }}</div>
+            <h2 class="title" style="margin-bottom:4px;">{{ last_week_copy.title }}</h2>
+            <p class="sub">{{ last_week_copy.body }}</p>
+            {% else %}
+            {# Filled in release 1.2 (recap content). #}
+            <div class="card" id="last-week-recap-card">
+                <h3>Gameweek {{ last_week.gameweek }} recap</h3>
+                <p class="sub">Your recap for gameweek {{ last_week.gameweek }} is on its way.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
