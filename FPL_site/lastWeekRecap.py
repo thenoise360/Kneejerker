@@ -150,3 +150,20 @@ def get_last_week_recap(gameweek):
     finally:
         conn.close()
     return recap_payload(gameweek, summary, players)
+
+
+def build_squad(picks_data, players):
+    """Join a team's picks to last week's results. Players with no result score 0."""
+    squad = []
+    for pick in (picks_data or {}).get('picks', []):
+        result = players.get(pick['element'], {})
+        squad.append({
+            'id': pick['element'],
+            'name': result.get('name', 'A player'),
+            'is_captain': bool(pick.get('is_captain')),
+            'multiplier': pick.get('multiplier', 0),
+            'points': result.get('points', 0),
+            'minutes': result.get('minutes', 0),
+            'difficulty': result.get('difficulty'),
+        })
+    return squad

@@ -78,3 +78,51 @@ def recap_not_ready_copy(gameweek):
         'title': f"Gameweek {gameweek}'s recap is nearly ready",
         'body': "We're still pulling the scores together. Check back a little later.",
     }
+
+
+CAPTAIN_PAID_OFF_FROM = 6   # captain's own points (before doubling)
+BIG_PICK_FROM = 8
+SOLID_PICK_FROM = 4
+KIND_FIXTURE_UP_TO = 2      # fixture difficulty 1-2 is a kind fixture
+BLANK_UP_TO = 2             # 2 points or fewer counts as a blank
+
+
+def _starters(squad):
+    return [p for p in squad if p['multiplier'] > 0]
+
+
+def _best(players):
+    # Highest points; ties broken by name so the choice is always the same.
+    return min(players, key=lambda p: (-p['points'], p['name'])) if players else None
+
+
+def pick_one_thing_right(squad):
+    """Something to celebrate in a personal recap, even after a bad week."""
+    starters = _starters(squad)
+    captain = next((p for p in starters if p['is_captain']), None)
+    if captain and captain['points'] >= CAPTAIN_PAID_OFF_FROM:
+        times = 'triple' if captain['multiplier'] >= 3 else 'double'
+        return {'tier': 'captain', 'title': 'Your captain call',
+                'reason': f"Captaining {captain['name']} paid off: {captain['points']} points, "
+                          f"and you got them {times}."}
+
+    best = _best(starters)
+    if best and best['points'] >= BIG_PICK_FROM:
+        return {'tier': 'big_pick', 'title': 'A smart pick',
+                'reason': f"Having {best['name']} in your team paid off with {best['points']} points."}
+
+    sound = [p for p in starters if p['minutes'] > 0 and p['difficulty'] is not None
+             and p['difficulty'] <= KIND_FIXTURE_UP_TO and p['points'] <= BLANK_UP_TO]
+    if sound:
+        pick = min(sound, key=lambda p: p['name'])
+        return {'tier': 'sound_blank', 'title': 'Sound thinking',
+                'reason': f"Backing {pick['name']} for a kind fixture was the right idea, even "
+                          f"though it didn't land this time. Keep trusting that logic."}
+
+    if best and best['points'] >= SOLID_PICK_FROM:
+        return {'tier': 'solid_pick', 'title': 'A solid pick',
+                'reason': f"{best['name']} came through for you with {best['points']} points."}
+
+    return {'tier': 'showed_up', 'title': 'You showed up',
+            'reason': "Weeks like this happen to everyone. The next deadline is a fresh start, "
+                      "and we'll help you make the most of it."}

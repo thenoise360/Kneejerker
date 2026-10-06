@@ -89,3 +89,20 @@ def test_fetchers_pass_season_and_gameweek():
     assert cursor.executed[0][1] == (2026, 5)
     fetch_history_rows(cursor, 2026, 5)
     assert cursor.executed[1][1] == (2026, 2026, 5)
+
+
+from FPL_site.lastWeekRecap import build_squad
+
+
+def test_build_squad_joins_picks_to_results_and_tolerates_missing_players():
+    players = aggregate_player_rows([row(7, 9, name='Saka', difficulty=2)])
+    picks = {'picks': [{'element': 7, 'multiplier': 2, 'is_captain': True},
+                       {'element': 99, 'multiplier': 1, 'is_captain': False}]}
+    squad = build_squad(picks, players)
+    assert squad[0] == {'id': 7, 'name': 'Saka', 'is_captain': True, 'multiplier': 2,
+                        'points': 9, 'minutes': 90, 'difficulty': 2}
+    assert squad[1]['points'] == 0 and squad[1]['minutes'] == 0 and squad[1]['difficulty'] is None
+
+
+def test_build_squad_handles_no_picks():
+    assert build_squad({}, {}) == []

@@ -75,3 +75,53 @@ def test_no_acronyms_anywhere():
     texts += list(recap_not_ready_copy(6).values())
     for text in texts:
         assert not ACRONYMS.search(text), text
+
+
+from FPL_site.recapCopy import pick_one_thing_right
+
+
+def squad_player(name, points, captain=False, multiplier=1, minutes=90, difficulty=3):
+    return {'id': hash(name) % 1000, 'name': name, 'is_captain': captain,
+            'multiplier': multiplier if not captain else max(multiplier, 2),
+            'points': points, 'minutes': minutes, 'difficulty': difficulty}
+
+
+@pytest.mark.parametrize('points,tier', [(5, 'solid_pick'), (6, 'captain')])
+def test_captain_threshold(points, tier):
+    assert pick_one_thing_right([squad_player('Cap', points, captain=True)])['tier'] == tier
+
+
+def test_triple_captain_wording():
+    result = pick_one_thing_right([squad_player('Cap', 10, captain=True, multiplier=3)])
+    assert 'triple' in result['reason']
+
+
+@pytest.mark.parametrize('points,tier', [(7, 'solid_pick'), (8, 'big_pick')])
+def test_big_pick_threshold(points, tier):
+    squad = [squad_player('Cap', 1, captain=True, difficulty=5), squad_player('Star', points)]
+    assert pick_one_thing_right(squad)['tier'] == tier
+
+
+def test_bench_player_never_counts():
+    squad = [squad_player('Cap', 1, captain=True, difficulty=5), squad_player('Bench', 15, multiplier=0)]
+    assert pick_one_thing_right(squad)['tier'] == 'showed_up'
+
+
+@pytest.mark.parametrize('difficulty,points,tier', [
+    (2, 2, 'sound_blank'), (3, 2, 'showed_up'), (2, 3, 'showed_up'), (None, 1, 'showed_up'),
+])
+def test_sound_blank_boundaries(difficulty, points, tier):
+    squad = [squad_player('Cap', 0, captain=True, difficulty=5, minutes=0),
+             squad_player('Pick', points, difficulty=difficulty)]
+    assert pick_one_thing_right(squad)['tier'] == tier
+
+
+def test_sound_blank_needs_minutes():
+    squad = [squad_player('Cap', 0, captain=True, minutes=0, difficulty=5),
+             squad_player('Benched', 0, minutes=0, difficulty=1)]
+    assert pick_one_thing_right(squad)['tier'] == 'showed_up'
+
+
+def test_empty_squad_is_kind():
+    result = pick_one_thing_right([])
+    assert result['tier'] == 'showed_up' and not ACRONYMS.search(result['reason'])
