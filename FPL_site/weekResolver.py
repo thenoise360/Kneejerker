@@ -6,6 +6,7 @@ UTC time, and get back what "this week" and "last week" mean right now.
 from datetime import datetime
 
 DEADLINE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+NO_LAST_WEEK = {'status': 'none', 'gameweek': None, 'deadline': None}
 
 
 def _parse_deadline(raw):
@@ -45,8 +46,9 @@ def _last_week(passed, this_week_gameweek):
     for _, event in reversed(passed):
         if event.get('finished') and event.get('id') != this_week_gameweek:
             status = 'final' if event.get('data_checked') else 'confirming'
-            return {'status': status, 'gameweek': event.get('id')}
-    return {'status': 'none', 'gameweek': None}
+            return {'status': status, 'gameweek': event.get('id'),
+                    'deadline': event.get('deadline_time')}
+    return dict(NO_LAST_WEEK)
 
 
 def _resolve_this_week(passed, upcoming):
@@ -64,14 +66,14 @@ def resolve_week(events, now):
     dated = _dated_events(events)
     if not dated:
         return {'this_week': _this_week('unavailable'),
-                'last_week': {'status': 'none', 'gameweek': None}}
+                'last_week': dict(NO_LAST_WEEK)}
 
     passed = [pair for pair in dated if pair[0] <= now]
     upcoming = [pair for pair in dated if pair[0] > now]
 
     if not passed:
         return {'this_week': _this_week('pre_season', upcoming[0][1]),
-                'last_week': {'status': 'none', 'gameweek': None}}
+                'last_week': dict(NO_LAST_WEEK)}
 
     this_week = _resolve_this_week(passed, upcoming)
     return {'this_week': this_week,

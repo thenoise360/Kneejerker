@@ -17,7 +17,8 @@ def test_fetch_uses_timeout_and_resolves_events():
         result = dataModels.get_week_view_state()
     assert get.call_args.kwargs['timeout'] == 5
     assert result['this_week']['mode'] == 'off_season'
-    assert result['last_week'] == {'status': 'final', 'gameweek': 1}
+    assert result['last_week'] == {'status': 'final', 'gameweek': 1,
+                                   'deadline': '2020-01-01T10:00:00Z'}
 
 
 def test_non_200_is_unavailable():

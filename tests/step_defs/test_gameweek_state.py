@@ -92,9 +92,12 @@ def _this_week_none(context, mode):
 
 @then(parsers.parse('last week is "{status}" for gameweek {gw:d}'))
 def _last_week(context, status, gw):
-    assert context['result']['last_week'] == {'status': status, 'gameweek': gw}
+    deadline = next(e['deadline_time'] for e in context['events'] if e['id'] == gw)
+    assert context['result']['last_week'] == {'status': status, 'gameweek': gw,
+                                              'deadline': deadline}
 
 
 @then(parsers.parse('last week is "{status}"'))
 def _last_week_status(context, status):
-    assert context['result']['last_week'] == {'status': status, 'gameweek': None}
+    assert context['result']['last_week'] == {'status': status, 'gameweek': None,
+                                              'deadline': None}
