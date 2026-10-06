@@ -6,8 +6,9 @@ from FPL_site.lastWeekRecap import (
 )
 
 
-def row(element, points, name='Player', minutes=90, difficulty=3, **stats):
-    base = {'element': element, 'total_points': points, 'minutes': minutes, 'goals_scored': 0,
+def row(element, points, name='Player', minutes=90, difficulty=3, fixture=None, **stats):
+    base = {'element': element, 'fixture': element * 100 if fixture is None else fixture,
+            'total_points': points, 'minutes': minutes, 'goals_scored': 0,
             'assists': 0, 'clean_sheets': 0, 'saves': 0, 'bonus': 0, 'penalties_saved': 0,
             'web_name': name, 'element_type': 3, 'team_short_name': 'ARS', 'difficulty': difficulty}
     base.update(stats)
@@ -43,14 +44,21 @@ def test_summarise_event_missing_or_unfinished_is_none():
 
 def test_aggregate_sums_double_gameweek():
     players = aggregate_player_rows([
-        row(7, 6, name='Saka', goals_scored=1, difficulty=4),
-        row(7, 9, name='Saka', assists=2, bonus=3, difficulty=2),
+        row(7, 6, name='Saka', goals_scored=1, difficulty=4, fixture=11),
+        row(7, 9, name='Saka', assists=2, bonus=3, difficulty=2, fixture=12),
     ])
     saka = players[7]
     assert saka['points'] == 15
     assert saka['minutes'] == 180
     assert saka['goals'] == 1 and saka['assists'] == 2 and saka['bonus'] == 3
     assert saka['difficulty'] == 2  # easiest of the two fixtures
+
+
+def test_aggregate_ignores_duplicate_join_rows():
+    players = aggregate_player_rows([row(7, 6, name='Saka', goals_scored=1), row(7, 6, name='Saka', goals_scored=1)])
+    assert players[7]['points'] == 6
+    assert players[7]['minutes'] == 90
+    assert players[7]['goals'] == 1
 
 
 def test_aggregate_handles_missing_difficulty():

@@ -28,7 +28,7 @@ def fetch_event_rows(cursor, year_start, gameweek):
 def fetch_history_rows(cursor, year_start, gameweek):
     """One row per player per fixture in the gameweek (two in a double gameweek)."""
     cursor.execute("""
-        SELECT h.element, h.total_points, h.minutes, h.goals_scored, h.assists,
+        SELECT h.element, h.fixture, h.total_points, h.minutes, h.goals_scored, h.assists,
                h.clean_sheets, h.saves, h.bonus, h.penalties_saved,
                e.web_name, e.element_type, t.short_name AS team_short_name,
                CASE WHEN h.was_home THEN f.team_h_difficulty ELSE f.team_a_difficulty END AS difficulty
@@ -68,7 +68,14 @@ def _empty_player(row):
 def aggregate_player_rows(rows):
     """Sum each player's fixture rows into one record per player."""
     players = {}
+    seen = set()
     for row in rows:
+        # The joined tables can hold duplicate rows, which repeat a fixture row; count each once.
+        key = (row['element'], row.get('fixture'))
+        if row.get('fixture') is not None:
+            if key in seen:
+                continue
+            seen.add(key)
         player = players.setdefault(row['element'], _empty_player(row))
         player['points'] += row['total_points'] or 0
         player['minutes'] += row['minutes'] or 0
