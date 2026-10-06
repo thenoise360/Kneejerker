@@ -121,3 +121,9 @@ def test_last_week_view_carries_deadline_and_this_week_gameweek():
     html = render(state)
     assert 'data-deadline="2026-09-20T10:00:00Z"' in html
     assert 'data-this-week-gameweek="6"' in html
+
+
+@pytest.mark.parametrize('mode', ['live', 'confirming', 'off_season'])
+def test_this_week_gameweek_attribute_is_empty_unless_upcoming(mode):
+    html = render(_state(mode, gw=6, last='final', last_gw=5))
+    assert 'data-this-week-gameweek=""' in html

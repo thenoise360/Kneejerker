@@ -70,7 +70,7 @@
              data-week-v2="true"
              data-gameweek="{{ last_week.gameweek if last_week.status == 'final' else '' }}"
              data-deadline="{{ last_week.deadline or '' }}"
-             data-this-week-gameweek="{{ this_week.gameweek if this_week.gameweek is not none else '' }}">
+             data-this-week-gameweek="{{ this_week.gameweek if this_week.mode == 'upcoming' and this_week.gameweek is not none else '' }}">
             {% if last_week_copy %}
             <div class="eyebrow-sm">{{ last_week_copy.eyebrow }}</div>
             <h2 class="title" style="margin-bottom:4px;">{{ last_week_copy.title }}</h2>
