@@ -10,9 +10,14 @@ def row(element, points, name='Player', minutes=90, difficulty=3, fixture=None, 
     base = {'element': element, 'fixture': element * 100 if fixture is None else fixture,
             'total_points': points, 'minutes': minutes, 'goals_scored': 0,
             'assists': 0, 'clean_sheets': 0, 'saves': 0, 'bonus': 0, 'penalties_saved': 0,
-            'web_name': name, 'element_type': 3, 'team_short_name': 'ARS', 'difficulty': difficulty}
+            'web_name': name, 'element_type': 3, 'team_name': 'Arsenal', 'difficulty': difficulty}
     base.update(stats)
     return base
+
+
+def test_player_team_is_the_full_team_name():
+    players = aggregate_player_rows([row(1, 10, name='Saka')])
+    assert players[1]['team'] == 'Arsenal'
 
 
 class FakeCursor:

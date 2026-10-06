@@ -32,7 +32,7 @@ def fetch_history_rows(cursor, year_start, gameweek):
     cursor.execute("""
         SELECT h.element, h.fixture, h.total_points, h.minutes, h.goals_scored, h.assists,
                h.clean_sheets, h.saves, h.bonus, h.penalties_saved,
-               e.web_name, e.element_type, t.short_name AS team_short_name,
+               e.web_name, e.element_type, t.name AS team_name,
                CASE WHEN h.was_home THEN f.team_h_difficulty ELSE f.team_a_difficulty END AS difficulty
         FROM elementsummary_history h
         JOIN bootstrapstatic_elements e
@@ -61,7 +61,7 @@ def summarise_event(rows):
 
 
 def _empty_player(row):
-    return {'id': row['element'], 'name': row['web_name'], 'team': row['team_short_name'],
+    return {'id': row['element'], 'name': row['web_name'], 'team': row['team_name'],
             'position': row['element_type'], 'points': 0, 'minutes': 0, 'goals': 0,
             'assists': 0, 'clean_sheets': 0, 'saves': 0, 'bonus': 0, 'penalties_saved': 0,
             'difficulty': None}
