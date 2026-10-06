@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TEAM_ID_KEY, parseTeamId, readTeamId, saveTeamId } from '../../FPL_site/static/scripts/lib/teamId.js';
+import { TEAM_ID_KEY, parseTeamId, readTeamId, saveTeamId, clearTeamId } from '../../FPL_site/static/scripts/lib/teamId.js';
 
 function memoryStorage(initial = {}) {
     const data = { ...initial };
-    return { getItem: (k) => (k in data ? data[k] : null), setItem: (k, v) => { data[k] = String(v); }, data };
+    return { getItem: (k) => (k in data ? data[k] : null), setItem: (k, v) => { data[k] = String(v); }, removeItem: (k) => { delete data[k]; }, data };
 }
 
 test('uses the same key as the live panel', () => {
@@ -32,4 +32,18 @@ test('blocked storage never throws', () => {
     const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
     assert.equal(readTeamId(blocked), null);
     assert.equal(saveTeamId(blocked, '5'), 5);
+});
+
+test('clearTeamId forgets a saved number', () => {
+    const storage = memoryStorage();
+    saveTeamId(storage, '42');
+    assert.equal(readTeamId(storage), 42);
+    clearTeamId(storage);
+    assert.equal(readTeamId(storage), null);
+});
+
+test('clearTeamId is safe with blocked (null) or throwing storage', () => {
+    assert.doesNotThrow(() => clearTeamId(null));
+    const throwing = { removeItem: () => { throw new Error('blocked'); } };
+    assert.doesNotThrow(() => clearTeamId(throwing));
 });

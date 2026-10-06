@@ -36,3 +36,13 @@ export function saveTeamId(storage, raw) {
     }
     return id;
 }
+
+// Forgets the saved team number, so a mistyped one can be replaced.
+// Safe to call with blocked (null) storage.
+export function clearTeamId(storage) {
+    try {
+        storage.removeItem(TEAM_ID_KEY);
+    } catch {
+        // Nothing stored, or storage blocked: either way there is nothing to forget.
+    }
+}

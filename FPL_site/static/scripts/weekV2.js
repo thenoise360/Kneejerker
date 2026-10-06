@@ -4,7 +4,7 @@
 // file only reads the page, fetches data, and puts HTML on the page.
 import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, RECAP_LOAD_FAILED } from './lib/recapView.js';
 import { safeLocalStorage } from './lib/safeStorage.js';
-import { readTeamId, saveTeamId } from './lib/teamId.js';
+import { readTeamId, saveTeamId, clearTeamId } from './lib/teamId.js';
 import { welcomeBackMessage, readLastVisit, recordVisit } from './lib/returningUser.js';
 
 export function initializeWeekV2() {
@@ -55,11 +55,23 @@ async function loadLastWeekRecap(lastWeekView) {
                 ? renderPersonalRecap(data.personal, data.gameweek)
                 : renderTeamPrompt();
             bindTeamForm(lastWeekView);
+            bindChangeTeam(personalSlot, lastWeekView);
         }
     } catch (err) {
         console.error('Failed to load last week recap', err);
         guestSlot.innerHTML = renderMessage(RECAP_LOAD_FAILED);
     }
+}
+
+// "Not your team? Change it": forget the saved number and show the prompt again.
+function bindChangeTeam(personalSlot, lastWeekView) {
+    const button = document.getElementById('recap-change-team');
+    if (!button) return;
+    button.addEventListener('click', () => {
+        clearTeamId(safeLocalStorage(window));
+        personalSlot.innerHTML = renderTeamPrompt();
+        bindTeamForm(lastWeekView);
+    });
 }
 
 // The form is re-created each time the slot is redrawn, so the listener is

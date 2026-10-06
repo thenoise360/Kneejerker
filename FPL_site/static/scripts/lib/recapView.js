@@ -98,5 +98,6 @@ export function renderPersonalRecap(personal, gameweek) {
                 <p class="sub">You scored ${escapeHtml(personal.score)} points. The average was ${escapeHtml(personal.average_score)} points.</p>
                 ${callPoints}
             </details>
+            <button type="button" class="btn-pill secondary" id="recap-change-team">Not your team? Change it</button>
         </div>`;
 }

@@ -117,3 +117,13 @@ test('personal recap: no right-call points line when points is not set', () => {
     const html = renderPersonalRecap({ ...personal, right_call: { ...personal.right_call, points: null } }, 5);
     assert.doesNotMatch(html, /scored null|scored undefined|Salah scored/);
 });
+
+test('personal recap: the ok card offers a way to change the team', () => {
+    const html = renderPersonalRecap(personal, 5);
+    assert.match(html, /<button type="button" class="btn-pill secondary" id="recap-change-team">Not your team\? Change it<\/button>/);
+});
+
+test('personal recap: the change-team button is not on non-ok cards', () => {
+    const html = renderPersonalRecap({ status: 'team_not_found', message: { title: 'T', body: 'B' } }, 5);
+    assert.doesNotMatch(html, /recap-change-team/);
+});
