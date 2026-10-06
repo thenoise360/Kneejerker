@@ -648,3 +648,6 @@
 .recap-standout:last-child { border-bottom: none; }
 .recap-standout-head { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .recap-points { font-weight: 700; white-space: nowrap; }
+
+/* Verdict headings: the global .card h3 teal is too faint on white (about 2.2:1), so use charcoal. */
+.card h3.recap-verdict { font-size: 17px; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 6px; }

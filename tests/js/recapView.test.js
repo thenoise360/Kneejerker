@@ -49,3 +49,8 @@ test('load-failure copy is calm and acronym free', () => {
     const text = RECAP_LOAD_FAILED.title + ' ' + RECAP_LOAD_FAILED.body;
     assert.doesNotMatch(text, /\b(FPL|GW|error)\b/i);
 });
+
+test('verdict headings carry the recap-verdict class so they pass contrast', () => {
+    assert.match(renderGuestRecap(guest, 5), /<h3 class="recap-verdict">/);
+    assert.match(renderMessage({ title: 'Not ready', body: 'Soon' }), /<h3 class="recap-verdict">/);
+});

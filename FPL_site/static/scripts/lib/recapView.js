@@ -35,7 +35,7 @@ export function renderGuestRecap(guest, gameweek) {
     return `
         <div class="card" id="guest-recap">
             <div class="eyebrow-sm">gameweek ${escapeHtml(gameweek)}, for everyone</div>
-            <h3>${escapeHtml(guest.headline)}</h3>
+            <h3 class="recap-verdict">${escapeHtml(guest.headline)}</h3>
             <p>${escapeHtml(guest.reason)}</p>
             <details class="recap-details">
                 <summary>See the numbers</summary>
@@ -48,7 +48,7 @@ export function renderGuestRecap(guest, gameweek) {
 export function renderMessage(message) {
     return `
         <div class="card">
-            <h3>${escapeHtml(message.title)}</h3>
+            <h3 class="recap-verdict">${escapeHtml(message.title)}</h3>
             <p class="sub">${escapeHtml(message.body)}</p>
         </div>`;
 }
