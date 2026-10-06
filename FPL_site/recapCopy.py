@@ -19,14 +19,33 @@ def average_headline(average_score):
     return 'A high-scoring week'
 
 
+NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
+
+def _number_word(n):
+    """'three' for 3, up to ten; digits above that."""
+    return NUMBER_WORDS[n] if n <= 10 else str(n)
+
+
+def _count_phrase(n, singular, plural):
+    """'a goal' for 1, 'two goals' for 2. The article is 'an' before a vowel."""
+    if n == 1:
+        article = 'an' if singular[0] in 'aeiou' else 'a'
+        return f'{article} {singular}'
+    return f'{_number_word(n)} {plural}'
+
+
 def _attacking_phrase(goals, assists):
-    if goals >= 3:
-        return 'a hat-trick'
-    if goals == 2:
-        return 'two goals and an assist' if assists else 'two goals'
-    if goals == 1 and assists:
-        return 'a goal and an assist'
-    return None
+    if goals == 3:
+        goal_part = 'a hat-trick'
+    elif goals:
+        goal_part = _count_phrase(goals, 'goal', 'goals')
+    else:
+        goal_part = None
+    assist_part = _count_phrase(assists, 'assist', 'assists') if assists else None
+    if goal_part and assist_part:
+        return f'{goal_part} and {assist_part}'
+    return goal_part or assist_part
 
 
 def _main_phrase(p):
@@ -34,15 +53,11 @@ def _main_phrase(p):
     if attacking:
         return attacking
     if p['penalties_saved']:
-        return 'a penalty save'
-    if p['goals'] == 1:
-        return 'a goal'
-    if p['assists'] >= 2:
-        return f"{p['assists']} assists"
-    if p['assists'] == 1:
-        return 'an assist'
+        return _count_phrase(p['penalties_saved'], 'penalty save', 'penalty saves')
     if p['clean_sheets'] and p['position'] in (GOALKEEPER, DEFENDER):
-        return f"a clean sheet and {p['saves']} saves" if p['saves'] >= 3 else 'a clean sheet'
+        if p['saves'] >= 3:
+            return f"a clean sheet and {_number_word(p['saves'])} saves"
+        return 'a clean sheet'
     return 'a solid all-round game'
 
 
