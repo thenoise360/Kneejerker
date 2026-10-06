@@ -80,9 +80,11 @@ def test_no_acronyms_anywhere():
 from FPL_site.recapCopy import pick_one_thing_right
 
 
-def squad_player(name, points, captain=False, multiplier=1, minutes=90, difficulty=3):
+def squad_player(name, points, captain=False, multiplier=None, minutes=90, difficulty=3):
+    if multiplier is None:
+        multiplier = 2 if captain else 1
     return {'id': hash(name) % 1000, 'name': name, 'is_captain': captain,
-            'multiplier': multiplier if not captain else max(multiplier, 2),
+            'multiplier': multiplier,
             'points': points, 'minutes': minutes, 'difficulty': difficulty}
 
 
@@ -125,3 +127,22 @@ def test_sound_blank_needs_minutes():
 def test_empty_squad_is_kind():
     result = pick_one_thing_right([])
     assert result['tier'] == 'showed_up' and not ACRONYMS.search(result['reason'])
+
+
+def test_captain_double_wording():
+    result = pick_one_thing_right([squad_player('Cap', 10, captain=True, multiplier=2)])
+    assert result['reason'].endswith('and you got them double.')
+
+
+def test_captain_with_unexpected_multiplier_has_no_double_claim():
+    result = pick_one_thing_right([squad_player('Cap', 10, captain=True, multiplier=1)])
+    assert result['tier'] == 'captain'
+    assert 'double' not in result['reason'] and 'triple' not in result['reason']
+    assert result['reason'] == 'Captaining Cap paid off: 10 points.'
+
+
+@pytest.mark.parametrize('points,tier', [(3, 'showed_up'), (4, 'solid_pick')])
+def test_solid_pick_threshold(points, tier):
+    squad = [squad_player('Cap', 0, captain=True, minutes=0, difficulty=5),
+             squad_player('Pick', points, difficulty=3)]
+    assert pick_one_thing_right(squad)['tier'] == tier

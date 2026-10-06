@@ -101,10 +101,14 @@ def pick_one_thing_right(squad):
     starters = _starters(squad)
     captain = next((p for p in starters if p['is_captain']), None)
     if captain and captain['points'] >= CAPTAIN_PAID_OFF_FROM:
-        times = 'triple' if captain['multiplier'] >= 3 else 'double'
-        return {'tier': 'captain', 'title': 'Your captain call',
-                'reason': f"Captaining {captain['name']} paid off: {captain['points']} points, "
-                          f"and you got them {times}."}
+        reason = f"Captaining {captain['name']} paid off: {captain['points']} points"
+        if captain['multiplier'] == 3:
+            reason += ", and you got them triple."
+        elif captain['multiplier'] == 2:
+            reason += ", and you got them double."
+        else:
+            reason += "."
+        return {'tier': 'captain', 'title': 'Your captain call', 'reason': reason}
 
     best = _best(starters)
     if best and best['points'] >= BIG_PICK_FROM:
