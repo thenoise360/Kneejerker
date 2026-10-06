@@ -2,6 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 from FPL_site.config import current_config
 from FPL_site.genericMethods import unicodeReplace
+from FPL_site.weekResolver import resolve_week
 from datetime import datetime
 import requests
 import json
@@ -130,6 +131,18 @@ def get_gameweek_state():
         'gameweek': current_event.get('id'),
         'deadline': current_event.get('deadline_time'),
     }
+
+
+def get_week_view_state():
+    try:
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', timeout=5)
+        if response.status_code != 200:
+            raise ValueError(f"bootstrap-static returned status {response.status_code}")
+        events = response.json().get('events', [])
+    except Exception as e:
+        logger.error(f"Failed to fetch week view state: {e}")
+        events = None
+    return resolve_week(events, datetime.utcnow())
 
 
 FPL_API = 'https://fantasy.premierleague.com/api'
