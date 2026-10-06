@@ -54,3 +54,37 @@ test('verdict headings carry the recap-verdict class so they pass contrast', () 
     assert.match(renderGuestRecap(guest, 5), /<h3 class="recap-verdict">/);
     assert.match(renderMessage({ title: 'Not ready', body: 'Soon' }), /<h3 class="recap-verdict">/);
 });
+
+import { renderPersonalRecap, renderTeamPrompt } from '../../FPL_site/static/scripts/lib/recapView.js';
+
+const personal = {
+    status: 'ok', score: 61, average_score: 48, verdict: 'Above average. Nicely done.',
+    verdict_tier: 'above',
+    right_call: { tier: 'captain', title: 'Your captain call', reason: 'Captaining Salah paid off.' },
+};
+
+test('personal recap: verdict and right call by default, numbers in details', () => {
+    const html = renderPersonalRecap(personal, 5);
+    const [beforeDetails, insideDetails] = html.split('<details');
+    assert.match(beforeDetails, /Above average\. Nicely done\./);
+    assert.match(beforeDetails, /Your captain call/);
+    assert.doesNotMatch(beforeDetails, /61/);
+    assert.match(insideDetails, /You scored 61 points\. The average was 48 points\./);
+});
+
+test('personal recap: verdict heading carries the contrast-safe class', () => {
+    assert.match(renderPersonalRecap(personal, 5), /<h3 class="recap-verdict">Above average/);
+});
+
+test('personal recap: team not found shows the server message', () => {
+    const html = renderPersonalRecap({ status: 'team_not_found', message: { title: "We couldn't find that team", body: 'Double-check.' } }, 5);
+    assert.match(html, /couldn&#39;t find that team/);
+    assert.match(html, /recap-team-form/);  // offers to try another number
+});
+
+test('team prompt has an accessible labelled input', () => {
+    const html = renderTeamPrompt();
+    assert.match(html, /<label for="recap-team-input"/);
+    assert.match(html, /inputmode="numeric"/);
+    assert.doesNotMatch(html, /\bFPL\b/);
+});

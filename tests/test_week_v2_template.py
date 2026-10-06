@@ -104,3 +104,19 @@ def test_flag_on_home_uses_partial():
     assert 'Friend activity feed' not in html
     assert 'Your decisions for gameweek 4' in html
     assert 'scripts/home.js' in html and 'content/home.css' in html
+
+
+def test_v2_has_welcome_banner_and_personal_slot():
+    html = render(_state('upcoming', gw=6, last='final', last_gw=5))
+    assert 'id="welcome-back-banner"' in html and 'hidden' in html
+    assert 'id="personal-recap-slot"' in html
+
+
+def test_last_week_view_carries_deadline_and_this_week_gameweek():
+    # _state only sets this week's deadline, so build the state by hand here.
+    state = {'this_week': {'mode': 'upcoming', 'gameweek': 6, 'deadline': None},
+             'last_week': {'status': 'final', 'gameweek': 5,
+                           'deadline': '2026-09-20T10:00:00Z'}}
+    html = render(state)
+    assert 'data-deadline="2026-09-20T10:00:00Z"' in html
+    assert 'data-this-week-gameweek="6"' in html

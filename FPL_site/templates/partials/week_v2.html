@@ -15,6 +15,7 @@
     </div>
 
     <div id="week-content">
+        <div id="welcome-back-banner" class="card welcome-back" role="status" hidden></div>
         <div class="this-week-view"
              id="this-week-view"
              data-gw-state="{{ gw_state_attr }}"
@@ -78,6 +79,7 @@
             <div class="eyebrow-sm">last week</div>
             <h2 class="title" style="margin-bottom:4px;">How gameweek {{ last_week.gameweek }} went</h2>
             {# Filled by weekV2.js from /api/week/last-week-recap #}
+            <div id="personal-recap-slot"></div>
             <div id="last-week-recap-slot">
                 <div class="card" aria-busy="true" aria-label="Loading last week's recap">
                     <div class="skeleton" style="height:18px; width:60%; margin-bottom:10px;"></div>

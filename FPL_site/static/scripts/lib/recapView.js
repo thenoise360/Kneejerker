@@ -52,3 +52,42 @@ export function renderMessage(message) {
             <p class="sub">${escapeHtml(message.body)}</p>
         </div>`;
 }
+
+// Asks for the team number, explained in plain words. Shown to guests and
+// after a "not found", so the user is never stuck.
+export function renderTeamPrompt() {
+    return `
+        <div class="card" id="recap-team-card">
+            <h3 class="recap-verdict">See how your team did</h3>
+            <form id="recap-team-form" class="recap-team-form">
+                <label for="recap-team-input" class="sub">
+                    Your team number is in the web address of your Fantasy Premier League team page,
+                    after "/entry/".
+                </label>
+                <div class="recap-team-row">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="recap-team-input"
+                           placeholder="e.g. 1234567" required>
+                    <button type="submit" class="btn-pill">Show my recap</button>
+                </div>
+            </form>
+        </div>`;
+}
+
+export function renderPersonalRecap(personal, gameweek) {
+    // Anything other than "ok" (for example team_not_found) shows the server's
+    // friendly message and lets the user try another number.
+    if (personal.status !== 'ok') {
+        return renderMessage(personal.message) + renderTeamPrompt();
+    }
+    const call = personal.right_call;
+    return `
+        <div class="card" id="personal-recap">
+            <div class="eyebrow-sm">your gameweek ${escapeHtml(gameweek)}</div>
+            <h3 class="recap-verdict">${escapeHtml(personal.verdict)}</h3>
+            <p><strong>${escapeHtml(call.title)}:</strong> ${escapeHtml(call.reason)}</p>
+            <details class="recap-details">
+                <summary>See the numbers</summary>
+                <p class="sub">You scored ${escapeHtml(personal.score)} points. The average was ${escapeHtml(personal.average_score)} points.</p>
+            </details>
+        </div>`;
+}

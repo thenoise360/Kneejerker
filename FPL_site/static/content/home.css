@@ -651,3 +651,11 @@
 
 /* Verdict headings: the global .card h3 teal is too faint on white (about 2.2:1), so use charcoal. */
 .card h3.recap-verdict { font-size: 17px; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 6px; }
+
+/* Week v2: team number form and welcome back banner. Input is 16px so iOS doesn't zoom in. */
+.recap-team-form label { display: block; margin-bottom: 8px; }
+.recap-team-row { display: flex; gap: 8px; }
+.recap-team-row input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--black-20); font-family: var(--font); font-size: 16px; }
+.recap-team-row input:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.recap-team-row .btn-pill { width: auto; padding: 10px 18px; }
+.welcome-back { border-left: 4px solid var(--teal); transition: opacity 200ms ease-in-out; }
