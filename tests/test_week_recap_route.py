@@ -27,7 +27,7 @@ def test_recap_route_returns_payload(client, monkeypatch):
     assert seen['gameweek'] == 5
 
 
-@pytest.mark.parametrize('query', ['', '?gameweek=', '?gameweek=abc', '?gameweek=0', '?gameweek=39', '?gameweek=-1'])
+@pytest.mark.parametrize('query', ['', '?gameweek=', '?gameweek=abc', '?gameweek=0', '?gameweek=39', '?gameweek=-1', '?gameweek=%C2%B2'])
 def test_recap_route_rejects_bad_gameweek(client, query):
     resp = client.get('/api/week/last-week-recap' + query)
     assert resp.status_code == 400

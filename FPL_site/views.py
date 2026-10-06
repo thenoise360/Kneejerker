@@ -100,7 +100,7 @@ GAMEWEEKS_IN_SEASON = 38
 
 def _parse_gameweek(raw):
     """A gameweek number from a query string, or None if it isn't 1-38."""
-    if not raw or not raw.isdigit():
+    if not raw or not (raw.isascii() and raw.isdigit()):
         return None
     gameweek = int(raw)
     return gameweek if 1 <= gameweek <= GAMEWEEKS_IN_SEASON else None
