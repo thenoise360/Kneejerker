@@ -12,8 +12,12 @@ should be invented client-side — everything traces back to a backend function.
 
 ## Running the app
 
-No test suite, linter, or build step exists in this repo (`npm test` is an unconfigured stub).
-Verification is done by starting the dev server and exercising routes directly.
+There is no linter or build step. Tests: `vs-env/Scripts/python.exe -m pytest -q` (pytest + pytest-bdd;
+Gherkin scenarios live in `features/`, step definitions in `tests/step_defs/`) and `npm test` (Node's
+built-in runner over pure modules in `FPL_site/static/scripts/lib/`). Tests set `KJ_SKIP_DB_INIT=1` and
+must never touch MySQL or the live FPL API — monkeypatch fetchers instead. `tests/test_regression_routes.py`
+is the regression gate: add every new route to it.
+Beyond tests, verification is done by starting the dev server and exercising routes directly.
 
 ```bash
 # Activate the local venv first if not already active (vs-env/Scripts/... on Windows)

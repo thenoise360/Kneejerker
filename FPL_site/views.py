@@ -62,9 +62,15 @@ def home():
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     # Computed server-side (06.0) since it's cheap and changes infrequently -
     # no need for the client to poll for it.
-    gw_state = get_gameweek_state()
     week_v2 = getattr(current_config, 'FEATURE_WEEK_V2', False)
-    week_context = _week_v2_context() if week_v2 else {}
+    # Only fetch the state the page will actually use: each call is a round
+    # trip to the Fantasy Premier League API, which hurts on a cold start.
+    if week_v2:
+        gw_state = None
+        week_context = _week_v2_context()
+    else:
+        gw_state = get_gameweek_state()
+        week_context = {}
     return render_template('home.html', is_ajax=is_ajax, title='This Week', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN, gw_state=gw_state, week_v2=week_v2, **week_context)
 
 
