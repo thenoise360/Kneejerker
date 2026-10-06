@@ -5,6 +5,8 @@ is pure, so the recap logic is tested without a database.
 """
 import logging
 
+from FPL_site.recapCopy import average_headline, standout_reason, standout_sentence, recap_not_ready_copy
+
 logger = logging.getLogger(__name__)
 
 STANDOUT_COUNT = 3
@@ -97,3 +99,34 @@ def top_performers(players, limit=STANDOUT_COUNT):
     played = [p for p in players.values() if p['minutes'] > 0]
     ranked = sorted(played, key=lambda p: (-p['points'], -p['bonus'], p['name']))
     return ranked[:limit]
+
+
+#################################################
+#               Pure recap building             #
+#################################################
+
+def build_guest_recap(summary, performers):
+    """The recap everyone sees: a verdict on the week plus one standout reason."""
+    if summary is None or not performers:
+        return None
+    return {
+        'headline': average_headline(summary['average_score']),
+        'reason': standout_sentence(performers[0]),
+        'average_score': summary['average_score'],
+        'highest_score': summary['highest_score'],
+        'standouts': [
+            {'id': p['id'], 'name': p['name'], 'team': p['team'],
+             'points': p['points'], 'reason': standout_reason(p)}
+            for p in performers
+        ],
+    }
+
+
+def recap_payload(gameweek, summary, players):
+    """The JSON the recap route returns. 'personal' is filled in by release 1.3."""
+    guest = build_guest_recap(summary, top_performers(players))
+    if guest is None:
+        return {'gameweek': gameweek, 'status': 'not_ready', 'guest': None,
+                'message': recap_not_ready_copy(gameweek), 'personal': None}
+    return {'gameweek': gameweek, 'status': 'ready', 'guest': guest,
+            'message': None, 'personal': None}
