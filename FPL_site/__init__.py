@@ -22,9 +22,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICAT
 
 db = SQLAlchemy(app)
 
-# Create tables if needed
-with app.app_context():
-    db.create_all()
+# Create tables if needed (skipped under tests, which have no database)
+if os.getenv('KJ_SKIP_DB_INIT') != '1':
+    with app.app_context():
+        db.create_all()
 
 # Register routes
 import FPL_site.views
