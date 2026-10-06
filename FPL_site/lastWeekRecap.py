@@ -5,8 +5,11 @@ is pure, so the recap logic is tested without a database.
 """
 import logging
 
-from FPL_site.dataModels import connect_db, season_start
-from FPL_site.recapCopy import average_headline, standout_reason, standout_sentence, recap_not_ready_copy
+from FPL_site.dataModels import connect_db, season_start, get_entry_picks
+from FPL_site.recapCopy import (
+    average_headline, standout_reason, standout_sentence, recap_not_ready_copy,
+    pick_one_thing_right, score_verdict, team_not_found_copy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -123,22 +126,42 @@ def build_guest_recap(summary, performers):
     }
 
 
-def recap_payload(gameweek, summary, players):
-    """The JSON the recap route returns. 'personal' is filled in by release 1.3."""
+def build_personal_recap(picks_data, players, average_score, gameweek):
+    """Score against the average plus one thing the user got right."""
+    if not picks_data:
+        return {'status': 'team_not_found', 'message': team_not_found_copy(gameweek)}
+    history = picks_data.get('entry_history') or {}
+    # Match what the official app shows: points minus any transfer costs.
+    score = (history.get('points') or 0) - (history.get('event_transfers_cost') or 0)
+    verdict = score_verdict(score, average_score)
+    return {
+        'status': 'ok',
+        'score': score,
+        'average_score': average_score,
+        'verdict': verdict['text'],
+        'verdict_tier': verdict['tier'],
+        'right_call': pick_one_thing_right(build_squad(picks_data, players)),
+    }
+
+
+def recap_payload(gameweek, summary, players, picks_data=None, team_requested=False):
+    """The JSON the recap route returns."""
     guest = build_guest_recap(summary, top_performers(players))
     if guest is None:
         return {'gameweek': gameweek, 'status': 'not_ready', 'guest': None,
                 'message': recap_not_ready_copy(gameweek), 'personal': None}
+    personal = (build_personal_recap(picks_data, players, summary['average_score'], gameweek)
+                if team_requested else None)
     return {'gameweek': gameweek, 'status': 'ready', 'guest': guest,
-            'message': None, 'personal': None}
+            'message': None, 'personal': personal}
 
 
 #################################################
 #          Live-route entry point               #
 #################################################
 
-def get_last_week_recap(gameweek):
-    """Reads the finished gameweek from the database and builds the recap."""
+def get_last_week_recap(gameweek, team_id=None):
+    """team_id: an int, None for a guest, or 'invalid' if the user typed junk."""
     conn = connect_db()
     if conn is None:
         logger.error("get_last_week_recap: could not connect to the database.")
@@ -149,7 +172,9 @@ def get_last_week_recap(gameweek):
         players = aggregate_player_rows(fetch_history_rows(cursor, season_start, gameweek))
     finally:
         conn.close()
-    return recap_payload(gameweek, summary, players)
+    picks_data = get_entry_picks(team_id, gameweek) if isinstance(team_id, int) else None
+    return recap_payload(gameweek, summary, players, picks_data=picks_data,
+                         team_requested=team_id is not None)
 
 
 def build_squad(picks_data, players):

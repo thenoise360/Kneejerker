@@ -130,3 +130,30 @@ def pick_one_thing_right(squad):
     return {'tier': 'showed_up', 'title': 'You showed up',
             'reason': "Weeks like this happen to everyone. The next deadline is a fresh start, "
                       "and we'll help you make the most of it."}
+
+
+WELL_ABOVE_FROM = 15   # points above the average
+ABOVE_FROM = 5
+BELOW_FROM = -5        # 5+ under the average is "below"
+TOUGH_FROM = -15       # 15+ under is a tough week
+
+
+def score_verdict(score, average):
+    diff = score - average
+    if diff >= WELL_ABOVE_FROM:
+        return {'tier': 'well_above', 'text': 'Well above average. A cracking week.'}
+    if diff >= ABOVE_FROM:
+        return {'tier': 'above', 'text': 'Above average. Nicely done.'}
+    if diff > BELOW_FROM:
+        return {'tier': 'about', 'text': 'Right around the average. A steady week.'}
+    if diff > TOUGH_FROM:
+        return {'tier': 'below', 'text': "A little below average. It happens, and one week "
+                                         "doesn't define a season."}
+    return {'tier': 'tough', 'text': "A tough week. They happen to everyone, and there's "
+                                     "plenty of season left."}
+
+
+def team_not_found_copy(gameweek):
+    return {'title': "We couldn't find that team",
+            'body': f"There's no team with that number for gameweek {gameweek}. Double-check the "
+                    f"number, or if you joined after that, your first recap is on its way."}

@@ -146,3 +146,26 @@ def test_solid_pick_threshold(points, tier):
     squad = [squad_player('Cap', 0, captain=True, minutes=0, difficulty=5),
              squad_player('Pick', points, difficulty=3)]
     assert pick_one_thing_right(squad)['tier'] == tier
+
+
+from FPL_site.recapCopy import score_verdict, team_not_found_copy
+
+
+@pytest.mark.parametrize('score,tier', [
+    (63, 'well_above'), (62, 'above'), (53, 'above'), (52, 'about'),
+    (48, 'about'), (44, 'about'), (43, 'below'), (34, 'below'), (33, 'tough'), (0, 'tough'),
+])
+def test_score_verdict_boundaries_against_average_48(score, tier):
+    assert score_verdict(score, 48)['tier'] == tier
+
+
+def test_score_verdict_copy_is_kind_and_acronym_free():
+    for score in (0, 40, 48, 55, 90):
+        text = score_verdict(score, 48)['text']
+        assert not ACRONYMS.search(text)
+        assert 'bad' not in text.lower() and 'fail' not in text.lower()
+
+
+def test_team_not_found_copy():
+    copy = team_not_found_copy(5)
+    assert 'gameweek 5' in copy['body'] and not ACRONYMS.search(copy['title'] + copy['body'])

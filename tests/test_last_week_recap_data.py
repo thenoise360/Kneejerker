@@ -106,3 +106,71 @@ def test_build_squad_joins_picks_to_results_and_tolerates_missing_players():
 
 def test_build_squad_handles_no_picks():
     assert build_squad({}, {}) == []
+
+
+from FPL_site.lastWeekRecap import recap_payload, build_personal_recap, get_last_week_recap
+import FPL_site.lastWeekRecap as recap_module
+
+
+def test_personal_recap_team_not_found():
+    assert build_personal_recap(None, {}, 48, 5)['status'] == 'team_not_found'
+
+
+def test_payload_includes_personal_only_when_requested_and_ready():
+    players = aggregate_player_rows([row(7, 9, name='Saka')])
+    summary = {'average_score': 48, 'highest_score': 100}
+    picks = {'picks': [{'element': 7, 'multiplier': 2, 'is_captain': True}],
+             'entry_history': {'points': 70, 'event_transfers_cost': 0}}
+    assert recap_payload(5, summary, players)['personal'] is None
+    personal = recap_payload(5, summary, players, picks_data=picks, team_requested=True)['personal']
+    assert personal['status'] == 'ok' and personal['score'] == 70
+    not_ready = recap_payload(5, None, {}, picks_data=picks, team_requested=True)
+    assert not_ready['personal'] is None
+
+
+class FakeConn:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def cursor(self, dictionary=False):
+        return self._cursor
+
+    def close(self):
+        pass
+
+
+class SequenceCursor:
+    """Returns the event rows first, then the history rows, matching the fetch order."""
+    def __init__(self, batches):
+        self.batches = list(batches)
+
+    def execute(self, sql, params):
+        pass
+
+    def fetchall(self):
+        return self.batches.pop(0)
+
+
+def test_get_last_week_recap_fetches_picks_only_for_a_valid_team(monkeypatch):
+    calls = []
+
+    def fake_picks(entry_id, gameweek):
+        calls.append((entry_id, gameweek))
+        return None
+
+    def fresh_conn():
+        return FakeConn(SequenceCursor([
+            [{'average_entry_score': 48, 'highest_score': 100, 'finished': 1, 'data_checked': 1}],
+            [row(7, 9, name='Saka')],
+        ]))
+
+    monkeypatch.setattr(recap_module, 'connect_db', fresh_conn)
+    monkeypatch.setattr(recap_module, 'get_entry_picks', fake_picks)
+
+    result = get_last_week_recap(5, team_id=123)
+    assert calls == [(123, 5)]
+    assert result['personal']['status'] == 'team_not_found'
+
+    get_last_week_recap(5, team_id='invalid')
+    get_last_week_recap(5, team_id=None)
+    assert calls == [(123, 5)]

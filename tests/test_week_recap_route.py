@@ -15,7 +15,7 @@ def client():
 def test_recap_route_returns_payload(client, monkeypatch):
     seen = {}
 
-    def fake(gameweek):
+    def fake(gameweek, team_id=None):
         seen['gameweek'] = gameweek
         return {'gameweek': gameweek, 'status': 'ready', 'guest': {'headline': 'x'},
                 'message': None, 'personal': None}
@@ -42,3 +42,30 @@ def test_recap_route_hides_internal_errors(client, monkeypatch):
     resp = client.get('/api/week/last-week-recap?gameweek=5')
     assert resp.status_code == 500
     assert resp.get_json() == {'error': 'server_error'}
+
+
+def test_route_passes_team_id(client, monkeypatch):
+    seen = {}
+
+    def fake(gameweek, team_id=None):
+        seen['team_id'] = team_id
+        return {'gameweek': gameweek, 'status': 'ready', 'guest': {}, 'message': None, 'personal': None}
+
+    monkeypatch.setattr(views, 'get_last_week_recap', fake)
+    client.get('/api/week/last-week-recap?gameweek=5&team_id=123')
+    assert seen['team_id'] == 123
+
+
+@pytest.mark.parametrize('junk', ['abc', '-4', '0', '1e5', '99999999999', '%C2%B2'])
+def test_route_rejects_junk_team_id_gracefully(client, monkeypatch, junk):
+    seen = {}
+
+    def fake(gameweek, team_id=None):
+        seen['team_id'] = team_id
+        return {'gameweek': gameweek, 'status': 'ready', 'guest': {}, 'message': None,
+                'personal': {'status': 'team_not_found'}}
+
+    monkeypatch.setattr(views, 'get_last_week_recap', fake)
+    resp = client.get(f'/api/week/last-week-recap?gameweek=5&team_id={junk}')
+    assert resp.status_code == 200
+    assert seen['team_id'] == 'invalid'

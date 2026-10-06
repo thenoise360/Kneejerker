@@ -106,6 +106,18 @@ def _parse_gameweek(raw):
     return gameweek if 1 <= gameweek <= GAMEWEEKS_IN_SEASON else None
 
 
+MAX_TEAM_ID_DIGITS = 10
+
+
+def _parse_team_id(raw):
+    """None if absent, an int if valid, or 'invalid' so the page can say so kindly."""
+    if raw is None or raw == '':
+        return None
+    if not (raw.isascii() and raw.isdigit()) or len(raw) > MAX_TEAM_ID_DIGITS or int(raw) < 1:
+        return 'invalid'
+    return int(raw)
+
+
 @app.route('/api/week/last-week-recap')
 def week_last_week_recap():
     logger.info("Request for last week recap")
@@ -113,7 +125,7 @@ def week_last_week_recap():
     if gameweek is None:
         return jsonify({'error': 'invalid_gameweek'}), 400
     try:
-        return jsonify(get_last_week_recap(gameweek))
+        return jsonify(get_last_week_recap(gameweek, team_id=_parse_team_id(request.args.get('team_id'))))
     except Exception as e:
         logger.error(f"Error building last week recap: {e}")
         return jsonify({'error': 'server_error'}), 500
