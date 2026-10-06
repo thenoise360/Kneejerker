@@ -29,3 +29,11 @@ test('an unknown state gives panel none', () => {
     const plan = planWeekRender({ state: 'none', gameweek: null }, stubStorage());
     assert.equal(plan.panel, 'none');
 });
+
+test('blocked storage (null) is treated as nothing stored, with no error', () => {
+    const closed = planWeekRender({ state: 'closed', gameweek: 5 }, null);
+    assert.deepEqual(closed, { panel: 'closed', showTransition: false, message: null });
+    const live = planWeekRender({ state: 'live', gameweek: 5 }, null);
+    assert.equal(live.panel, 'live');
+    assert.equal(live.showTransition, false);
+});
