@@ -5,15 +5,18 @@ is pure, so the recap logic is tested without a database.
 """
 import logging
 
-from FPL_site.dataModels import connect_db, season_start, get_entry_picks
+import requests
+
+from FPL_site.dataModels import connect_db, season_start, FPL_API
 from FPL_site.recapCopy import (
     average_headline, standout_reason, standout_sentence, recap_not_ready_copy,
-    pick_one_thing_right, score_verdict, team_not_found_copy,
+    pick_one_thing_right, score_verdict, team_not_found_copy, personal_unavailable_copy,
 )
 
 logger = logging.getLogger(__name__)
 
 STANDOUT_COUNT = 3
+PICKS_TIMEOUT_SECONDS = 10
 
 
 #################################################
@@ -47,6 +50,26 @@ def fetch_history_rows(cursor, year_start, gameweek):
         WHERE h.year_start = %s AND h.round = %s
     """, (year_start, year_start, gameweek))
     return cursor.fetchall()
+
+
+def fetch_entry_picks(entry_id, gameweek):
+    """A team's picks, with a status that tells "no such team" apart from "can't reach".
+
+    Returns ('ok', data), ('not_found', None) for a 404, or ('unavailable', None)
+    for anything else (the site being updated, a timeout, no connection).
+    """
+    try:
+        response = requests.get(f'{FPL_API}/entry/{entry_id}/event/{gameweek}/picks/',
+                                timeout=PICKS_TIMEOUT_SECONDS)
+        if response.status_code == 200:
+            return 'ok', response.json()
+        if response.status_code == 404:
+            return 'not_found', None
+        return 'unavailable', None
+    except Exception as exc:
+        # Log the kind of failure only: the message can carry the URL, which holds the team number.
+        logger.error("Picks fetch failed for gameweek %s: %s", gameweek, type(exc).__name__)
+        return 'unavailable', None
 
 
 #################################################
@@ -126,8 +149,11 @@ def build_guest_recap(summary, performers):
     }
 
 
-def build_personal_recap(picks_data, players, average_score, gameweek):
+def build_personal_recap(picks_data, players, average_score, gameweek, fetch_status='ok'):
     """Score against the average plus one thing the user got right."""
+    if fetch_status == 'unavailable':
+        # The official site couldn't be reached, which says nothing about the team number.
+        return {'status': 'unavailable', 'message': personal_unavailable_copy(gameweek)}
     if not picks_data:
         return {'status': 'team_not_found', 'message': team_not_found_copy(gameweek)}
     history = picks_data.get('entry_history') or {}
@@ -144,13 +170,15 @@ def build_personal_recap(picks_data, players, average_score, gameweek):
     }
 
 
-def recap_payload(gameweek, summary, players, picks_data=None, team_requested=False):
+def recap_payload(gameweek, summary, players, picks_data=None, team_requested=False,
+                  picks_status='ok'):
     """The JSON the recap route returns."""
     guest = build_guest_recap(summary, top_performers(players))
     if guest is None:
         return {'gameweek': gameweek, 'status': 'not_ready', 'guest': None,
                 'message': recap_not_ready_copy(gameweek), 'personal': None}
-    personal = (build_personal_recap(picks_data, players, summary['average_score'], gameweek)
+    personal = (build_personal_recap(picks_data, players, summary['average_score'], gameweek,
+                                     fetch_status=picks_status)
                 if team_requested else None)
     return {'gameweek': gameweek, 'status': 'ready', 'guest': guest,
             'message': None, 'personal': personal}
@@ -172,9 +200,10 @@ def get_last_week_recap(gameweek, team_id=None):
         players = aggregate_player_rows(fetch_history_rows(cursor, season_start, gameweek))
     finally:
         conn.close()
-    picks_data = get_entry_picks(team_id, gameweek) if isinstance(team_id, int) else None
+    picks_status, picks_data = (fetch_entry_picks(team_id, gameweek) if isinstance(team_id, int)
+                                else ('not_found', None))
     return recap_payload(gameweek, summary, players, picks_data=picks_data,
-                         team_requested=team_id is not None)
+                         team_requested=team_id is not None, picks_status=picks_status)
 
 
 def build_squad(picks_data, players):

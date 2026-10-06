@@ -164,3 +164,10 @@ def team_not_found_copy(gameweek):
     return {'title': "We couldn't find that team",
             'body': f"There's no team with that number for gameweek {gameweek}. Double-check the "
                     f"number, or if you joined after that, your first recap is on its way."}
+
+
+def personal_unavailable_copy(gameweek):
+    """Shown when the official site can't be reached. The user's number may be fine."""
+    return {'title': "We can't reach your team's details right now",
+            'body': f"Your gameweek {gameweek} recap will be here once we can. Nothing is wrong "
+                    f"on your side. Try again in a little while."}

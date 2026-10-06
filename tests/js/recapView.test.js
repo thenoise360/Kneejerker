@@ -127,3 +127,9 @@ test('personal recap: the change-team button is not on non-ok cards', () => {
     const html = renderPersonalRecap({ status: 'team_not_found', message: { title: 'T', body: 'B' } }, 5);
     assert.doesNotMatch(html, /recap-change-team/);
 });
+
+test('personal recap: unavailable shows the message only, with no team prompt', () => {
+    const html = renderPersonalRecap({ status: 'unavailable', message: { title: "We can't reach your team", body: 'Try again soon.' } }, 5);
+    assert.match(html, /Try again soon\./);
+    assert.doesNotMatch(html, /recap-team-form|recap-change-team/);
+});

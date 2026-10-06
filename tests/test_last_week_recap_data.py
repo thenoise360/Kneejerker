@@ -1,4 +1,5 @@
 import os
+import pytest
 os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
 
 from FPL_site.lastWeekRecap import (
@@ -156,7 +157,7 @@ def test_get_last_week_recap_fetches_picks_only_for_a_valid_team(monkeypatch):
 
     def fake_picks(entry_id, gameweek):
         calls.append((entry_id, gameweek))
-        return None
+        return 'not_found', None
 
     def fresh_conn():
         return FakeConn(SequenceCursor([
@@ -165,7 +166,7 @@ def test_get_last_week_recap_fetches_picks_only_for_a_valid_team(monkeypatch):
         ]))
 
     monkeypatch.setattr(recap_module, 'connect_db', fresh_conn)
-    monkeypatch.setattr(recap_module, 'get_entry_picks', fake_picks)
+    monkeypatch.setattr(recap_module, 'fetch_entry_picks', fake_picks)
 
     result = get_last_week_recap(5, team_id=123)
     assert calls == [(123, 5)]
@@ -174,3 +175,62 @@ def test_get_last_week_recap_fetches_picks_only_for_a_valid_team(monkeypatch):
     get_last_week_recap(5, team_id='invalid')
     get_last_week_recap(5, team_id=None)
     assert calls == [(123, 5)]
+
+
+class FakeResponse:
+    def __init__(self, status_code, payload=None):
+        self.status_code = status_code
+        self._payload = payload
+
+    def json(self):
+        return self._payload
+
+
+def test_fetch_entry_picks_ok(monkeypatch):
+    seen = {}
+
+    def fake_get(url, timeout=None, **kwargs):
+        seen['timeout'] = timeout
+        return FakeResponse(200, {'picks': []})
+
+    monkeypatch.setattr(recap_module.requests, 'get', fake_get)
+    assert recap_module.fetch_entry_picks(123, 5) == ('ok', {'picks': []})
+    assert seen['timeout'] == 10
+
+
+def test_fetch_entry_picks_404_is_not_found(monkeypatch):
+    monkeypatch.setattr(recap_module.requests, 'get', lambda *a, **k: FakeResponse(404))
+    assert recap_module.fetch_entry_picks(123, 5) == ('not_found', None)
+
+
+@pytest.mark.parametrize('status', [500, 503, 429, 403])
+def test_fetch_entry_picks_other_statuses_are_unavailable(monkeypatch, status):
+    monkeypatch.setattr(recap_module.requests, 'get', lambda *a, **k: FakeResponse(status))
+    assert recap_module.fetch_entry_picks(123, 5) == ('unavailable', None)
+
+
+def test_fetch_entry_picks_exception_is_unavailable_and_logs_only_the_type(monkeypatch, caplog):
+    def boom(*a, **k):
+        raise recap_module.requests.Timeout('https://example/entry/987654/ timed out')
+
+    monkeypatch.setattr(recap_module.requests, 'get', boom)
+    with caplog.at_level('ERROR'):
+        assert recap_module.fetch_entry_picks(987654, 5) == ('unavailable', None)
+    assert 'Timeout' in caplog.text
+    assert '987654' not in caplog.text and 'example' not in caplog.text
+
+
+def test_personal_recap_unavailable_is_calm_and_has_no_prompt_to_change_number():
+    result = build_personal_recap(None, {}, 48, 5, fetch_status='unavailable')
+    assert result['status'] == 'unavailable'
+    body = result['message']['body'].lower()
+    assert 'nothing is wrong on your side' in body and 'double-check' not in body
+
+
+def test_get_last_week_recap_reports_unavailable_when_the_api_is_down(monkeypatch):
+    monkeypatch.setattr(recap_module, 'connect_db', lambda: FakeConn(SequenceCursor([
+        [{'average_entry_score': 48, 'highest_score': 100, 'finished': 1, 'data_checked': 1}],
+        [row(7, 9, name='Saka')],
+    ])))
+    monkeypatch.setattr(recap_module, 'fetch_entry_picks', lambda e, g: ('unavailable', None))
+    assert get_last_week_recap(5, team_id=123)['personal']['status'] == 'unavailable'

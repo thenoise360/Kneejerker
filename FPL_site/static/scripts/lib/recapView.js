@@ -76,6 +76,11 @@ export function renderTeamPrompt() {
 export function renderPersonalRecap(personal, gameweek) {
     // Anything other than "ok" (for example team_not_found) shows the server's
     // friendly message and lets the user try another number.
+    // When the official site can't be reached the number may well be right,
+    // so show the calm message alone and don't invite a change.
+    if (personal.status === 'unavailable') {
+        return renderMessage(personal.message);
+    }
     if (personal.status !== 'ok') {
         return renderMessage(personal.message) + renderTeamPrompt();
     }

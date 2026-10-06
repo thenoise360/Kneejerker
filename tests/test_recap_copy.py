@@ -204,3 +204,11 @@ def test_tiers_without_a_meaningful_number_have_no_points():
                                   squad_player('Pick', 1, difficulty=2)])
     assert blank['tier'] == 'sound_blank' and blank['points'] is None and blank['name'] == 'Pick'
     assert pick_one_thing_right([])['points'] is None
+
+
+def test_personal_unavailable_copy_is_calm_and_acronym_free():
+    from FPL_site.recapCopy import personal_unavailable_copy
+    copy = personal_unavailable_copy(5)
+    text = copy['title'] + copy['body']
+    assert 'Nothing is wrong on your side' in copy['body'] and 'Try again' in copy['body']
+    assert not ACRONYMS.search(text) and 'error' not in text.lower()
