@@ -661,6 +661,27 @@ def run_daily_match_predictions():
 #        Live-route read (Ticket 02 needs)      #
 #################################################
 
+def _meetings_lookup(cursor, team_id, teams, rows):
+    """Returns f(opponent_id) -> last meetings list, built from one pass over the history."""
+    try:
+        from FPL_site.headToHead import load_meeting_history, last_meetings, code_map_for_season
+        if not rows:
+            return lambda opponent_id: []
+        codes = code_map_for_season(cursor, current_season_start())
+        history = load_meeting_history(cursor)
+        mine = codes.get(team_id)
+    except Exception as exc:
+        logger.warning("last meetings unavailable: %s", exc)
+        return lambda opponent_id: []
+
+    def lookup(opponent_id):
+        theirs = codes.get(opponent_id)
+        if mine is None or theirs is None:
+            return []
+        return last_meetings(history, mine, theirs)
+    return lookup
+
+
 def load_team_fixture_outlook(team_id, num_gameweeks=NEXT_N_GAMEWEEKS):
     """
     Live-route entry point for the Team page. Reads back what
@@ -701,10 +722,15 @@ def load_team_fixture_outlook(team_id, num_gameweeks=NEXT_N_GAMEWEEKS):
         """, (team_id, num_gameweeks))
         rows = cursor.fetchall()
 
+        # Last meetings: read every season's results once for the whole request, then pick
+        # each opponent out of it. Failure here must never take the outlook down.
+        meetings_for = _meetings_lookup(cursor, team_id, teams, rows)
+
         fixtures = []
         for row in rows:
             opponent = teams.get(row['opponent_id'], {})
             fixtures.append({
+                'last_meetings': meetings_for(row['opponent_id']),
                 'gameweek': row['gameweek'],
                 'is_home': bool(row['is_home']),
                 'opponent_name': opponent.get('name', 'Unknown'),

@@ -4,6 +4,7 @@ import { createRangeBar } from './rangeBar.js';
 import { renderStrength, STRENGTH_LOAD_FAILED } from './lib/strengthView.js';
 import { renderRecord, RECORD_LOAD_FAILED } from './lib/recordView.js';
 import { renderMessage } from './lib/recapView.js';
+import { renderLastMeetings } from './lib/headToHeadView.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeClubPage();
@@ -125,6 +126,13 @@ function renderDetailView(container, teamName, f) {
     container.appendChild(ownBar);
     container.appendChild(oppBar);
     container.appendChild(rationale);
+
+    // Last meetings: background only, and it sits inside the expanded row so its
+    // season labels and scores appear only when the user asks for detail.
+    const meetings = document.createElement('div');
+    meetings.className = 'outlook-meetings';
+    meetings.innerHTML = renderLastMeetings(f.last_meetings);
+    container.appendChild(meetings);
 }
 
 function generateRationale(f) {

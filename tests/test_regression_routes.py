@@ -22,6 +22,7 @@ DATA_ROUTE_STUBS = {
         'gameweek': 6, 'based_on': 'everyone', 'squad_gameweek': None, 'decision': None,
         'message': {'title': 't', 'body': 'b'}}),
     '/api/club/1/strength': ('load_team_strength', {'status': 'not_ready', 'message': {'title': 't', 'body': 'b'}}),
+    '/api/club/1/fixture-outlook': ('load_team_fixture_outlook', {'team_id': 1, 'team_name': 'Arsenal', 'fixtures': [{'gameweek': 6, 'last_meetings': []}]}),
     '/api/club/1/prediction-record': ('load_prediction_record', {'status': 'ready', 'games': []}),
     '/api/player/1/momentum': ('load_player_momentum', {'status': 'not_ready', 'message': {'title': 't', 'body': 'b'}}),
     '/api/discover/momentum-strip': ('load_momentum_strip', {'heating_up': [], 'cooling_off': []}),
