@@ -62,7 +62,8 @@ def test_no_meetings_is_none():
 
 class FakeCursor:
     """Seasons: this = 2026, last = 2025."""
-    def __init__(self, this_el, last_el, history, code_maps, teams):
+    def __init__(self, this_el, last_el, history, code_maps, teams, snapshots=None):
+        self.snapshots = snapshots or []
         self.this_el, self.last_el = this_el, last_el
         self.history, self.code_maps, self.teams = history, code_maps, teams
         self.sql, self.params = '', ()
@@ -78,6 +79,8 @@ class FakeCursor:
             return {'name': name} if name else None
 
     def fetchall(self):
+        if 'SELECT gameweek, team_code' in self.sql:
+            return self.snapshots
         if 'GROUP BY team, team_code' in self.sql:
             mapping = self.code_maps[self.params[0]]
             return [{'team': t, 'team_code': c, 'gws': 10, 'last_gw': 10, 'n_rows': 100}
@@ -92,8 +95,9 @@ THIS_MAP = {1: 3, 7: BRIGHTON}      # this season: Arsenal is team 1, Brighton t
 LAST_MAP = {2: 3, 9: BRIGHTON}      # last season the ids were different
 
 
-def make(history, this_el=None, last_el='default', teams=None):
+def make(history, this_el=None, last_el='default', teams=None, snapshots=None):
     return FakeCursor(
+        snapshots=snapshots,
         this_el=this_el or {'code': 223340, 'team_code': 3},
         last_el={'id': 16, 'team_code': 3} if last_el == 'default' else last_el,
         history={(16, 2025): history},
@@ -243,3 +247,18 @@ def test_a_misfiled_row_cannot_stand_in_for_a_meeting():
     out = lookup(make([stray, match(20, 9, True, points=2, h=0, a=0)]))
     assert out['points'] == 2
     assert lookup(make([stray])) == {'kind': 'no_meeting'}
+
+
+def test_mid_season_mover_gets_the_club_he_was_at_for_that_match():
+    # Arsenal (3) up to gameweek 19, Spurs (6) from 20. Now at Spurs.
+    snapshots = [{'gameweek': g, 'team_code': 3 if g < 20 else 6} for g in range(1, 39)]
+    games = [match(4, 9, True, points=9, h=3, a=1),       # played for Arsenal
+             match(30, 9, False, points=5, h=0, a=1)]     # played for Spurs
+    teams = {(3, 2025): 'Arsenal', (6, 2025): 'Spurs', (BRIGHTON, 2025): 'Brighton'}
+    this_el = {'code': 223340, 'team_code': 6}
+    early = lookup(make(games, this_el=this_el, snapshots=snapshots, teams=teams,
+                        last_el={'id': 16, 'team_code': 6}), is_home=True)
+    late = lookup(make(games, this_el=this_el, snapshots=snapshots, teams=teams,
+                       last_el={'id': 16, 'team_code': 6}), is_home=False)
+    assert early['club'] == 'Arsenal'     # a different club from his current one
+    assert late['club'] is None           # the same club as now: nothing to say

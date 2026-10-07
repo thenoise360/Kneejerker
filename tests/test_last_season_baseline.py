@@ -59,7 +59,8 @@ def test_duplicate_rows_for_one_match_count_once():
 
 class FakeCursor:
     """Answers by what the query asks for. Seasons: this = 2026, last = 2025."""
-    def __init__(self, this_el=None, last_el=None, history=None, teams=None):
+    def __init__(self, this_el=None, last_el=None, history=None, teams=None, snapshots=None):
+        self.snapshots = snapshots or []
         self.this_el, self.last_el = this_el, last_el
         self.history = history or {}
         self.teams = teams or {}
@@ -77,6 +78,8 @@ class FakeCursor:
         return None
 
     def fetchall(self):
+        if 'SELECT gameweek, team_code' in self.sql:
+            return self.snapshots
         if 'elementsummary_history' in self.sql:
             return self.history.get((self.params[0], self.params[1]), [])
         return []
@@ -178,3 +181,29 @@ def test_the_same_fixture_twice_counts_once_even_if_the_round_differs():
     first = rows([5])[0]
     again = dict(first, round=2)           # same fixture id, filed twice
     assert ph.last_season_baseline([first, again], 'Arsenal')['appearances'] == 1
+
+
+# ---- a player who changed club in the middle of last season ---------------------
+
+def snap(first, last, team_code):
+    return [{'gameweek': g, 'team_code': team_code} for g in range(first, last + 1)]
+
+
+def test_nearest_snapshot_is_used_for_a_gameweek_without_one():
+    snapshots = ph.snapshot_teams(snap(1, 10, 3) + snap(21, 38, 6))
+    assert ph.club_code_at(snapshots, 5, 99) == 3
+    assert ph.club_code_at(snapshots, 12, 99) == 3     # nearer to 10 than to 21
+    assert ph.club_code_at(snapshots, 19, 99) == 6     # nearer to 21
+    assert ph.club_code_at({}, 5, 99) == 99            # no snapshots: fall back
+
+
+def test_club_is_the_one_with_the_most_appearances_for_a_mid_season_mover():
+    first_club = [dict(r, round=g, fixture=g) for g, r in zip(range(1, 6), rows([4] * 5))]
+    second_club = [dict(r, round=g, fixture=g) for g, r in zip(range(21, 33), rows([4] * 12))]
+    cur = cursor_for(this_el={'code': 1, 'team_code': 6}, last_el={'id': 4, 'team_code': 3},
+                     history={(4, 2025): first_club + second_club},
+                     snapshots=snap(1, 10, 3) + snap(11, 38, 6),
+                     teams={(3, 2025): 'Arsenal', (6, 2025): 'Spurs'})
+    out = ph.fetch_last_season_baseline(cur, 12, this_year=2026)
+    assert out['appearances'] == 17
+    assert out['headline'].endswith('(Spurs)')

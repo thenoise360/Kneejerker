@@ -98,6 +98,32 @@ def _db():
     return db
 
 
+def snapshot_teams(snapshots):
+    """{gameweek: team code} from a player's weekly snapshots."""
+    return {s['gameweek']: s['team_code'] for s in snapshots or []
+            if s.get('gameweek') is not None and s.get('team_code') is not None}
+
+
+def club_code_at(by_gameweek, gameweek, fallback):
+    """
+    The club a player was at in a gameweek: that week's snapshot, or the nearest one (an
+    earlier snapshot wins a tie). With no snapshots at all, `fallback`.
+    """
+    if not by_gameweek:
+        return fallback
+    if gameweek in by_gameweek:
+        return by_gameweek[gameweek]
+    nearest = min(by_gameweek, key=lambda g: (abs(g - (gameweek or 0)), g))
+    return by_gameweek[nearest]
+
+
+def _snapshots(cursor, element_id, year_start):
+    cursor.execute(
+        "SELECT gameweek, team_code FROM {db}.bootstrapstatic_elements WHERE id = %s "
+        "AND year_start = %s".format(db=_db()), (element_id, year_start))
+    return snapshot_teams(cursor.fetchall())
+
+
 def _team_name(cursor, team_code, year_start):
     cursor.execute(
         "SELECT name FROM {db}.bootstrapstatic_teams WHERE code = %s AND year_start = %s "
@@ -144,11 +170,22 @@ def fetch_last_season_baseline(cursor, player_id, this_year=None):
         out.update({'played': False, 'headline': NEW_TO_LEAGUE})
         return out
 
-    club = _team_name(cursor, before.get('team_code'), last_year)
-    baseline = last_season_baseline(_season_rows(cursor, before['id'], last_year), club)
-    if baseline is None:
+    last_rows = _season_rows(cursor, before['id'], last_year)
+    appearance_rows = [r for r in last_rows if (r.get('minutes') or 0) > 0]
+    if not appearance_rows:
         out.update({'played': False, 'headline': DID_NOT_PLAY})
         return out
+
+    # A mid-season mover gets the club where he made the most appearances (the latest club wins a tie).
+    snapshots = _snapshots(cursor, before['id'], last_year)
+    counts = {}
+    for r in sorted(appearance_rows, key=lambda r: r.get('round') or 0):
+        code = club_code_at(snapshots, r.get('round'), before.get('team_code'))
+        counts[code] = counts.get(code, 0) + 1
+    latest = club_code_at(snapshots, max(r.get('round') or 0 for r in appearance_rows), before.get('team_code'))
+    main_club = max(counts, key=lambda c: (counts[c], c == latest))
+    club = _team_name(cursor, main_club, last_year)
+    baseline = last_season_baseline(last_rows, club)
 
     if baseline['appearances'] < SMALL_SAMPLE_BELOW:
         headline = 'Only a few games last season'
@@ -243,12 +280,19 @@ def fetch_last_time_context(cursor, player_id, this_year=None):
         if opponent_code is not None:
             by_opponent.setdefault(opponent_code, []).append(row)
 
-    # Name the old club only when the player has moved since.
-    club = None
-    if before.get('team_code') != mine.get('team_code'):
-        club = _team_name(cursor, before.get('team_code'), last_year)
+    # Each meeting remembers the club the player was at for that match (he may have moved
+    # mid-season). Names are looked up once per distinct old club, and only for clubs that
+    # differ from his current one, because "same club as now" needs no mention.
+    snapshots = _snapshots(cursor, before['id'], last_year)
+    names = {}
+    for rows_for_opponent in by_opponent.values():
+        for row in rows_for_opponent:
+            code = club_code_at(snapshots, row.get('round'), before.get('team_code'))
+            row['club_code'] = code
+            if code != mine.get('team_code') and code not in names:
+                names[code] = _team_name(cursor, code, last_year)
 
-    return {'status': 'ok', 'this_codes': this_codes, 'by_opponent': by_opponent, 'club': club}
+    return {'status': 'ok', 'this_codes': this_codes, 'by_opponent': by_opponent, 'club_names': names}
 
 
 def last_time_for(context, opponent_id, is_home):
@@ -270,5 +314,5 @@ def last_time_for(context, opponent_id, is_home):
         'minutes': meeting.get('minutes'),
         'result': result_wording(was_home, meeting.get('team_h_score'), meeting.get('team_a_score')),
         'is_home': was_home,
-        'club': context.get('club'),
+        'club': context['club_names'].get(meeting.get('club_code')),
     }
