@@ -8,7 +8,7 @@ Influence, Creativity and Threat index, or form. No database access here.
 from FPL_site.momentumCopy import momentum_reason
 
 FIXTURE_WINDOW = 3                 # gameweeks ahead
-FIXTURE_CHANGE_FROM = 0.10         # 10% easier or harder than an average opponent
+FIXTURE_CHANGE_FROM = 0.20         # 20% easier or harder than an average opponent
 KEY_TEAMMATE_SHARE = 0.15          # share of team expected goals + assists
 OUT_BELOW_CHANCE = 50              # chance of playing below this = out
 ATTACKING = (3, 4)                 # midfielder, forward

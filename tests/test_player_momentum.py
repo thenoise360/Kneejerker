@@ -20,21 +20,21 @@ def _mate(name='Saka', share=0.2, status='a', played_last=False, chance=None, id
 # fixtures ----------------------------------------------------------------
 
 def test_attacker_boundary_up():
-    assert fixtures_signal(4, _fx(1.1, 1), 1.0, 1.0)['direction'] == 'up'
-    assert fixtures_signal(3, _fx(1.099, 1), 1.0, 1.0)['direction'] == 'same'
+    assert fixtures_signal(4, _fx(1.2, 1), 1.0, 1.0)['direction'] == 'up'
+    assert fixtures_signal(3, _fx(1.199, 1), 1.0, 1.0)['direction'] == 'same'
 
 
 def test_attacker_boundary_down():
-    assert fixtures_signal(4, _fx(0.9, 1), 1.0, 1.0)['direction'] == 'down'
-    assert fixtures_signal(4, _fx(0.901, 1), 1.0, 1.0)['direction'] == 'same'
+    assert fixtures_signal(4, _fx(0.8, 1), 1.0, 1.0)['direction'] == 'down'
+    assert fixtures_signal(4, _fx(0.801, 1), 1.0, 1.0)['direction'] == 'same'
 
 
 def test_defender_fixture_direction():
     # Opponents expected to score less than average is kinder for a defender.
-    assert fixtures_signal(2, _fx(1, 0.9), 1.0, 1.0)['direction'] == 'up'
-    assert fixtures_signal(1, _fx(1, 0.901), 1.0, 1.0)['direction'] == 'same'
-    assert fixtures_signal(2, _fx(1, 1.1), 1.0, 1.0)['direction'] == 'down'
-    assert fixtures_signal(2, _fx(1, 1.099), 1.0, 1.0)['direction'] == 'same'
+    assert fixtures_signal(2, _fx(1, 0.8), 1.0, 1.0)['direction'] == 'up'
+    assert fixtures_signal(1, _fx(1, 0.801), 1.0, 1.0)['direction'] == 'same'
+    assert fixtures_signal(2, _fx(1, 1.2), 1.0, 1.0)['direction'] == 'down'
+    assert fixtures_signal(2, _fx(1, 1.199), 1.0, 1.0)['direction'] == 'same'
 
 
 def test_fixture_reasons():
@@ -53,7 +53,7 @@ def test_blank_gameweek_fixtures_signal():
 
 
 def test_double_gameweek_averages_both_fixtures():
-    upcoming = [{'own_mean': 1.4, 'opp_mean': 1}, {'own_mean': 0.8, 'opp_mean': 1}]
+    upcoming = [{'own_mean': 1.6, 'opp_mean': 1}, {'own_mean': 0.8, 'opp_mean': 1}]
     assert fixtures_signal(4, upcoming, 1.0, 1.0)['direction'] == 'up'
 
 
