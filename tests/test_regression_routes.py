@@ -68,3 +68,8 @@ def test_club_page_always_has_both_cards(client):
     html = client.get('/club/1').get_data(as_text=True)
     assert 'id="team-strength-slot"' in html
     assert 'id="prediction-record-slot"' in html
+
+
+def test_hub_flag_defaults_off():
+    from FPL_site.config import current_config
+    assert getattr(current_config, 'THIS_WEEK_HUB', None) is False
