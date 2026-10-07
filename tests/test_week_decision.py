@@ -4,7 +4,7 @@ os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
 from FPL_site import weekDecision
 from FPL_site.weekDecision import (
     fixtures_by_team, biggest_decision, guest_biggest_decision, DOUBT_BELOW, squad_from_picks,
-    get_this_week_decision,
+    get_this_week_decision, involvement_predictions,
 )
 
 
@@ -71,10 +71,12 @@ def test_squad_from_picks_maps_official_keys():
 #################################################
 
 ELEMENTS = [
-    {'id': 1, 'web_name': 'Saka', 'team': 10, 'chance_of_playing_next_round': 25, 'news': 'Hamstring'},
-    {'id': 3, 'web_name': 'Salah', 'team': 30, 'chance_of_playing_next_round': None, 'news': ''},
+    {'id': 1, 'web_name': 'Saka', 'team': 10, 'chance_of_playing_next_round': 25, 'news': 'Hamstring',
+     'element_type': 3, 'status': 'd', 'expected_goals': 3.0, 'expected_assists': 2.0},
+    {'id': 3, 'web_name': 'Salah', 'team': 30, 'chance_of_playing_next_round': None, 'news': '',
+     'element_type': 3, 'status': 'a', 'expected_goals': 8.0, 'expected_assists': 4.0},
 ]
-PREDICTIONS = [{'player_id': 1, 'predicted_performance': 5.0}, {'player_id': 3, 'predicted_performance': 8.0}]
+TEAM_GOALS = [{'team_id': 10, 'expected_goals_mean': 1.0}, {'team_id': 30, 'expected_goals_mean': 2.0}]
 FIXTURES = [{'team_h': 30, 'team_a': 40, 'team_h_difficulty': 2, 'team_a_difficulty': 4,
              'home_name': 'Liverpool', 'away_name': 'Everton'},
             {'team_h': 10, 'team_a': 50, 'team_h_difficulty': 3, 'team_a_difficulty': 3,
@@ -89,8 +91,8 @@ class FakeCursor:
     def execute(self, sql, params=None):
         if 'bootstrapstatic_elements' in sql:
             self.rows = ELEMENTS
-        elif 'player_predictions' in sql:
-            self.rows = PREDICTIONS
+        elif 'team_fixture_predictions' in sql:
+            self.rows = TEAM_GOALS
         elif 'fixtures_fixtures' in sql:
             self.rows = FIXTURES
         else:
@@ -154,3 +156,48 @@ def test_no_database_gives_the_empty_message(monkeypatch):
     monkeypatch.setattr(weekDecision, 'connect_db', lambda: None)
     result = get_this_week_decision(6, 5)
     assert result['decision'] is None and result['message']['title']
+
+
+#################################################
+#          involvement_predictions              #
+#################################################
+
+def row(pid, team, xg, xa, status='a'):
+    return {'id': pid, 'team': team, 'status': status, 'expected_goals': xg, 'expected_assists': xa}
+
+
+def goals(team, mean):
+    return {'team_id': team, 'expected_goals_mean': mean}
+
+
+def test_involvement_is_share_times_team_goals():
+    rows = [row(1, 10, 6, 2), row(2, 10, 1, 1)]   # shares: 8 of 10, 2 of 10
+    p = involvement_predictions(rows, [goals(10, 2.0)])
+    assert abs(p[1] - 1.6) < 1e-9 and abs(p[2] - 0.4) < 1e-9
+
+
+def test_double_gameweek_sums_team_goals():
+    p = involvement_predictions([row(1, 10, 5, 5)], [goals(10, 1.5), goals(10, 1.0)])
+    assert abs(p[1] - 2.5) < 1e-9
+
+
+def test_blank_gameweek_team_is_skipped():
+    p = involvement_predictions([row(1, 10, 5, 5), row(2, 20, 5, 5)], [goals(10, 1.0)])
+    assert 1 in p and 2 not in p
+
+
+def test_team_total_of_zero_is_skipped_without_error():
+    p = involvement_predictions([row(1, 10, 0, 0), row(2, 10, None, None)], [goals(10, 1.0)])
+    assert p == {}
+
+
+def test_unavailable_status_is_excluded_from_share_and_output():
+    rows = [row(1, 10, 5, 0), row(2, 10, 5, 0, status='u')]
+    p = involvement_predictions(rows, [goals(10, 2.0)])
+    assert 2 not in p and abs(p[1] - 2.0) < 1e-9
+
+
+def test_attacker_outranks_defender_on_same_team():
+    rows = [row(1, 10, 9, 3), row(2, 10, 0.5, 1)]
+    p = involvement_predictions(rows, [goals(10, 1.8)])
+    assert p[1] > p[2]

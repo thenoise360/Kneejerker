@@ -40,7 +40,7 @@ def test_captain_same_vs_switch():
     fixture = {'opponent': 'Everton', 'is_home': True, 'difficulty': 2}
     same = captain_decision('Haaland', 7.04, 'Haaland', fixture)
     assert same['title'] == 'Captain: Haaland looks right'
-    assert same['details'] == ['Our prediction for Haaland: about 7.0 points']
+    assert same['details'] == ['We expect Haaland to be involved in about 7.0 goals this week']
     switch = captain_decision('Salah', 8.0, 'Haaland', fixture)
     assert switch['title'] == 'Captain: worth a look at Salah' and 'ahead of Haaland' in switch['reason']
 

@@ -21,7 +21,8 @@ DOUBT_BELOW = 75   # chance of playing under this % makes a starter a doubt
 
 def fetch_availability_rows(cursor, year_start):
     cursor.execute("""
-        SELECT id, web_name, team, chance_of_playing_next_round, news
+        SELECT id, web_name, team, chance_of_playing_next_round, news,
+               element_type, status, expected_goals, expected_assists
         FROM bootstrapstatic_elements
         WHERE year_start = %s
           AND gameweek = (SELECT MAX(gameweek) FROM bootstrapstatic_elements WHERE year_start = %s)
@@ -29,11 +30,11 @@ def fetch_availability_rows(cursor, year_start):
     return cursor.fetchall()
 
 
-def fetch_prediction_rows(cursor):
+def fetch_team_expected_goals_rows(cursor, gameweek):
     cursor.execute("""
-        SELECT player_id, predicted_performance FROM player_predictions
-        WHERE gameweek = (SELECT MAX(gameweek) FROM player_predictions)
-    """)
+        SELECT team_id, expected_goals_mean FROM team_fixture_predictions
+        WHERE gameweek = %s
+    """, (gameweek,))
     return cursor.fetchall()
 
 
@@ -60,9 +61,32 @@ def availability_from_rows(rows):
             for r in rows}
 
 
-def predictions_from_rows(rows):
-    return {r['player_id']: float(r['predicted_performance'])
-            for r in rows if r['predicted_performance'] is not None}
+def involvement_predictions(availability_rows, team_goal_rows):
+    """Expected goal involvement this gameweek for each player.
+
+    A player's share of their team's season expected goals plus expected assists,
+    times the goals we expect their team to score. A double gameweek adds up and
+    a blank gameweek has no entry, so those players are skipped.
+    """
+    team_goals = {}
+    for r in team_goal_rows:
+        team_goals[r['team_id']] = team_goals.get(r['team_id'], 0.0) + float(r['expected_goals_mean'] or 0)
+
+    def involvement(r):
+        return float(r['expected_goals'] or 0) + float(r['expected_assists'] or 0)
+
+    totals = {}
+    for r in availability_rows:
+        if r['status'] != 'u':
+            totals[r['team']] = totals.get(r['team'], 0.0) + involvement(r)
+
+    predictions = {}
+    for r in availability_rows:
+        team = r['team']
+        if r['status'] == 'u' or team not in team_goals or not totals.get(team):
+            continue
+        predictions[r['id']] = involvement(r) / totals[team] * team_goals[team]
+    return predictions
 
 
 def squad_from_picks(picks_data):
@@ -149,8 +173,10 @@ def get_this_week_decision(gameweek, last_gameweek, team_id=None):
                 'decision': None, 'message': no_decision_copy()}
     try:
         cursor = conn.cursor(dictionary=True)
-        availability = availability_from_rows(fetch_availability_rows(cursor, season_start))
-        predictions = predictions_from_rows(fetch_prediction_rows(cursor))
+        availability_rows = fetch_availability_rows(cursor, season_start)
+        availability = availability_from_rows(availability_rows)
+        predictions = involvement_predictions(availability_rows,
+                                              fetch_team_expected_goals_rows(cursor, gameweek))
         fixtures = fixtures_by_team(fetch_fixture_rows(cursor, season_start, gameweek))
     finally:
         conn.close()

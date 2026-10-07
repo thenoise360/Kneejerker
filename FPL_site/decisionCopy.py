@@ -30,7 +30,7 @@ def availability_decision(name, chance, news):
 
 
 def captain_decision(best_name, best_prediction, current_name, fixture):
-    details = [f'Our prediction for {best_name}: about {best_prediction:.1f} points']
+    details = [f'We expect {best_name} to be involved in about {best_prediction:.1f} goals this week']
     where = fixture_phrase(fixture)
     if best_name == current_name:
         return {'kind': 'captain', 'title': f'Captain: {best_name} looks right',
@@ -48,7 +48,7 @@ def guest_captain_decision(best_name, best_prediction, fixture):
             'reason': f"Across every team, {best_name} is the strongest option we're "
                       f"seeing{fixture_phrase(fixture)}. If you have them, they're worth a "
                       f"look as captain. It's your call.",
-            'details': [f'Our prediction for {best_name}: about {best_prediction:.1f} points']}
+            'details': [f'We expect {best_name} to be involved in about {best_prediction:.1f} goals this week']}
 
 
 def no_decision_copy():
