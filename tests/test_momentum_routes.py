@@ -35,26 +35,13 @@ def test_momentum_route_hides_errors(client, monkeypatch):
     assert resp.get_json() == {'error': 'server_error'}
 
 
-@pytest.mark.parametrize('flag', [True, False])
-def test_radar_feature_flag_marker(client, monkeypatch, flag):
-    monkeypatch.setattr(views.current_config, 'FEATURE_MOMENTUM', flag, raising=False)
-    html = client.get('/radar').get_data(as_text=True)
-    assert 'id="feature-flags"' in html
-    assert ('data-momentum="true"' in html) == flag
-    assert 'data-momentum=""' in html or flag
-
-
-def test_feature_momentum_defaults_off():
-    from FPL_site.config import Config
-    assert Config.FEATURE_MOMENTUM is False
-
-
 def test_radar_leaves_out_the_slide_for_a_missing_momentum_payload():
     # fetchJsonSafe turns a 404 into null, and buildMiniCards only adds the slide when it has a payload.
     source = open(os.path.join(os.path.dirname(__file__), '..', 'FPL_site', 'static', 'scripts', 'radar.js'),
                   encoding='utf-8').read()
     assert 'if (!res.ok) return null;' in source
     assert 'if (momentum) {' in source
+    assert 'fetchJsonSafe(`/api/player/${playerId}/momentum`)' in source
 
 
 STRIP = {'heating_up': [{'id': 2, 'name': 'B', 'team': 'Chelsea', 'reason': 'Rising: kinder fixtures coming up.'}],
@@ -83,9 +70,15 @@ def test_strip_route_hides_errors(client, monkeypatch):
     assert resp.get_json() == {'error': 'server_error'}
 
 
-@pytest.mark.parametrize('flag', [True, False])
-def test_discovery_feature_flag_marker(client, monkeypatch, flag):
-    monkeypatch.setattr(views.current_config, 'FEATURE_MOMENTUM', flag, raising=False)
-    html = client.get('/discovery').get_data(as_text=True)
-    assert 'id="feature-flags"' in html
-    assert ('data-momentum="true"' in html) == flag
+def test_discover_renders_and_loads_the_strip_without_any_flag(client):
+    assert client.get('/discovery').status_code == 200
+    root = os.path.join(os.path.dirname(__file__), '..', 'FPL_site')
+    discovery_js = open(os.path.join(root, 'static', 'scripts', 'discovery.js'), encoding='utf-8').read()
+    assert "heatingUp: 'category-heating-up'" in discovery_js
+    assert 'loadHeatingUpCategory()' in discovery_js
+
+
+def test_sheet_and_strip_routes_are_registered():
+    rules = {rule.rule for rule in app.url_map.iter_rules()}
+    assert '/api/player/<int:player_id>/momentum' in rules
+    assert '/api/discover/momentum-strip' in rules

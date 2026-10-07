@@ -144,15 +144,13 @@ def week_this_week_decision():
 def radar():
     logger.info("Request for radar page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('radar.html', is_ajax=is_ajax, title='Radar', mixpanel_token=current_config.MIXPANEL_TOKEN,
-                           momentum=getattr(current_config, 'FEATURE_MOMENTUM', False))
+    return render_template('radar.html', is_ajax=is_ajax, title='Radar', mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/discovery')
 def discovery():
     logger.info("Request for discovery page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('discovery.html', is_ajax=is_ajax, title='Discover', mixpanel_token=current_config.MIXPANEL_TOKEN,
-                           momentum=getattr(current_config, 'FEATURE_MOMENTUM', False))
+    return render_template('discovery.html', is_ajax=is_ajax, title='Discover', mixpanel_token=current_config.MIXPANEL_TOKEN)
 
 @app.route('/api/discover/momentum-strip')
 def discover_momentum_strip():

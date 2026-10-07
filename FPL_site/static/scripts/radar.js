@@ -260,16 +260,13 @@ function initializeRadar() {
         };
 
         try {
-            // The momentum card is behind a feature flag. The page leaves a hidden
-            // marker (see radar.html); we only ask the server when it says "true".
-            const momentumOn = document.getElementById('feature-flags')?.dataset.momentum === 'true';
             const [summaryArr, fixtures, positionData, last5Data, indexScores, momentum] = await Promise.all([
                 fetchJsonSafe(`/get_player_summary?id=${playerId}`),
                 fetchJsonSafe(`/get_next_5_gameweeks?id=${playerId}`),
                 fetchJsonSafe('/api/top-5-players'),
                 fetchJsonSafe(`/get_player_last_5_points?id=${playerId}`),
                 fetchJsonSafe('/get_player_index_scores'),
-                momentumOn ? fetchJsonSafe(`/api/player/${playerId}/momentum`) : null
+                fetchJsonSafe(`/api/player/${playerId}/momentum`)
             ]);
 
             const summary = Array.isArray(summaryArr) ? summaryArr[0] : summaryArr;

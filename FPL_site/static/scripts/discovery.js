@@ -1031,16 +1031,9 @@ const CATEGORY_SLOTS = {
     worthWatching: 'category-worth-watching',
     mostConsistent: 'category-most-consistent',
     momentum: 'category-momentum',
-    newManager: 'category-new-manager'
+    newManager: 'category-new-manager',
+    heatingUp: 'category-heating-up'
 };
-
-// The "Heating up / Cooling off" strip is behind a feature flag. The page
-// leaves a hidden marker saying whether it is on, and this reads it once.
-// Only when it is on do we add a slot for the strip.
-const momentumStripOn = document.getElementById('feature-flags')?.dataset.momentum === 'true';
-if (momentumStripOn) {
-    CATEGORY_SLOTS.heatingUp = 'category-heating-up';
-}
 
 /**
  * Loads and renders discovery categories from real backend sources. Renders
@@ -1061,8 +1054,7 @@ async function loadDiscoveryCategories() {
         loadMostConsistentCategory(),
         loadMomentumCategory(),
         loadNewManagerCategory(),
-        // Only load the strip when its slot exists (the flag is on).
-        CATEGORY_SLOTS.heatingUp ? loadHeatingUpCategory() : Promise.resolve()
+        loadHeatingUpCategory()
     ]);
 }
 
