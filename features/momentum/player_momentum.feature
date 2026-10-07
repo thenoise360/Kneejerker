@@ -2,7 +2,7 @@ Feature: Player momentum
   A player is Rising, Steady or Cooling, with one plain reason.
 
   Scenario: A forward with kinder fixtures and a key teammate back is Rising
-    Given a forward whose team expects 1.6 goals a game against a typical 1.4
+    Given a forward whose team expects 1.8 goals a game against a typical 1.4
     And a key teammate "Saka" with a 0.20 share who is back in the team
     When the momentum is worked out
     Then the label is "Rising"
