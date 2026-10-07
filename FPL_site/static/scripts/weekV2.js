@@ -1,5 +1,5 @@
 /***** weekV2.js *****/
-// DOM glue for the rebuilt Week tab (behind FEATURE_WEEK_V2). All the
+// DOM glue for the rebuilt Week tab. All the
 // decisions about *what* to show live in the pure modules under lib/; this
 // file only reads the page, fetches data, and puts HTML on the page.
 import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, renderRecapSkeleton, RECAP_LOAD_FAILED } from './lib/recapView.js';

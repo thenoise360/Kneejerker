@@ -95,17 +95,9 @@ def test_no_acronyms_in_partial_copy():
     assert not re.search(r'\b(GW|xG|xA)\b', visible)
 
 
-def test_flag_off_home_keeps_old_markup():
+def test_home_uses_partial():
     with app.test_request_context('/this-week'):
         html = render_template('home.html', is_ajax=True,
-                               gw_state={'state': 'none', 'gameweek': None})
-    assert 'Friend activity feed' in html
-    assert 'Team of the Week' in html
-
-
-def test_flag_on_home_uses_partial():
-    with app.test_request_context('/this-week'):
-        html = render_template('home.html', is_ajax=True, week_v2=True,
                                week_state=_state('upcoming', gw=4),
                                this_week_copy=None, last_week_copy=None)
     assert 'Friend activity feed' not in html

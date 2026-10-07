@@ -15,7 +15,7 @@ from .dataModels import (
     get_momentum_players, get_new_manager_players, get_player_ownership_history,
     next_5_gameweeks, fetch_player_summary, get_alternative_players, top_5_players_last_5_weeks,
     get_player_last_5_points, generateCurrentGameweek,
-    get_gameweek_state, get_live_gameweek_view, get_comparison_averages_last_5,
+    get_live_gameweek_view, get_comparison_averages_last_5,
     get_week_view_state
 )
 from .weekCopy import this_week_empty_copy, last_week_empty_copy
@@ -62,18 +62,9 @@ def index():
 def home():
     logger.info("Request for home page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    # Computed server-side (06.0) since it's cheap and changes infrequently -
-    # no need for the client to poll for it.
-    week_v2 = getattr(current_config, 'FEATURE_WEEK_V2', False)
-    # Only fetch the state the page will actually use: each call is a round
-    # trip to the Fantasy Premier League API, which hurts on a cold start.
-    if week_v2:
-        gw_state = None
-        week_context = _week_v2_context()
-    else:
-        gw_state = get_gameweek_state()
-        week_context = {}
-    return render_template('home.html', is_ajax=is_ajax, title='This Week', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN, gw_state=gw_state, week_v2=week_v2, **week_context)
+    # One Fantasy Premier League API call per request (get_week_view_state),
+    # made inside _week_v2_context().
+    return render_template('home.html', is_ajax=is_ajax, title='This Week', year=datetime.now().year, mixpanel_token=current_config.MIXPANEL_TOKEN, **_week_v2_context())
 
 
 def _hours_since(deadline):
@@ -86,7 +77,7 @@ def _hours_since(deadline):
 
 
 def _week_v2_context():
-    """Template context for the Week tab rebuild (behind FEATURE_WEEK_V2)."""
+    """Template context for the Week tab rebuild."""
     week_state = get_week_view_state()
     this_week = week_state['this_week']
     last_week = week_state['last_week']
