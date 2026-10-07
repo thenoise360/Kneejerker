@@ -19,6 +19,16 @@ function signalRow(signal) {
         + `${escapeHtml(signal.name)}: ${escapeHtml(signal.word)}${reason}</li>`;
 }
 
+// The stored reason starts with the label ("Rising: kinder fixtures coming
+// up."), but the label is already the heading. Drop that prefix and start
+// the sentence with a capital letter, so the card does not say it twice.
+function reasonWithoutLabel(label, reason) {
+    const text = String(reason);
+    const prefix = `${label}: `;
+    const rest = text.startsWith(prefix) ? text.slice(prefix.length) : text;
+    return rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
 export function renderMomentumCard(payload) {
     // Anything that is not "ready" carries its own calm message.
     if (payload.status !== 'ready') {
@@ -27,9 +37,9 @@ export function renderMomentumCard(payload) {
     const signals = payload.signals || [];
     return slide(`
         <div class="mc-title">Momentum</div>
-        <h3 class="recap-verdict">${escapeHtml(payload.label)}</h3>
-        <p>${escapeHtml(payload.reason)}</p>
-        <details>
+        <h3 class="recap-verdict momentum-verdict">${escapeHtml(payload.label)}</h3>
+        <p>${escapeHtml(reasonWithoutLabel(payload.label, payload.reason))}</p>
+        <details class="recap-details">
             <summary>See each signal</summary>
             <ul class="recap-standouts">${signals.map(signalRow).join('')}</ul>
         </details>`);

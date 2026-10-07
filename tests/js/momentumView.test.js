@@ -5,19 +5,19 @@ import { renderMomentumCard } from '../../FPL_site/static/scripts/lib/momentumVi
 const ready = {
     status: 'ready',
     label: 'Rising',
-    reason: 'a kinder run of fixtures',
+    reason: 'Rising: kinder fixtures coming up.',
     signals: [
         { key: 'fixtures', name: 'Fixtures', direction: 'up', word: 'Up', arrow: '↑', reason: 'easier games ahead' },
-        { key: 'teammates', name: 'Teammates', direction: 'flat', word: 'No change', arrow: '→', reason: null },
-        { key: 'position', name: 'Position', direction: 'not_tracked', word: 'Not tracked yet', arrow: '–', reason: null },
-        { key: 'manager', name: 'Manager', direction: 'not_tracked', word: 'Not tracked yet', arrow: '–', reason: null },
+        { key: 'teammates', name: 'Teammates', direction: 'same', word: 'No change', arrow: '→', reason: null },
+        { key: 'position', name: 'Position on the pitch', direction: 'not_tracked', word: 'Not tracked yet', arrow: '–', reason: null },
+        { key: 'manager', name: 'Manager change', direction: 'not_tracked', word: 'Not tracked yet', arrow: '–', reason: null },
     ],
 };
 
 test('default view is the label and reason only', () => {
     const [before] = renderMomentumCard(ready).split('<details');
-    assert.match(before, /<h3 class="recap-verdict">Rising<\/h3>/);
-    assert.match(before, /<p[^>]*>a kinder run of fixtures<\/p>/);
+    assert.match(before, /<h3 class="recap-verdict momentum-verdict">Rising<\/h3>/);
+    assert.match(before, /<p[^>]*>Kinder fixtures coming up\.<\/p>/);
     assert.doesNotMatch(before, /Teammates/);
 });
 
@@ -29,7 +29,7 @@ test('all four signals sit inside the details', () => {
     const html = renderMomentumCard(ready);
     const inside = html.split('<details')[1];
     assert.match(inside, /<summary>See each signal<\/summary>/);
-    for (const name of ['Fixtures', 'Teammates', 'Position', 'Manager']) {
+    for (const name of ['Fixtures', 'Teammates', 'Position on the pitch', 'Manager change']) {
         assert.ok(inside.includes(name), name);
     }
     assert.match(inside, /<div class="sub">easier games ahead<\/div>/);
@@ -39,8 +39,21 @@ test('every arrow is paired with a word', () => {
     const inside = renderMomentumCard(ready).split('<details')[1];
     assert.match(inside, /<span aria-hidden="true">↑<\/span> Fixtures: Up/);
     assert.match(inside, /<span aria-hidden="true">→<\/span> Teammates: No change/);
-    assert.match(inside, /<span aria-hidden="true">–<\/span> Position: Not tracked yet/);
-    assert.match(inside, /<span aria-hidden="true">–<\/span> Manager: Not tracked yet/);
+    assert.match(inside, /<span aria-hidden="true">–<\/span> Position on the pitch: Not tracked yet/);
+    assert.match(inside, /<span aria-hidden="true">–<\/span> Manager change: Not tracked yet/);
+});
+
+test('the details use recap-details so the focus outline applies', () => {
+    assert.match(renderMomentumCard(ready), /<details class="recap-details">/);
+});
+
+test('the heading uses the momentum-verdict class', () => {
+    assert.match(renderMomentumCard(ready), /<h3 class="recap-verdict momentum-verdict">Rising<\/h3>/);
+});
+
+test('a reason without the label prefix is still capitalised', () => {
+    const html = renderMomentumCard({ ...ready, reason: 'key teammates are back' });
+    assert.match(html, /<p[^>]*>Key teammates are back<\/p>/);
 });
 
 test('values are escaped', () => {

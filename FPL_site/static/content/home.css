@@ -651,6 +651,8 @@
 
 /* Verdict headings: the global .card h3 teal is too faint on white (about 2.2:1), so use charcoal. */
 .card h3.recap-verdict { font-size: 17px; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 6px; }
+/* The momentum heading sits in a mini-slide, outside .card, so it needs its own rule. */
+.momentum-verdict { font-size: 17px; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 6px; }
 
 /* Week v2: team number form and welcome back banner. Input is 16px so iOS doesn't zoom in. */
 .recap-team-form label { display: block; margin-bottom: 8px; }
