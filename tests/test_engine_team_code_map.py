@@ -66,7 +66,8 @@ def roster(code_base=100, n=20):
 
 
 def one_fixture():
-    return [{'event': 1, 'team_h': 1, 'team_a': 3, 'team_h_score': 2, 'team_a_score': 1}]
+    return [{'event': 1, 'team_h': 1, 'team_a': 3, 'team_h_score': 2, 'team_a_score': 1,
+             'kickoff_time': '2024-09-01T14:00:00Z'}]
 
 
 def test_build_rating_dataset_credits_fixtures_via_the_snapshot_map():

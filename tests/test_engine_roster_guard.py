@@ -29,7 +29,8 @@ class FakeCursor:
                 return roster(20, 20, 100)
             return []
         # one finished fixture per season between team ids 1 and 2
-        return [{'event': 1, 'team_h': 1, 'team_a': 2, 'team_h_score': 1, 'team_a_score': 0}]
+        return [{'event': 1, 'team_h': 1, 'team_a': 2, 'team_h_score': 1, 'team_a_score': 0,
+                 'kickoff_time': f'{self.year}-09-01T14:00:00Z'}]
 
 
 def test_season_with_a_corrupt_roster_is_skipped_and_logged(caplog):

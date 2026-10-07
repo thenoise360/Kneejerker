@@ -118,9 +118,25 @@ def fetch_team_code_map(cursor, year_start):
     return {tid: code for tid, (_, code) in best.items()}
 
 
+def kickoff_in_season_window(kickoff, year_start):
+    """
+    True if `kickoff` ('YYYY-MM-DDTHH:MM:SSZ') is on or after 1 July of year_start and before
+    1 July of the next year. The update job once wrote a new season's fixtures under the old
+    year_start, so a season's table can hold other seasons' matches. Missing or unparseable
+    kickoffs are treated as outside the window.
+    """
+    if not isinstance(kickoff, str):
+        return False
+    try:
+        moment = datetime.strptime(kickoff, '%Y-%m-%dT%H:%M:%SZ')
+    except ValueError:
+        return False
+    return datetime(int(year_start), 7, 1) <= moment < datetime(int(year_start) + 1, 7, 1)
+
+
 def fetch_finished_fixtures(cursor, year_start):
     cursor.execute(
-        f"""SELECT event, team_h, team_a, team_h_score, team_a_score
+        f"""SELECT event, team_h, team_a, team_h_score, team_a_score, kickoff_time
             FROM {db}.fixtures_fixtures
             WHERE year_start = %s AND finished = 1
               AND team_h_score IS NOT NULL AND team_a_score IS NOT NULL""",
@@ -185,7 +201,11 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
             continue
         season_offset = season_index * GAMEWEEKS_PER_SEASON
 
+        out_of_window = 0
         for fx in fetch_finished_fixtures(cursor, year_start):
+            if not kickoff_in_season_window(fx.get('kickoff_time'), year_start):
+                out_of_window += 1
+                continue
             if (year_start == current_season and current_season_max_event is not None
                     and fx['event'] >= current_season_max_event):
                 continue
@@ -206,6 +226,10 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
             if year_start == current_season:
                 games_this_season[code_h] = games_this_season.get(code_h, 0) + 1
                 games_this_season[code_a] = games_this_season.get(code_a, 0) + 1
+
+        if out_of_window:
+            logger.warning("build_rating_dataset: season %s skipped %s finished fixtures with a missing "
+                           "or out-of-window kickoff.", year_start, out_of_window)
 
     reference_gw = (len(seasons) - 1) * GAMEWEEKS_PER_SEASON + max(current_gw, 1)
     return rows, sorted(codes_seen), games_this_season, reference_gw
