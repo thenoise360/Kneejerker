@@ -114,10 +114,7 @@ function bindTeamForm(lastWeekView) {
     if (!form || !input) return;
     form.addEventListener('submit', (event) => {
         event.preventDefault();  // stop the browser reloading the page
-        // Decide validity ourselves: saveTeamId also returns null when storage is
-        // blocked, and a perfectly good number shouldn't be rejected for that.
-        const typed = parseTeamId(input.value);
-        if (typed === null) {
+        if (saveTeamId(safeLocalStorage(window), input.value) === null) {
             input.setCustomValidity('Please enter the number only, for example 1234567.');
             input.reportValidity();
             return;
@@ -204,7 +201,10 @@ function bindHubTeamForm() {
     if (!form || !input) return;
     form.addEventListener('submit', (event) => {
         event.preventDefault();
-        if (saveTeamId(safeLocalStorage(window), input.value) === null) {
+        // Decide validity ourselves: saveTeamId also returns null when storage is
+        // blocked, and a perfectly good number shouldn't be rejected for that.
+        const typed = parseTeamId(input.value);
+        if (typed === null) {
             input.setCustomValidity('Please enter the number only, for example 1234567.');
             input.reportValidity();
             return;
