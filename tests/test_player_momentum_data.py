@@ -185,14 +185,15 @@ def test_persist_replaces_table_in_one_commit():
 
 # ---- loaders ----
 
-def stored(label='Rising', score=1.2, pid=1, team_id=1, name='Saka', reason='Rising: kinder fixtures coming up.'):
+def stored(label='Rising', score=1.2, pid=1, team_id=1, name='Saka', reason='Rising: kinder fixtures coming up.',
+           position=3):
     signals = [
         {'key': 'fixtures', 'direction': 'up', 'reason': 'kinder fixtures coming up', 'magnitude': 0.3},
         {'key': 'teammates', 'direction': 'same', 'reason': 'no change around them', 'magnitude': 0},
         {'key': 'position', 'direction': 'not_tracked', 'reason': None, 'magnitude': 0},
         {'key': 'manager', 'direction': 'not_tracked', 'reason': None, 'magnitude': 0},
     ]
-    return {'player_id': pid, 'name': name, 'team_id': team_id, 'label': label, 'reason': reason,
+    return {'player_id': pid, 'name': name, 'team_id': team_id, 'position': position, 'label': label, 'reason': reason,
             'signals_json': json.dumps(signals), 'score': score}
 
 
@@ -235,12 +236,23 @@ def test_strip_ordering_limit_and_no_score(monkeypatch):
     strip = pm.load_momentum_strip(limit=2)
     assert [i['name'] for i in strip['heating_up']] == ['B', 'A']
     assert [i['name'] for i in strip['cooling_off']] == ['E', 'D']
-    assert strip['heating_up'][0] == {'id': 2, 'name': 'B', 'team': 'Chelsea',
+    assert strip['heating_up'][0] == {'id': 2, 'name': 'B', 'team': 'Chelsea', 'position': 'MID',
                                       'reason': 'Rising: kinder fixtures coming up.'}
     for item in strip['heating_up'] + strip['cooling_off']:
         assert 'score' not in item
     assert 'ARS' not in json.dumps(strip) and 'score' not in json.dumps(strip)
     assert conn.closed
+
+
+def test_strip_maps_stored_position_numbers_to_short_codes(monkeypatch):
+    rows = [stored('Rising', 4.0, 1, 1, 'G', position=1), stored('Rising', 3.0, 2, 1, 'D', position=2),
+            stored('Rising', 2.0, 3, 1, 'M', position=3), stored('Rising', 1.0, 4, 1, 'F', position=4),
+            stored('Cooling', -1.0, 5, 1, 'X', position=None)]
+    monkeypatch.setattr(pm, 'connect_db', lambda: FakeConn(FakeCursor(rows)))
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: {})
+    strip = pm.load_momentum_strip()
+    assert [i['position'] for i in strip['heating_up']] == ['GKP', 'DEF', 'MID', 'FWD']
+    assert strip['cooling_off'][0]['position'] == ''
 
 
 def test_strip_empty_when_no_table_or_connection(monkeypatch):

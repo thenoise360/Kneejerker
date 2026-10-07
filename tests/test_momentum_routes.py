@@ -44,7 +44,7 @@ def test_radar_leaves_out_the_slide_for_a_missing_momentum_payload():
     assert 'fetchJsonSafe(`/api/player/${playerId}/momentum`)' in source
 
 
-STRIP = {'heating_up': [{'id': 2, 'name': 'B', 'team': 'Chelsea', 'reason': 'Rising: kinder fixtures coming up.'}],
+STRIP = {'heating_up': [{'id': 2, 'name': 'B', 'team': 'Chelsea', 'position': 'MID', 'reason': 'Rising: kinder fixtures coming up.'}],
          'cooling_off': [{'id': 4, 'name': 'D', 'team': 'Arsenal', 'reason': 'Cooling: tougher fixtures coming up.'}]}
 
 

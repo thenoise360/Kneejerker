@@ -66,9 +66,9 @@ export function stripToCategories(strip) {
         .map(group => ({
             title: group.title,
             subtitle: group.subtitle,
-            // The card wants these field names. There is no position here, so it is left blank.
+            // The card wants these field names. The position is the short code the server sent.
             players: group.list.map(item => ({
-                id: item.id, full_name: item.name, team_name: item.team, position: '', why: item.reason,
+                id: item.id, full_name: item.name, team_name: item.team, position: item.position || '', why: item.reason,
             })),
         }));
 }

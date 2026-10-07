@@ -82,12 +82,12 @@ test('a null or missing reason shows nothing instead of the word Null', () => {
 
 test('the strip becomes two groups with the right titles and one reason each', () => {
     const groups = stripToCategories({
-        heating_up: [{ id: 1, name: 'B', team: 'Chelsea', reason: 'Rising: kinder fixtures coming up.' }],
+        heating_up: [{ id: 1, name: 'B', team: 'Chelsea', position: 'MID', reason: 'Rising: kinder fixtures coming up.' }],
         cooling_off: [{ id: 2, name: 'D', team: 'Arsenal', reason: 'Cooling: tougher fixtures coming up.' }],
     });
     assert.deepEqual(groups.map(g => g.title), ['Heating up', 'Cooling off']);
     assert.deepEqual(groups[0].players, [{
-        id: 1, full_name: 'B', team_name: 'Chelsea', position: '', why: 'Rising: kinder fixtures coming up.' }]);
+        id: 1, full_name: 'B', team_name: 'Chelsea', position: 'MID', why: 'Rising: kinder fixtures coming up.' }]);
 });
 
 test('an empty list leaves its group out, and nothing at all gives no groups', () => {

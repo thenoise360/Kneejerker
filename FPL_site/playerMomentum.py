@@ -308,6 +308,10 @@ def load_player_momentum(player_id):
         conn.close()
 
 
+# The stored element_type number as the short code the other Discover categories use.
+POSITION_CODES = {1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD'}
+
+
 def load_momentum_strip(limit=5):
     """Biggest risers and fallers, sorted on the server. Scores never leave this function."""
     # Imported here, not at the top, to avoid a circular import with the engine.
@@ -322,7 +326,7 @@ def load_momentum_strip(limit=5):
         cursor = conn.cursor(dictionary=True)
         try:
             cursor.execute(f"""
-                SELECT player_id, name, team_id, label, reason, score FROM {MOMENTUM_TABLE}
+                SELECT player_id, name, team_id, position, label, reason, score FROM {MOMENTUM_TABLE}
                 WHERE label IN ('Rising', 'Cooling')
             """)
             rows = cursor.fetchall()
@@ -335,7 +339,8 @@ def load_momentum_strip(limit=5):
 
         def item(row):
             return {'id': row['player_id'], 'name': row['name'],
-                    'team': teams.get(row['team_id'], {}).get('name', ''), 'reason': row['reason']}
+                    'team': teams.get(row['team_id'], {}).get('name', ''),
+                    'position': POSITION_CODES.get(row['position'], ''), 'reason': row['reason']}
 
         rising = sorted((r for r in rows if r['label'] == 'Rising'),
                         key=lambda r: (-float(r['score']), r['player_id']))
