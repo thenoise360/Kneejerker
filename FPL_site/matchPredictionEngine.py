@@ -39,7 +39,12 @@ HISTORY_SEASONS_BACK = 3          # completed seasons pooled alongside the curre
 DECAY_RATE = 0.02                 # per-gameweek exponential decay across the pooled timeline
 STABLE_GAMES_THIS_SEASON = 5      # games played this season before a team's range stops widening
 MAX_DISPERSION = 1.0 + STABLE_GAMES_THIS_SEASON * 0.3
-CONFIDENCE = 0.90                 # width of the reported low/high range
+# Gameweek 0 (true preseason) hits every team with the full low-data penalty
+# at once, since nobody has a game this season yet - halve it rather than
+# applying the same widening reserved for an individual team with a genuine
+# data gap mid-season.
+PRESEASON_DISPERSION_CAP = 1.0 + (MAX_DISPERSION - 1.0) * 0.5
+CONFIDENCE = 0.50                 # width of the reported low/high range (0.50 = 25th-75th percentile)
 HOME_ADV_INIT = 0.25
 
 NEXT_N_GAMEWEEKS = 5
@@ -205,29 +210,51 @@ def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE):
 #   Per-team goal distribution from a rate      #
 #################################################
 
-def expected_goals_range(lam, games_played_this_season, confidence=CONFIDENCE):
+def _interpolated_quantile(dist, p, *params):
+    """
+    Continuous approximation of a quantile for a discrete (integer-goals)
+    distribution, via linear interpolation across the CDF step that contains
+    p. A plain integer ppf() jumps straight from e.g. 0 to 1 goals with
+    nothing in between, discarding information the underlying distribution
+    actually has about where within that step p falls; interpolating spreads
+    that step's probability mass evenly across the interval so a value like
+    0.6 can be reported instead of always flooring to 0 or ceiling-ing to 1.
+    """
+    k = int(dist.ppf(p, *params))
+    cdf_k = dist.cdf(k, *params)
+    cdf_km1 = dist.cdf(k - 1, *params) if k > 0 else 0.0
+    pmf_k = cdf_k - cdf_km1
+    if pmf_k <= 0:
+        return float(k)
+    frac = (p - cdf_km1) / pmf_k
+    return max(0.0, k - 1 + frac)
+
+
+def expected_goals_range(lam, games_played_this_season, confidence=CONFIDENCE, is_preseason=False):
     """
     mean/low/high for one team's expected goals in a fixture. A team with
     fewer than STABLE_GAMES_THIS_SEASON games under its belt this season
     (newly promoted, or the season hasn't started) gets extra variance on
     top of the Poisson rate, via a negative-binomial with inflated variance,
     so the range widens instead of quietly reusing a Poisson width the data
-    doesn't actually support.
+    doesn't actually support. `is_preseason` softens that widening for
+    gameweek 0 specifically, where it would otherwise hit every team at once.
     """
     lam = max(float(lam), 0.05)
     shortfall = max(0, STABLE_GAMES_THIS_SEASON - games_played_this_season)
-    dispersion = min(1.0 + shortfall * 0.3, MAX_DISPERSION)
+    cap = PRESEASON_DISPERSION_CAP if is_preseason else MAX_DISPERSION
+    dispersion = min(1.0 + shortfall * 0.3, cap)
 
     alpha = (1 - confidence) / 2
     if dispersion <= 1.0 + 1e-9:
-        low = poisson.ppf(alpha, lam)
-        high = poisson.ppf(1 - alpha, lam)
+        low = _interpolated_quantile(poisson, alpha, lam)
+        high = _interpolated_quantile(poisson, 1 - alpha, lam)
     else:
         variance = lam * dispersion
         p = lam / variance  # = 1 / dispersion
         r = lam * p / (1 - p)
-        low = nbinom.ppf(alpha, r, p)
-        high = nbinom.ppf(1 - alpha, r, p)
+        low = _interpolated_quantile(nbinom, alpha, r, p)
+        high = _interpolated_quantile(nbinom, 1 - alpha, r, p)
 
     return {'mean': round(lam, 2), 'low': float(max(0.0, low)), 'high': float(high)}
 
@@ -258,6 +285,7 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
     from_gw, to_gw = current_gw + 1, current_gw + NEXT_N_GAMEWEEKS
     fixtures = fetch_upcoming_fixtures(cursor, current_season, from_gw, to_gw)
     computed_at = datetime.utcnow()
+    is_preseason = current_gw == 0
 
     rows = []
     for fx in fixtures:
@@ -276,8 +304,8 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
         games_h = games_this_season.get(code_h, 0)
         games_a = games_this_season.get(code_a, 0)
 
-        home_dist = expected_goals_range(lam_home, games_h)
-        away_dist = expected_goals_range(lam_away, games_a)
+        home_dist = expected_goals_range(lam_home, games_h, is_preseason=is_preseason)
+        away_dist = expected_goals_range(lam_away, games_a, is_preseason=is_preseason)
 
         rows.append({
             'fixture_code': fx['code'], 'gameweek': fx['event'],
