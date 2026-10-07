@@ -17,7 +17,7 @@ from mysql.connector import errorcode
 from mysql.connector.errors import ProgrammingError
 
 from FPL_site.dataModels import connect_db, season_start
-from FPL_site.strengthCopy import strength_summary
+from FPL_site.strengthCopy import strength_summary, gauge_summary
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +98,19 @@ def adjust(attack, defence, attack_share, defence_share):
     return attack_adj, defence_adj
 
 
+DEFAULT_RATING_KEY = '_default'
+
+
+def rating_for(ratings, code):
+    """
+    A team's rating, or - for a team with no fixtures in the pool (e.g. a promoted side
+    at gameweek 0) - the engine's default, a typical promoted side with the league scoring
+    level folded in (stored under a reserved key by fit_dixon_coles). Falls back to
+    (0, 0) only if the ratings dict has no default at all.
+    """
+    return ratings.get(code) or ratings.get(DEFAULT_RATING_KEY) or {'attack': 0.0, 'defence': 0.0}
+
+
 def goals_vs_average(attack, defence, league_mean_attack, league_mean_defence, home_adv):
     """Goals a game scored and conceded against an average side, with half the home edge."""
     scored = math.exp(attack + league_mean_defence + home_adv / 2)
@@ -107,12 +120,10 @@ def goals_vs_average(attack, defence, league_mean_attack, league_mean_defence, h
 
 def build_team_strengths(teams, ratings, home_adv, squad_rows):
     """{team_id: strength} for every team; an unrated team uses default ratings."""
-    # Same default the engine uses for a team it has no rating for.
-    default = {'attack': 0.0, 'defence': 0.0}
     rated = dict(teams)
     if not rated:
         return {}
-    ratings = {t['code']: ratings.get(t['code'], default) for t in rated.values()}
+    ratings = {t['code']: rating_for(ratings, t['code']) for t in rated.values()}
     mean_attack = sum(ratings[t['code']]['attack'] for t in rated.values()) / len(rated)
     mean_defence = sum(ratings[t['code']]['defence'] for t in rated.values()) / len(rated)
 
@@ -224,6 +235,10 @@ def load_team_strength(team_id):
             'scored_adjusted': round(strength['scored_adjusted'], 1),
             'conceded': round(strength['conceded'], 1),
             'conceded_adjusted': round(strength['conceded_adjusted'], 1),
+            # The league average goals scored, which the gauges compare each team against.
+            'league_scored': round(strength['league_scored'], 2),
+            # Unrounded gauge positions and their words; the rounded figures above are for the written numbers.
+            'gauge': gauge_summary(strength),
             'missing': strength['missing'],
         }
     finally:

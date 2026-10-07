@@ -117,7 +117,7 @@ from datetime import datetime
 from mysql.connector import errorcode
 from mysql.connector.errors import ProgrammingError
 
-from FPL_site.dataModels import connect_db, season_start
+from FPL_site.dataModels import connect_db, current_season_start
 from FPL_site.momentumCopy import DIRECTION_WORDS, SIGNAL_NAMES
 
 logger = logging.getLogger(__name__)
@@ -268,8 +268,8 @@ def persist_momentum(conn, momentum, players):
 
 def run_daily_momentum(cursor, conn, current_gw):
     """Compute and store momentum. Called from the daily match prediction job."""
-    players = fetch_player_rows(cursor, season_start)
-    minutes = fetch_last_gameweek_minutes(cursor, season_start, current_gw)
+    players = fetch_player_rows(cursor, current_season_start())
+    minutes = fetch_last_gameweek_minutes(cursor, current_season_start(), current_gw)
     upcoming = fetch_upcoming_predictions(cursor, current_gw + 1, current_gw + FIXTURE_WINDOW)
     baselines = fetch_team_baselines(cursor)
     momentum = build_all_momentum(players, minutes, upcoming, baselines)
@@ -331,7 +331,7 @@ def load_momentum_strip(limit=5):
             """)
             rows = cursor.fetchall()
             # Inside the same guard: a missing teams table also means "not ready".
-            teams = fetch_teams_for_season(cursor, season_start) or {}
+            teams = fetch_teams_for_season(cursor, current_season_start()) or {}
         except ProgrammingError as e:
             if e.errno != errorcode.ER_NO_SUCH_TABLE:
                 raise

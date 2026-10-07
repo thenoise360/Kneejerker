@@ -5,10 +5,8 @@ import {
     isUserActive
 } from './utils.js';
 import {
-    difficultyColor,
     buildSparkline,
     describeFixtureRun,
-    buildFixtureChips,
     buildOwnershipArea,
     SEASON_STATS,
     formatStatValue,
@@ -16,6 +14,9 @@ import {
 } from './visuals.js';
 import { trackPlayerSummary } from './analytics.js';
 import { renderMomentumCard } from './lib/momentumView.js';
+import { sumNumbers, formatPoints } from './lib/numbers.js';
+import { buildFixtureList } from './lib/fixtureList.js';
+import { buildLastSeasonHtml } from './lib/lastSeasonView.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeRadar();
@@ -260,13 +261,15 @@ function initializeRadar() {
         };
 
         try {
-            const [summaryArr, fixtures, positionData, last5Data, indexScores, momentum] = await Promise.all([
+            const [summaryArr, fixtures, positionData, last5Data, indexScores, momentum, lastSeason] = await Promise.all([
                 fetchJsonSafe(`/get_player_summary?id=${playerId}`),
                 fetchJsonSafe(`/get_next_5_gameweeks?id=${playerId}`),
                 fetchJsonSafe('/api/top-5-players'),
                 fetchJsonSafe(`/get_player_last_5_points?id=${playerId}`),
                 fetchJsonSafe('/get_player_index_scores'),
-                fetchJsonSafe(`/api/player/${playerId}/momentum`)
+                fetchJsonSafe(`/api/player/${playerId}/momentum`),
+                // Last season's baseline. A failed fetch gives null and the line is left out.
+                fetchJsonSafe(`/api/player/${playerId}/last-season`)
             ]);
 
             const summary = Array.isArray(summaryArr) ? summaryArr[0] : summaryArr;
@@ -275,7 +278,7 @@ function initializeRadar() {
                 return;
             }
 
-            currentCards = buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum);
+            currentCards = buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum, lastSeason);
             currentMiniIndex = 0;
 
             sheetContent.innerHTML = `
@@ -346,9 +349,10 @@ function initializeRadar() {
         'Forward': 'forwards'
     };
 
-    function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum) {
+    function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum, lastSeason) {
         const safeLast5 = Array.isArray(last5Data) ? last5Data : [];
-        const last5Values = safeLast5.map(d => d.points);
+        // Coerce to real numbers: older responses sent totals as text.
+        const last5Values = safeLast5.map(d => Number(d.points) || 0);
         const positionKey = POSITION_DATA_KEYS[summary.position_name];
         const avg5Values = (positionData && positionKey && positionData[positionKey])
                      ? positionData[positionKey].averageScores
@@ -365,7 +369,7 @@ function initializeRadar() {
         const indexEntry = (rawIndexEntry && rawIndexEntry.web_name === summary.name) ? rawIndexEntry : null;
 
         const cards = [
-            buildFormCard(last5Values, avg5Values),
+            buildFormCard(last5Values, avg5Values, lastSeason),
             buildFixtureCard(fixtures),
             buildSeasonNumbersCard(summary),
             buildSetPieceCard(summary),
@@ -390,20 +394,24 @@ function initializeRadar() {
         </div>`;
     }
 
-    function buildFormCard(last5, avg5) {
+    function buildFormCard(last5, avg5, lastSeason) {
+        // buildLastSeasonHtml gives '' once this season has 6 or more appearances,
+        // so the line only ever appears while the chart has a small sample.
+        const lastSeasonHtml = buildLastSeasonHtml(lastSeason);
         if (!last5.length) {
-            return emptyStateCard('Form — last 5 vs average', "No recent gameweek data for this player yet.");
+            return emptyStateCard('Form — last 5 vs average', `No recent gameweek data for this player yet.${lastSeasonHtml}`);
         }
         return `<div class="mini-card mini-slide">
             <div class="mc-title">Form — last 5 vs average</div>
             <div style="margin: 10px 0;">${buildSparkline(last5, avg5)}</div>
             <div class="mc-caption">${describeForm(last5, avg5)}</div>
+            ${lastSeasonHtml}
         </div>`;
     }
 
     function describeForm(last5, avg5) {
-        const total = last5.reduce((a, b) => a + b, 0);
-        const avgTotal = avg5.reduce((a, b) => a + b, 0);
+        const total = sumNumbers(last5);
+        const avgTotal = sumNumbers(avg5);
         if (total === 0 && avgTotal === 0) {
             return "No points on the board across these 5 gameweeks yet.";
         }
@@ -414,10 +422,10 @@ function initializeRadar() {
             return `Streaky — swinging between ${Math.min(...last5)} and ${Math.max(...last5)} points across these 5 gameweeks.`;
         }
         if (total > avgTotal) {
-            return `Consistently above the position average over these 5 gameweeks (${total} vs ${avgTotal} points).`;
+            return `Consistently above the position average over these 5 gameweeks (${formatPoints(total)} vs ${formatPoints(avgTotal)} points).`;
         }
         if (total < avgTotal) {
-            return `Below the position average over these 5 gameweeks (${total} vs ${avgTotal} points).`;
+            return `Below the position average over these 5 gameweeks (${formatPoints(total)} vs ${formatPoints(avgTotal)} points).`;
         }
         return "Right in line with the position average over these 5 gameweeks.";
     }
@@ -427,17 +435,9 @@ function initializeRadar() {
             return emptyStateCard('Upcoming Fixtures', "No fixture data available for this player right now.");
         }
 
-        const chips = buildFixtureChips(fixtures);
-
-        const avgDots = fixtures.map(f => `<div class="diff-dot" style="background:${difficultyColor(f.leagueAverageDifficulty)};" title="League average difficulty for gameweek ${f.gameweek}: ${f.leagueAverageDifficulty ?? 'not available'}"></div>`).join('');
-
         return `<div class="mini-card mini-slide">
             <div class="mc-title">Upcoming Fixtures</div>
-            <div class="fixture-chip-row">${chips}</div>
-            <div class="fixture-compare-row">
-                <span class="fixture-compare-label">League average</span>
-                <div class="fixture-dot-row">${avgDots}</div>
-            </div>
+            ${buildFixtureList(fixtures)}
             <div class="mc-caption">${describeFixtureRun(fixtures)}</div>
         </div>`;
     }
@@ -560,10 +560,10 @@ function initializeRadar() {
         const rows = [];
 
         if (last5.length) {
-            const total = last5.reduce((a, b) => a + b, 0);
-            const avgTotal = avg5.reduce((a, b) => a + b, 0);
+            const total = sumNumbers(last5);
+            const avgTotal = sumNumbers(avg5);
             const max = Math.max(total, avgTotal, 1);
-            rows.push(summaryRow('Form, last 5 gameweeks', `${total} pts`, `Position average: ${avgTotal} pts`, (total / max) * 100, (avgTotal / max) * 100));
+            rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} points`, `Position average: ${formatPoints(avgTotal)} points`, (total / max) * 100, (avgTotal / max) * 100));
         }
 
         const realFixtures = (fixtures || []).filter(f => f.homeOrAway !== 'Blank');

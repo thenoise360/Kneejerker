@@ -65,8 +65,8 @@ USER = current_config.USER
 PASSWORD = current_config.PASSWORD
 DB = current_config.DATABASE
 
-season = "2025_2026"
-season_start = 2026
+# The season is read at call time from dataModels (see refresh_season_start); never frozen here.
+from FPL_site.dataModels import current_season_start, refresh_season_start
 
 PREDICTIONS_TABLE = 'player_predictions'
 
@@ -398,7 +398,7 @@ def prepare_data():
             f"bps, influence, creativity, threat, ict_index, starts, expected_goals, expected_assists, "
             f"expected_goal_involvements, expected_goals_conceded, total_points, in_dreamteam, team_code, team "
             f"FROM {DB}.bootstrapstatic_elements "
-            f"WHERE Year_start = {season_start};"
+            f"WHERE Year_start = {current_season_start()};"
         )
         players_df = fetch_mysql_data(players_query, DB)
         logging.info("Using DB fallback for player data.")
@@ -937,6 +937,7 @@ def run_daily_predictions():
     retrain inside a web request.
     """
     logging.info("Starting daily predictive-picks training run.")
+    refresh_season_start()  # the update step may just have rolled the season over
     current_gameweek = get_current_gameweek()
 
     players_df, events_df, fixtures_df = prepare_data()

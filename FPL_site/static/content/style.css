@@ -22,6 +22,7 @@
     --plum-tint: #6a2a7c;
     --teal: #29C2B2;
     --pink: #F67CB0;
+    --pink-ink: #B83774; /* darker pink for TEXT on white/offwhite ONLY: 5.5:1 on white, 5.2:1 on offwhite, but just 4.35:1 on --grey, so never use it on grey backgrounds. Keep --pink for fills. */
     --charcoal: #333333;
     --offwhite: #F9F9F9;
     --grey: #E5E5E5;
@@ -1285,12 +1286,13 @@ a {
     background: rgba(75, 20, 91, .08);
     padding: 4px 10px;
     border-radius: 100px;
+    white-space: nowrap; /* "Gameweek 12" must never wrap */
 }
 
 .deadline {
     font-size: 11px;
     font-weight: 600;
-    color: var(--pink);
+    color: var(--pink-ink);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
@@ -1344,3 +1346,38 @@ body {
     border-radius: 2px;
     margin: 0 auto 15px;
 }
+
+/* Upcoming fixtures list: "Gameweek 12 · Crystal Palace, away · [Tough]" */
+.fixture-list {
+    list-style: none;
+    margin: 10px 0;
+    padding: 0;
+}
+.fixture-list-row {
+    font-size: 12px;
+    color: var(--charcoal);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--grey);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 5px;
+}
+.fixture-list-row:last-child { border-bottom: 0; }
+.fixture-list-blank { color: #666; }
+.fixture-list-compact .fixture-list-row { font-size: 11.5px; padding: 4px 0; }
+.fixture-list-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+}
+
+/* Last-season line on the player Form card (scoped to the two new classes). */
+.last-season-line { margin-top: 8px; color: var(--charcoal); }
+.last-season-line + .recap-details { margin-top: 6px; padding-top: 6px; }
+
+/* "Last time against them" caption under a fixture row (flex-basis makes it take its own line). */
+.fixture-list-caption { flex-basis: 100%; font-size: 11.5px; color: #666; }
+.fixture-list-numbers { list-style: none; margin: 0; padding: 0; font-size: 11.5px; color: var(--charcoal); }
+.fixture-list-numbers li { padding: 3px 0; }

@@ -9,7 +9,6 @@ import json
 from scipy.stats import pearsonr
 from scipy.stats import linregress
 
-season = "2025_2026"
 
 
 # URL set up and league codes

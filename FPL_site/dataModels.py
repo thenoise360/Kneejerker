@@ -1,3 +1,4 @@
+import os
 import mysql.connector
 from mysql.connector import Error
 from FPL_site.config import current_config
@@ -50,23 +51,93 @@ user = current_config.USER
 password = current_config.PASSWORD
 db = current_config.DATABASE
 
-season = "2025_2026"
-season_start = 2026
 
 NULL = None
 
-def connect_db():
+def connect_db(timeout=None):
     try:
+        extra = {'connection_timeout': timeout} if timeout else {}
         mydb = mysql.connector.connect(
             host=host,
             user=user,
             password=password,
             database=db,
+            **extra,
         )
         return mydb
     except Error as e:
         logger.error(f"Error while connecting to MySQL: {e}")
         return None
+
+# The season (year_start) is read from the database rather than hard-coded: a constant went stale
+# at every summer rollover, filing the new season's data under the old year until someone edited it.
+# The newest year_start in bootstrapstatic_teams is what the update job most recently wrote.
+#
+# Resolved once at import (the web app keeps that value until it restarts) and re-resolved by
+# refresh_season_start(), which the daily jobs call at run time. If the database cannot be reached
+# at import, we fall back to a year derived from today's date (a season starts in July-August), so
+# the value can be at most one season off, and the next successful refresh_season_start() fixes
+# it. A web process that booted on the fallback keeps it until restart. Under KJ_SKIP_DB_INIT
+# (tests, offline tooling) no connection is attempted.
+SEASON_CONNECT_TIMEOUT = 5
+
+
+def _calendar_season_start(today=None):
+    today = today or datetime.now()
+    return today.year if today.month >= 7 else today.year - 1
+
+
+FALLBACK_SEASON_START = _calendar_season_start()
+
+
+def _query_season_start():
+    """Newest year_start in the database, or None if unavailable (never raises)."""
+    if os.environ.get('KJ_SKIP_DB_INIT') == '1':
+        return None
+    conn = None
+    try:
+        conn = connect_db(timeout=SEASON_CONNECT_TIMEOUT)
+        if conn is None:
+            logger.error("Could not connect to read the current season from the database.")
+            return None
+        cursor = conn.cursor()
+        cursor.execute(f'SELECT MAX(year_start) FROM {db}.bootstrapstatic_teams')
+        row = cursor.fetchone()
+        return int(row[0]) if row and row[0] else None
+    except Exception as e:
+        logger.error(f"Could not read the current season from the database: {e}")
+        return None
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _resolve_season_start(default):
+    found = _query_season_start()
+    if found is None and os.environ.get('KJ_SKIP_DB_INIT') != '1':
+        logger.error(f"season_start falling back to {default}; refresh_season_start() will correct it.")
+    return found if found is not None else default
+
+
+season_start = _resolve_season_start(FALLBACK_SEASON_START)
+
+
+def current_season_start():
+    """The season as of now, read at call time (not frozen into an importing module's namespace)."""
+    return season_start
+
+
+def refresh_season_start():
+    """Re-read the season from the database. Keeps the current value if the database is unavailable."""
+    global season_start
+    found = _query_season_start()
+    if found is not None:
+        season_start = found
+    return season_start
+
 
 # Get us the current gameweek number
 def generateCurrentGameweek():
@@ -985,36 +1056,36 @@ def get_most_consistent_players():
     
     try:
         if current_gw == 0:
-            # Pre-season logic: Use end of last season (2025)
+            # Pre-season logic: Use end of last season (the season before the current one)
             # We must use 'code' to bridge between seasons as IDs may have changed
-            last_year = 2025
+            last_year = season_start - 1
             query = f"""
                 SELECT 
-                    e2026.id, 
-                    e2026.web_name,
-                    e2026.now_cost,
-                    e2026.team_code,
+                    e_cur.id, 
+                    e_cur.web_name,
+                    e_cur.now_cost,
+                    e_cur.team_code,
                     t.short_name as team_short_name,
                     et.singular_name_short as position,
                     stats.std_dev,
                     stats.avg_points
                 FROM (
                     SELECT 
-                        e2025.code,
+                        e_prev.code,
                         STDDEV_POP(h.total_points) as std_dev, 
                         AVG(h.total_points) as avg_points,
                         COUNT(CASE WHEN h.minutes >= 60 THEN 1 END) as starts
                     FROM {db}.elementsummary_history h
-                    JOIN {db}.bootstrapstatic_elements e2025 ON h.element = e2025.id AND e2025.year_start = {last_year}
+                    JOIN {db}.bootstrapstatic_elements e_prev ON h.element = e_prev.id AND e_prev.year_start = {last_year}
                     WHERE h.year_start = {last_year}
                     AND h.round BETWEEN 34 AND 38
-                    GROUP BY e2025.code
+                    GROUP BY e_prev.code
                     HAVING starts >= 4
                     AND avg_points >= 3.5
                 ) stats
-                JOIN {db}.bootstrapstatic_elements e2026 ON stats.code = e2026.code AND e2026.year_start = {season_start}
-                JOIN {db}.bootstrapstatic_teams t ON e2026.team = t.id AND t.year_start = {season_start}
-                JOIN {db}.bootstrapstatic_element_types et ON e2026.element_type = et.id
+                JOIN {db}.bootstrapstatic_elements e_cur ON stats.code = e_cur.code AND e_cur.year_start = {season_start}
+                JOIN {db}.bootstrapstatic_teams t ON e_cur.team = t.id AND t.year_start = {season_start}
+                JOIN {db}.bootstrapstatic_element_types et ON e_cur.element_type = et.id
                 ORDER BY stats.std_dev ASC
                 LIMIT 10
             """
@@ -1151,6 +1222,11 @@ def get_momentum_players():
         cursor.close()
         dbConnect.close()
 
+def new_manager_reason(manager_name, gameweek):
+    """Plain-words reason line shown on a new-manager player card."""
+    return f"New manager ({manager_name}) since gameweek {gameweek}. Their role could change."
+
+
 def get_new_manager_players():
     """
     Fetches players from teams with a new manager appointed within the last 4 gameweeks.
@@ -1217,7 +1293,7 @@ def get_new_manager_players():
                     'name': p['web_name'],
                     'team': p['team_name'],
                     'position': p['position'],
-                    'why': f"New manager ({team['manager_name']}) since GW{team['appointment_gameweek']} - role could change.",
+                    'why': new_manager_reason(team['manager_name'], team['appointment_gameweek']),
                     'shirt': player_shirts.get(p['team_code'], player_shirts['Unknown'])
                 })
                 
@@ -1291,7 +1367,9 @@ def get_top_10_net_transfers_out():
     return data
 
 
-def next_5_gameweeks(player_id):
+def next_5_gameweeks(player_id, include_history=False):
+    # include_history adds 'lastTime' (how the player did against each opponent last season).
+    # It costs several extra queries, so only the single-player route asks for it.
 
     dbConnect = connect_db()
     if dbConnect is None:
@@ -1301,7 +1379,7 @@ def next_5_gameweeks(player_id):
     gw = generateCurrentGameweek()
     
     # Always ensure you fetch all results or close the cursor before executing another query
-    query = f'SELECT id, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
+    query = f'SELECT id, name, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
     cursor.execute(query)
     teams = cursor.fetchall()  # Fetch all team information
 
@@ -1341,6 +1419,16 @@ def next_5_gameweeks(player_id):
 
     fixtures = list()
 
+    # How this player did against each opponent last season, loaded once for the whole list.
+    # History is background: if it can't be read, the fixtures still come back without it.
+    from FPL_site import playerHistory
+    history_context = None
+    if include_history:
+        try:
+            history_context = playerHistory.fetch_last_time_context(cursor, player_id)
+        except Exception as e:
+            logger.error(f"Could not load last season's meetings for player {player_id}: {e}")
+
     while i < gw + 6:
         team_id = player_info['team_id']
         query = f'''
@@ -1377,11 +1465,13 @@ def next_5_gameweeks(player_id):
         if not fixtures_in_gw:
             fixtures.append({
                 'teamName': '-',
+                'teamFullName': '',
                 'difficulty': "None",
                 'shirtImage': player_shirts['Unknown'],
                 'homeOrAway': 'Blank',
                 'gameweek': i,
-                'leagueAverageDifficulty': league_avg_difficulty
+                'leagueAverageDifficulty': league_avg_difficulty,
+                'lastTime': None
             })
             i += 1
             continue
@@ -1401,11 +1491,13 @@ def next_5_gameweeks(player_id):
 
             fixtures.append({
                 'teamName': opponent,
+                'teamFullName': next(t['name'] for t in teams if t['id'] == opponent_id),
                 'difficulty': difficulty,
                 'shirtImage': player_shirts.get(opponent_code, player_shirts['Unknown']),
                 'homeOrAway': venue,
                 'gameweek': i,
-                'leagueAverageDifficulty': league_avg_difficulty
+                'leagueAverageDifficulty': league_avg_difficulty,
+                'lastTime': playerHistory.last_time_for(history_context, opponent_id, venue == 'Home')
             })
 
         i += 1             
@@ -1769,14 +1861,19 @@ def get_player_last_5_points(player_id):
         rows = cursor.fetchall()
 
         by_gw = {row['gw']: row for row in rows}
-        
+
+        # SUM() comes back from MySQL as a Decimal, which JSON turns into a
+        # string and the browser then glues together instead of adding.
+        def as_int(value, default):
+            return int(value) if value is not None else default
+
         result = []
         for gw in gws_list:
             result.append({
                 'gw': gw,
-                'points': by_gw[gw]['points'] if gw in by_gw else 0,
-                'minutes': by_gw[gw]['minutes'] if gw in by_gw else 0,
-                'difficulty': by_gw[gw]['difficulty'] if gw in by_gw else 3
+                'points': as_int(by_gw[gw]['points'], 0) if gw in by_gw else 0,
+                'minutes': as_int(by_gw[gw]['minutes'], 0) if gw in by_gw else 0,
+                'difficulty': as_int(by_gw[gw]['difficulty'], None) if gw in by_gw else None
             })
         return result
     except Exception as e:

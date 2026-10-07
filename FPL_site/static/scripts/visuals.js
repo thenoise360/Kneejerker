@@ -1,6 +1,7 @@
 /**
  * visuals.js - Shared rendering logic for data visuals like sparklines and fixture chips.
  */
+import { escapeHtml } from './lib/escapeHtml.js';
 
 export function difficultyColor(diff) {
     if (diff === 'None' || diff === null || diff === undefined) return '#c9c4cc';
@@ -83,7 +84,7 @@ export function buildChartLegend(entries) {
     return `<div class="chart-legend">${entries.map(e => `
         <div class="chart-legend-item">
             <span class="chart-legend-dot${e.dashed ? ' dashed' : ''}"${e.dashed ? '' : ` style="background:${e.color};"`}></span>
-            <span>${e.label}</span>
+            <span>${escapeHtml(e.label)}</span>
         </div>
     `).join('')}</div>`;
 }
@@ -94,23 +95,8 @@ export function buildSparkline(last5, avg5) {
         series: [{ color: 'var(--teal)', values: last5 }],
         avgSeries: avg5,
         w: 260, h: 60, padTop: 6, padBottom: 14, padLeft: 22, padRight: 4,
-        formatValue: v => `${v}`
+        formatValue: v => `${Math.round(v)}`
     });
-}
-
-export function buildFixtureChips(fixtures) {
-    if (!fixtures || fixtures.length === 0) return '';
-    
-    return fixtures.map(f => {
-        if (f.homeOrAway === 'Blank') {
-            return `<div class="fixture-chip fixture-chip-blank" title="No fixture in gameweek ${f.gameweek}">
-                <span>GW${f.gameweek}</span><span>No fixture</span>
-            </div>`;
-        }
-        return `<div class="fixture-chip" style="background:${difficultyColor(f.difficulty)}; color:${difficultyTextColor(f.difficulty)};" title="Gameweek ${f.gameweek}, difficulty ${f.difficulty} of 5">
-            <span>${f.teamName}</span><span>${f.homeOrAway === 'Home' ? '(H)' : '(A)'}</span>
-        </div>`;
-    }).join('');
 }
 
 export function describeFixtureRun(fixtures) {
@@ -145,8 +131,7 @@ export function buildOwnershipArea(history, avgHistory) {
 }
 
 // Season numbers grid (02.5): backend metric title -> plain-language label.
-// "Points per GBP1m" is spelled out in full per the no-acronyms rule, even
-// though the backend's own metric title still uses the "£1m" shorthand.
+// The pound sign is used rather than the letters "GBP" (an acronym).
 // Shared between the player profile bottom sheet (radar.js) and the
 // Discovery comparison panel's Season Numbers metric.
 export const SEASON_STATS = [
@@ -155,7 +140,7 @@ export const SEASON_STATS = [
     { metricTitle: 'Assists', label: 'Assists' },
     { metricTitle: 'Clean sheets', label: 'Clean sheets', positionsOnly: ['Goalkeeper', 'Defender'] },
     { metricTitle: 'Bonus points', label: 'Bonus points' },
-    { metricTitle: 'Points per £1m', label: 'Points per GBP1m' }
+    { metricTitle: 'Points per £1m', label: 'Points per £1m' }
 ];
 
 export function formatStatValue(v) {

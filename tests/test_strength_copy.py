@@ -5,7 +5,7 @@ import re
 
 import pytest
 
-from FPL_site.strengthCopy import strength_summary
+from FPL_site.strengthCopy import strength_summary, gauge_summary
 
 
 def make(**over):
@@ -219,3 +219,50 @@ def test_goalkeeper_wording_uses_the_goalkeepers_own_chance():
 def test_backup_goalkeeper_counts_as_a_regular_defender():
     s = make(conceded_adjusted=1.3, missing=[dict(dict(player('defence', position=1), first_choice=True), first_choice=False)])
     assert reason(s) == 'One of their regular defenders is out.'
+
+
+# Gauge ratios and words come from the server, so the gauge, the headline and
+# the reason all use the same thresholds.
+def test_gauge_ratios_are_unrounded_to_three_places():
+    g = gauge_summary(make(scored=1.2, scored_adjusted=1.1, conceded=1.0, conceded_adjusted=1.1, league_scored=1.5))
+    assert g['attack']['now'] == round(1.1 / 1.5, 3)
+    assert g['attack']['usual'] == round(1.2 / 1.5, 3)
+    assert g['defence']['now'] == round(1.5 / 1.1, 3)
+    assert g['defence']['usual'] == round(1.5 / 1.0, 3)
+
+
+def test_slight_headline_never_pairs_with_same_as_usual():
+    # Reviewer reproduction: both figures round to 1.0, but the drop is about 5.8 percent.
+    s = make(scored=1.04, scored_adjusted=0.98, conceded=1.0, conceded_adjusted=1.0, league_scored=1.38,
+             missing=[player(role='attack', share=0.2)])
+    assert 'a little weaker' in headline(s)
+    words = gauge_summary(s)['attack']['words']
+    assert 'a little weaker than usual' in words
+    assert 'same as usual' not in words
+
+
+def test_gauge_words_use_the_copy_thresholds():
+    base = dict(scored=1.0, conceded=1.0, conceded_adjusted=1.0, league_scored=1.0)
+    assert 'the same as usual' in gauge_summary(make(scored_adjusted=0.96, **base))['attack']['words']
+    assert 'a little weaker than usual' in gauge_summary(make(scored_adjusted=0.94, **base))['attack']['words']
+    assert 'a little weaker than usual' in gauge_summary(make(scored_adjusted=0.86, **base))['attack']['words']
+    words = gauge_summary(make(scored_adjusted=0.84, **base))['attack']['words']
+    assert 'weaker than usual' in words and 'a little' not in words
+    # Against the league: the usual figure, with the 1.15 and 0.87 limits.
+    assert 'above average' in gauge_summary(make(scored=1.15, scored_adjusted=1.15, conceded=1.0, conceded_adjusted=1.0, league_scored=1.0))['attack']['words']
+    assert 'below average' in gauge_summary(make(scored=0.87, scored_adjusted=0.87, conceded=1.0, conceded_adjusted=1.0, league_scored=1.0))['attack']['words']
+    assert 'about average' in gauge_summary(make(scored=1.0, scored_adjusted=1.0, conceded=1.0, conceded_adjusted=1.0, league_scored=1.0))['attack']['words']
+
+
+def test_defence_words_and_no_digits():
+    g = gauge_summary(make(scored=1.0, scored_adjusted=1.0, conceded=1.0, conceded_adjusted=1.2, league_scored=1.0))
+    assert g['defence']['words'].startswith('Defence: leakier than usual')
+    assert not re.search(r'\d', g['defence']['words'])
+    # Conceding well under the league average is a tight defence: above average.
+    tight = gauge_summary(make(scored=1.0, scored_adjusted=1.0, conceded=0.8, conceded_adjusted=0.8, league_scored=1.0))
+    assert 'above average for the league' in tight['defence']['words']
+
+
+def test_gauge_is_none_without_a_league_average_or_goals_conceded():
+    assert gauge_summary(make(league_scored=0)) is None
+    assert gauge_summary(make(conceded=0)) is None
