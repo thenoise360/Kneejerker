@@ -2,6 +2,7 @@ import os
 os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
 
 import re
+from datetime import date, datetime
 
 import pytest
 
@@ -101,3 +102,9 @@ def test_no_digits_or_acronyms_outside_date_sentence():
     assert not re.search(r'\d', undated['headline'] + undated['reason'])
     for result in (dated, undated):
         assert not re.search(r'\b[A-Z]{2,}\b', result['headline'] + result['reason'])
+
+
+@pytest.mark.parametrize('started_on', [date(2026, 10, 8), datetime(2026, 10, 8, 9, 0)])
+def test_no_games_accepts_date_objects(started_on):
+    # mysql.connector returns DATE columns as datetime.date.
+    assert '8 October 2026' in record_summary('Arsenal', [], started_on)['reason']

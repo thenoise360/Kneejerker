@@ -4,7 +4,10 @@ No randomness: every phrase is chosen by an explicit threshold, and each
 threshold has a test on both sides of it. No digits and no acronyms in any
 output, apart from the date in the "no games yet" sentence (a label, not a statistic).
 """
-from datetime import date
+from datetime import date, datetime
+
+MONTHS = ('January', 'February', 'March', 'April', 'May', 'June', 'July',
+          'August', 'September', 'October', 'November', 'December')
 
 EARLY_DAYS_BELOW = 8   # fewer logged games than this and the record is "early days"
 TREND_FROM = 0.5       # average goal difference per game, actual minus predicted
@@ -39,8 +42,14 @@ def _average_difference(games):
 
 
 def _format_date(started_on):
-    d = date.fromisoformat(started_on)
-    return f"{d.day} {d.strftime('%B')} {d.year}"
+    # The database hands back a date object; callers elsewhere may pass an ISO string.
+    if isinstance(started_on, datetime):
+        d = started_on.date()
+    elif isinstance(started_on, date):
+        d = started_on
+    else:
+        d = date.fromisoformat(started_on)
+    return f"{d.day} {MONTHS[d.month - 1]} {d.year}"
 
 
 def _no_games(started_on):
