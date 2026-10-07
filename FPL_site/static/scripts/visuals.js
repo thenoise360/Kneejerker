@@ -1,6 +1,7 @@
 /**
  * visuals.js - Shared rendering logic for data visuals like sparklines and fixture chips.
  */
+import { escapeHtml } from './lib/escapeHtml.js';
 
 export function difficultyColor(diff) {
     if (diff === 'None' || diff === null || diff === undefined) return '#c9c4cc';
@@ -83,7 +84,7 @@ export function buildChartLegend(entries) {
     return `<div class="chart-legend">${entries.map(e => `
         <div class="chart-legend-item">
             <span class="chart-legend-dot${e.dashed ? ' dashed' : ''}"${e.dashed ? '' : ` style="background:${e.color};"`}></span>
-            <span>${e.label}</span>
+            <span>${escapeHtml(e.label)}</span>
         </div>
     `).join('')}</div>`;
 }

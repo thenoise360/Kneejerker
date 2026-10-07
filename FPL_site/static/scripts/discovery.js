@@ -641,7 +641,7 @@ function buildStatBlock(label, players, valueFn, options = {}) {
     const avgTicks = options.avgValue != null
         ? `<div class="mp-stat-avg-marker" style="left:${pctOf(options.avgValue)}%;"></div>`
         : results.map((r, i) => (r.avgValue !== null && r.avgValue !== undefined)
-            ? `<div class="mp-stat-avg-tick" style="left:${pctOf(r.avgValue)}%; border-color:${COMPARISON_COLORS[i]};" title="${players[i].name}'s average: ${r.avgValue}"></div>`
+            ? `<div class="mp-stat-avg-tick" style="left:${pctOf(r.avgValue)}%; border-color:${COMPARISON_COLORS[i]};" title="${escapeHtml(players[i].name)}'s average: ${r.avgValue}"></div>`
             : '').join('');
 
     // Collision avoidance: when 2-3 players' values sit close enough together
@@ -664,7 +664,7 @@ function buildStatBlock(label, players, valueFn, options = {}) {
         const pct = pctOf(r.value);
         const valueClass = belowLevel[i] ? 'mp-stat-dot-value below' : 'mp-stat-dot-value';
         return `<div class="${valueClass}" style="left:${pct}%; color:${COMPARISON_COLORS[i]};">${r.display}</div>
-            <div class="mp-stat-dot" style="left:${pct}%; background:${COMPARISON_COLORS[i]};" title="${players[i].name}: ${r.display}"></div>`;
+            <div class="mp-stat-dot" style="left:${pct}%; background:${COMPARISON_COLORS[i]};" title="${escapeHtml(players[i].name)}: ${r.display}"></div>`;
     }).join('');
 
     const axisLeft = options.axisLabels ? options.axisLabels[0] : `${Math.round(min)}`;
