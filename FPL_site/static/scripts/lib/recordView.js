@@ -3,6 +3,7 @@
 // access here, so they can be tested in Node. club.js puts them on the page.
 import { escapeHtml } from './escapeHtml.js';
 import { renderMessage } from './recapView.js';
+import { numbersToggle } from './numbersToggle.js';
 
 // Shown if the record request itself fails (no connection, server down).
 export const RECORD_LOAD_FAILED = {
@@ -38,8 +39,8 @@ function oneDecimal(value) {
     return Number(value).toFixed(1);
 }
 
-// One row per finished game: who and where on top, then our prediction and
-// the real score side by side, so the two can be compared at a glance.
+// One row per finished game: who and where, with the verdict badge. Our
+// prediction and the real score sit side by side underneath, opt in (kj-num).
 function gameRow(game) {
     const where = game.is_home ? 'home to' : 'away at';
     const verdict = VERDICTS[game.verdict];
@@ -48,7 +49,7 @@ function gameRow(game) {
         : '';
     return `<li class="record-game">
             <div class="record-game-head"><span>Gameweek ${escapeHtml(game.gameweek)}, ${where} ${escapeHtml(game.opponent)}</span>${badge}</div>
-            <div class="record-scores">
+            <div class="record-scores kj-num">
                 <div><span class="record-score-label">We expected</span> <span class="record-score">${escapeHtml(oneDecimal(game.predicted_for))}–${escapeHtml(oneDecimal(game.predicted_against))}</span></div>
                 <div><span class="record-score-label">It finished</span> <span class="record-score">${escapeHtml(game.actual_for)}–${escapeHtml(game.actual_against)}</span></div>
             </div>
@@ -88,13 +89,14 @@ export function renderRecord(payload) {
         ? `<p class="sub">We started keeping score on ${escapeHtml(longDate(payload.started_on))}.</p>`
         : '';
     return `
-        <div class="card" id="prediction-record">
+        <div class="card kj-numbers" id="prediction-record">
             <div class="eyebrow-sm">how our predictions are doing</div>
             <h3 class="recap-verdict">${escapeHtml(payload.headline)}</h3>
             <p>${escapeHtml(payload.reason)}</p>
             ${early}
             <ul class="record-games">${recent.map(gameRow).join('')}</ul>
             ${earlierBlock}
+            ${numbersToggle()}
             ${started}
         </div>`;
 }

@@ -18,8 +18,9 @@ test('escapes player names', () => {
 
 test('guest recap: verdict and reason first, then the figures as tiles and the standouts', () => {
     const html = renderGuestRecap(guest, 5);
-    const [beforeTiles, tilesOn] = html.split('<div class="stat-tiles">');
+    const [beforeTiles, tilesOn] = html.split('<div class="stat-tiles kj-num">');
     assert.match(beforeTiles, /A fairly typical week/);
+    assert.match(beforeTiles, /class="card kj-numbers" id="guest-recap"/);
     assert.match(beforeTiles, /Haaland led the way with a hat-trick\./);
     assert.doesNotMatch(beforeTiles, /48/);
     // Numbers are part of the card now, not behind a "See the numbers" expander.
@@ -29,6 +30,9 @@ test('guest recap: verdict and reason first, then the figures as tiles and the s
     assert.match(tilesOn, /Standout players/);
     assert.match(tilesOn, /A hat-trick/);
     assert.match(tilesOn, /Manchester City/);
+    // The standouts are opt in too, and the switch comes last.
+    assert.match(tilesOn, /<div class="kj-num">\s*<div class="recap-section-title">Standout players/);
+    assert.match(tilesOn, /Show the numbers<\/span><\/label>\s*<\/div>\s*$/);
 });
 
 test('guest recap without a highest score omits it', () => {
@@ -67,7 +71,7 @@ const personal = {
 
 test('personal recap: verdict and right call first, then your score beside the average', () => {
     const html = renderPersonalRecap(personal, 5);
-    const [beforeTiles, tilesOn] = html.split('<div class="stat-tiles">');
+    const [beforeTiles, tilesOn] = html.split('<div class="stat-tiles kj-num">');
     assert.match(beforeTiles, /Above average\. Nicely done\./);
     assert.match(beforeTiles, /Your captain call/);
     assert.doesNotMatch(beforeTiles.split('recap-call-points')[0], /61/);
@@ -107,7 +111,7 @@ test('personal recap: missing right call still renders without throwing', () => 
 test('personal recap: the verdict and the call wording contain no digits', () => {
     const html = renderPersonalRecap(personal, 5);
     // Only the heading and the call sentence; the points tag and tiles come after.
-    const words = html.split('<span class="recap-call-points">')[0];
+    const words = html.split('<span class="recap-call-points kj-num">')[0];
     // The "your gameweek 5" label is the one allowed number; strip it, then no digits may remain.
     const visible = words.replace(/<[^>]+>/g, ' ').replace(/gameweek \d+/g, 'gameweek');
     assert.doesNotMatch(visible, /\d/);
@@ -115,7 +119,7 @@ test('personal recap: the verdict and the call wording contain no digits', () =>
 
 test('personal recap: the right-call points sit on the call line', () => {
     const html = renderPersonalRecap(personal, 5);
-    assert.match(html, /Captaining Salah paid off\. <span class="recap-call-points">Salah: 12 points<\/span><\/p>/);
+    assert.match(html, /Captaining Salah paid off\. <span class="recap-call-points kj-num">Salah: 12 points<\/span><\/p>/);
 });
 
 test('personal recap: no right-call points line when points is not set', () => {

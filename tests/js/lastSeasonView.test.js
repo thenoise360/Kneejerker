@@ -25,8 +25,10 @@ test('hidden when there is no payload or no sample count', () => {
 test('builds the headline with the numbers on a quieter line underneath', () => {
     const html = buildLastSeasonHtml(played);
     assert.ok(!html.includes('<details'));
-    assert.ok(html.includes('<div class="mc-caption last-season-detail">about 6.1 points a game across 34 games</div>'));
-    assert.equal(text(html), 'Last season: a regular points-scorer (Brighton) about 6.1 points a game across 34 games');
+    // Opt in: the detail is hidden until the block's own switch is on.
+    assert.ok(html.startsWith('<div class="kj-numbers">'));
+    assert.ok(html.includes('<div class="mc-caption last-season-detail kj-num">about 6.1 points a game across 34 games</div>'));
+    assert.equal(text(html), 'Last season: a regular points-scorer (Brighton) about 6.1 points a game across 34 games Show the numbers');
     // The headline comes first, so it reads before the numbers.
     assert.ok(html.indexOf('Last season:') < html.indexOf('last-season-detail'));
 });

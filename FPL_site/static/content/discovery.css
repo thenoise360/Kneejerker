@@ -721,13 +721,15 @@
    content size and end up centred as a narrow column. */
 .mp-visual .season-grid,
 .mp-visual .mp-summary-rows,
-.mp-visual .fixture-list {
+.mp-visual .fixture-list,
+.mp-visual .fixture-list-block {
     width: 100%;
 }
 
 /* The single-player fixture list reads left to right like the Radar card,
    not centred like a chart. */
-.mp-visual .fixture-list {
+.mp-visual .fixture-list,
+.mp-visual .fixture-list-block {
     text-align: left;
 }
 

@@ -6,6 +6,7 @@
 // coloured pill, so the meaning never depends on colour alone.
 import { escapeHtml } from './escapeHtml.js';
 import { difficultyColor, difficultyTextColor } from '../visuals.js';
+import { numbersToggle } from './numbersToggle.js';
 
 // FPL rates a fixture 1 (easiest) to 5 (hardest). We group that into three
 // plain words that match the three colour bands the pill uses.
@@ -52,8 +53,8 @@ export function lastTimeCaption(lastTime) {
 }
 
 // The numbers behind a "played" caption, as a short line: "9 points · 90 minutes · won 3–1 at home".
-// They sit right under the caption of the row they belong to, so the reader
-// never has to match a separate list back to the fixtures. '' for anything else.
+// They are opt in: hidden until "Show the numbers" is on, then shown right under
+// the caption of the row they belong to. '' for anything else.
 export function lastTimeStats(lastTime) {
     if (!lastTime || lastTime.kind !== 'played') return '';
     const points = `${lastTime.points} ${Number(lastTime.points) === 1 ? 'point' : 'points'}`;
@@ -75,9 +76,15 @@ export function buildFixtureList(fixtures, options = {}) {
         const venue = f.homeOrAway === 'Home' ? 'home' : 'away';
         const caption = lastTimeCaption(f.lastTime);
         const stats = lastTimeStats(f.lastTime);
-        const statsHtml = stats ? `<span class="fixture-list-stats">${escapeHtml(stats)}</span>` : '';
+        const statsHtml = stats ? `<span class="fixture-list-stats kj-num">${escapeHtml(stats)}</span>` : '';
         const captionHtml = caption ? ` <span class="fixture-list-caption">${escapeHtml(caption)}${statsHtml}</span>` : '';
         return `<li class="fixture-list-row"><span>${week}</span> · <span>${team}, ${venue}</span> · ${pill(f.difficulty)}${captionHtml}</li>`;
     }).join('');
-    return `<ul class="fixture-list${options.compact ? ' fixture-list-compact' : ''}">${rows}</ul>`;
+    const list = `<ul class="fixture-list${options.compact ? ' fixture-list-compact' : ''}">${rows}</ul>`;
+    // Only offer the switch when at least one row has numbers to reveal. The list and
+    // the switch share one wrapper, so a flex container (Discovery's panel) sees a
+    // single child and never lays them side by side.
+    const hasStats = fixtures.some(f => f.homeOrAway !== 'Blank' && lastTimeStats(f.lastTime));
+    if (!hasStats) return list;
+    return `<div class="fixture-list-block kj-numbers">${list}${numbersToggle()}</div>`;
 }

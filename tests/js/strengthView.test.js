@@ -138,3 +138,14 @@ test('a slight headline never sits next to a gauge that says the same as usual',
     assert.doesNotMatch(html, /same as usual/);
     assert.match(html, /aria-label="Attack: a little weaker than usual/);
 });
+
+test('figures and missing players are opt in behind the card switch', () => {
+    const html = renderStrength(ready);
+    assert.match(html, /class="card kj-numbers" id="team-strength"/);
+    assert.match(html, /<dl class="strength-figures kj-num">/);
+    assert.match(html, /class="strength-missing kj-num"/);
+    assert.match(html, /Show the numbers/);
+    // Without a dial there is nothing else to look at, so the figures always show.
+    const noDials = renderStrength({ ...ready, gauge: null });
+    assert.match(noDials, /<dl class="strength-figures">/);
+});

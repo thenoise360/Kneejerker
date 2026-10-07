@@ -10,17 +10,20 @@ const decision = {
 
 test('decision shows title and reason first, then the figures as facts', () => {
     const html = renderDecision({ decision, based_on: 'everyone', squad_gameweek: null });
-    const [before, facts] = html.split('<ul class="decision-facts">');
+    const [before, facts] = html.split('<ul class="decision-facts kj-num">');
     assert.match(before, /Captain: Salah stands out/);
     assert.match(before, /your call/);
     assert.doesNotMatch(before, /8\.0/);
     assert.match(facts, /<li>Our prediction for Salah: about 8\.0 points<\/li>/);
     assert.doesNotMatch(html, /<details/);
+    // Opt in: the card carries the switch that reveals the facts in place.
+    assert.match(html, /class="card kj-numbers" id="week-decision"/);
+    assert.match(html, /Show the numbers/);
 });
 
 test('no facts list when there are no details', () => {
     const html = renderDecision({ decision: { ...decision, details: [] }, based_on: 'everyone' });
-    assert.doesNotMatch(html, /decision-facts/);
+    assert.doesNotMatch(html, /decision-facts|Show the numbers/);
 });
 
 test('says which team it is based on', () => {
@@ -52,7 +55,7 @@ test('no digit appears before the facts', () => {
     };
     // Everyone view, so there is no "Based on your team from gameweek N" line.
     const html = renderDecision({ decision: captain, based_on: 'everyone', squad_gameweek: null });
-    const [before, inside] = html.split('<ul class="decision-facts">');
+    const [before, inside] = html.split('<ul class="decision-facts kj-num">');
     // Escaped apostrophes (&#39;) contain digits but are not numbers a reader sees.
     // Tags such as <h3> also contain digits, so only the visible text is checked.
     const visible = before.replace(/<[^>]*>/g, ' ').replace(/&#\d+;/g, "'");

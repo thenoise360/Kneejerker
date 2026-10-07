@@ -4,6 +4,7 @@
 import { escapeHtml } from './escapeHtml.js';
 import { renderMessage } from './recapView.js';
 import { renderGauge } from './gauge.js';
+import { numbersToggle } from './numbersToggle.js';
 
 // Shown if the strength request itself fails (no connection, server down).
 export const STRENGTH_LOAD_FAILED = {
@@ -54,11 +55,14 @@ export function gaugeInputs(payload) {
 // figures: the two numbers that sit under this gauge, already written by the caller.
 // input is null when the server could not place the dial; the figures still show.
 function gaugeBlock(input, labels, figures) {
-    const figureHtml = `<dl class="strength-figures">
+    // kj-num: hidden until the card's "Show the numbers" switch is on, then shown right under
+    // the dial. With no dial to look at, the figures are all there is, so they always show.
+    const optIn = input ? ' kj-num' : '';
+    const figureHtml = `<dl class="strength-figures${optIn}">
             <div><dt>This week</dt><dd>${escapeHtml(figures.now)}</dd></div>
             <div><dt>Usual</dt><dd>${escapeHtml(figures.usual)}</dd></div>
         </dl>
-        <div class="strength-figures-unit">${escapeHtml(figures.unit)}</div>`;
+        <div class="strength-figures-unit${optIn}">${escapeHtml(figures.unit)}</div>`;
     if (!input) {
         return `<div class="strength-gauge"><div class="strength-figures-title">${escapeHtml(labels.centre)}</div>${figureHtml}</div>`;
     }
@@ -83,9 +87,9 @@ export function renderStrength(payload) {
     if (payload.status !== 'ready') {
         return renderMessage(payload.message);
     }
-    // Only draw the absentees if somebody is actually missing.
+    // Only draw the absentees if somebody is actually missing. Opt in, like the figures.
     const missing = payload.missing && payload.missing.length
-        ? `<div class="strength-missing">
+        ? `<div class="strength-missing kj-num">
             <div class="strength-missing-title">Missing or doubtful this week</div>
             <ul class="strength-missing-list">${payload.missing.map(missingChip).join('')}</ul>
         </div>`
@@ -93,7 +97,7 @@ export function renderStrength(payload) {
     // A missing or broken gauge is left out, but its figures still show.
     const inputs = gaugeInputs(payload) || { attack: null, defence: null };
     // Each gauge carries its own figures underneath, so the numbers sit next to
-    // the picture they explain instead of in a separate list.
+    // the picture they explain. They stay hidden until the reader asks for them.
     const gauges = `<div class="strength-gauges">
             ${gaugeBlock(inputs.attack, { left: 'Weaker', right: 'Stronger', centre: 'Attack' },
                 { now: oneDecimal(payload.scored_adjusted), usual: oneDecimal(payload.scored), unit: 'goals a game against an average side' })}
@@ -107,13 +111,14 @@ export function renderStrength(payload) {
     // Template literal: backticks let us write HTML across several lines and
     // drop values in with ${...}. Every value goes through escapeHtml.
     return `
-        <div class="card" id="team-strength">
+        <div class="card kj-numbers" id="team-strength">
             <div class="eyebrow-sm">how strong are they this week</div>
             <h3 class="outlook-phrase strength-verdict">${escapeHtml(payload.headline)}</h3>
             <p class="sub">${escapeHtml(payload.reason)}</p>
             ${gauges}
             ${legend}
             ${missing}
+            ${numbersToggle()}
         </div>`;
 }
 

@@ -96,3 +96,12 @@ test('predictions always show one decimal; actual scores stay whole', () => {
     const html = renderRecord({ ...ready, games: [game({ predicted_for: 1, predicted_against: 0, actual_for: 2, actual_against: 0 })] });
     assert.match(text(html), /We expected 1\.0–0\.0\s+It finished 2–0/);
 });
+
+test('scores are opt in; who, where and the verdict always show', () => {
+    const html = renderRecord(ready);
+    assert.match(html, /class="card kj-numbers" id="prediction-record"/);
+    assert.match(html, /<div class="record-scores kj-num">/);
+    assert.match(html, /record-game-head/);
+    assert.match(html, /Show the numbers/);
+    assert.doesNotMatch(renderRecord({ ...ready, games: [] }), /Show the numbers/);
+});

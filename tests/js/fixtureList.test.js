@@ -106,10 +106,19 @@ test('each played row carries its own points, minutes and result under the capti
     assert.ok(!rows[2].includes('point'));
 });
 
-test('one list and nothing else: no separate See the numbers block', () => {
+test('numbers are opt in: one wrapper holds the list and its switch', () => {
     const html = buildFixtureList([{ ...away, lastTime: played(9) }, { ...home, lastTime: { kind: 'no_meeting' } }]);
     assert.ok(!html.includes('<details'));
+    // A single element, so a flex container never lays the list and the switch side by side.
+    assert.ok(html.startsWith('<div class="fixture-list-block kj-numbers"><ul') && html.endsWith('</label></div>'));
+    assert.ok(html.includes('<span class="fixture-list-stats kj-num">9 points'));
+    assert.ok(html.includes('Show the numbers'));
+});
+
+test('no switch when no row has numbers to reveal', () => {
+    const html = buildFixtureList([{ ...away, lastTime: { kind: 'no_meeting' } }, home, blank]);
     assert.ok(html.startsWith('<ul') && html.endsWith('</ul>'));
+    assert.ok(!html.includes('Show the numbers'));
 });
 
 test('rows with no meeting numbers get no stats line', () => {

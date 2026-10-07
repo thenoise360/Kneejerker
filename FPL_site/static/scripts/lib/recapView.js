@@ -2,6 +2,7 @@
 // Pure functions that turn recap data into HTML strings. No DOM access here,
 // so they can be tested in Node. weekV2.js puts the strings on the page.
 import { escapeHtml } from './escapeHtml.js';
+import { numbersToggle } from './numbersToggle.js';
 
 // Shown if the recap request itself fails (no connection, server down).
 export const RECAP_LOAD_FAILED = {
@@ -27,8 +28,8 @@ function standoutRow(player) {
 }
 
 // A row of big-number tiles: [{ value, label }]. The verdict and reason come
-// first and stay free of digits; the tiles then show the figures behind them,
-// as part of the card rather than tucked away in an expander.
+// first and stay free of digits. The tiles are opt in (kj-num): they appear in
+// the card when its "Show the numbers" switch is on.
 export function statTiles(tiles) {
     const cells = tiles
         .filter(t => t.value !== null && t.value !== undefined && t.value !== '')
@@ -36,7 +37,7 @@ export function statTiles(tiles) {
             + `<span class="stat-tile-value">${escapeHtml(t.value)}</span>`
             + `<span class="stat-tile-label">${escapeHtml(t.label)}</span></div>`)
         .join('');
-    return cells ? `<div class="stat-tiles">${cells}</div>` : '';
+    return cells ? `<div class="stat-tiles kj-num">${cells}</div>` : '';
 }
 
 export function renderGuestRecap(guest, gameweek) {
@@ -47,16 +48,19 @@ export function renderGuestRecap(guest, gameweek) {
         { value: guest.highest_score, label: 'Highest points' },
     ]);
     const standouts = guest.standouts && guest.standouts.length
-        ? `<div class="recap-section-title">Standout players</div>
-            <ul class="recap-standouts">${guest.standouts.map(standoutRow).join('')}</ul>`
+        ? `<div class="kj-num">
+                <div class="recap-section-title">Standout players</div>
+                <ul class="recap-standouts">${guest.standouts.map(standoutRow).join('')}</ul>
+            </div>`
         : '';
     return `
-        <div class="card" id="guest-recap">
+        <div class="card kj-numbers" id="guest-recap">
             <div class="eyebrow-sm">gameweek ${escapeHtml(gameweek)}, for everyone</div>
             <h3 class="recap-verdict">${escapeHtml(guest.headline)}</h3>
             <p>${escapeHtml(guest.reason)}</p>
             ${tiles}
             ${standouts}
+            ${tiles || standouts ? numbersToggle() : ''}
         </div>`;
 }
 
@@ -103,7 +107,7 @@ export function renderPersonalRecap(personal, gameweek) {
     // The right call and its points read as one line: "Captain call: Haaland delivered."
     // followed by a small tag with the points, when the server sent them.
     const callPoints = call && call.points != null && call.name
-        ? ` <span class="recap-call-points">${escapeHtml(call.name)}: ${escapeHtml(call.points)} points</span>`
+        ? ` <span class="recap-call-points kj-num">${escapeHtml(call.name)}: ${escapeHtml(call.points)} points</span>`
         : '';
     const callLine = call
         ? `<p class="recap-call"><strong>${escapeHtml(call.title)}:</strong> ${escapeHtml(call.reason)}${callPoints}</p>`
@@ -114,11 +118,12 @@ export function renderPersonalRecap(personal, gameweek) {
         { value: personal.average_score, label: 'Average points' },
     ]);
     return `
-        <div class="card" id="personal-recap">
+        <div class="card kj-numbers" id="personal-recap">
             <div class="eyebrow-sm">your gameweek ${escapeHtml(gameweek)}</div>
             <h3 class="recap-verdict">${escapeHtml(personal.verdict)}</h3>
             ${callLine}
             ${tiles}
+            ${tiles || callPoints ? `<div>${numbersToggle()}</div>` : ''}
             <button type="button" class="btn-pill secondary" id="recap-change-team">Not your team? Change it</button>
         </div>`;
 }
