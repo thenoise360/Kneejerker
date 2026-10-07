@@ -60,6 +60,10 @@ HOME_ADV_INIT = 0.25
 # overall mean absolute error fell (0.996 -> 0.978 for 2022/23, 0.878 -> 0.869 for 2025) and
 # error on fixtures involving promoted teams fell 1.010 -> 0.954; it is the smallest value
 # that also keeps today's weakest attack at ~0.73 goals a game against an average side.
+# Note: time decay leaves only ~46 effective games per team, so the penalty is not negligible
+# for established sides either: top teams shrink by roughly 10-15% (Man City scores 1.80 -> 1.68).
+# The established/promoted prior switch counts raw (undecayed) pooled games, while the penalty
+# acts against decay-weighted information; the two are deliberately not the same measure.
 SHRINKAGE = 8.0
 ESTABLISHED_GAMES = 38
 # PROMOTED_PRIOR = (attack, defence), derived from data: the mean unshrunk fitted rating of
@@ -449,6 +453,9 @@ def persist_match_predictions(conn, rows):
          r['attack_rating'], r['defence_rating'], r['home_adv'], r['computed_at'])
         for r in rows
     ]
+    # Relies on autocommit being OFF (the mysql.connector default, which connect_db does not
+    # override): DELETE and INSERT stay in one transaction and readers see the old rows until
+    # the single commit. With autocommit on, the table would be briefly empty.
     # Full replace (like persist_team_strengths): a season rollover must not leave
     # last season's rows behind. DELETE + INSERT share one transaction and one commit.
     cursor.execute(f"DELETE FROM {PREDICTIONS_TABLE}")

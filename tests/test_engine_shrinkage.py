@@ -1,5 +1,5 @@
 import os
-os.environ['KJ_SKIP_DB_INIT'] = '1'
+os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
 
 import numpy as np
 
@@ -45,8 +45,10 @@ def test_low_data_team_is_pulled_towards_its_prior():
     assert abs(shrunk[99]['attack']) < abs(raw[99]['attack']) * 0.6
 
 
-def test_team_with_plenty_of_data_barely_moves():
-    rows = league_rows(20)  # 200 games each, plenty
+def test_team_with_200_undecayed_games_barely_moves():
+    # Only true without time decay. In production, decay leaves ~46 effective games per team
+    # (see the next test), so even established sides shrink noticeably.
+    rows = league_rows(20)  # 200 undecayed games each
     codes = LEAGUE
     raw, _, _ = fit_dixon_coles(rows, codes, GW, shrinkage=0.01)
     shrunk, _, _ = fit_dixon_coles(rows, codes, GW, shrinkage=8.0)
@@ -86,3 +88,16 @@ def test_penalty_does_not_drag_league_scoring_level_towards_one_goal():
     away_pred = np.mean([np.exp(ratings[r['code_a']]['attack'] + ratings[r['code_h']]['defence']) for r in rows])
     away_obs = np.mean([r['goals_a'] for r in rows])
     assert abs(away_pred - away_obs) / away_obs < 0.03
+
+
+def test_established_strong_team_shrinks_by_a_modest_share_under_decay():
+    rows = league_rows(12)  # 120 games each, like a pooled production team
+    for k, r in enumerate(rows):
+        r['unified_gw'] = k * 114 // len(rows)          # spread over ~3 seasons, newest at 114
+        if r['code_h'] == 1:
+            r["goals_h"] += 1                            # team 1 is a clearly strong attack
+    raw, _, _ = fit_dixon_coles(rows, LEAGUE, 114, shrinkage=0.01)
+    shrunk, _, _ = fit_dixon_coles(rows, LEAGUE, 114, shrinkage=8.0)
+    share = 1 - shrunk[1]['attack'] / raw[1]['attack']
+    # Decay leaves ~46 effective games, so a top side loses roughly 10-15% of its rating.
+    assert 0.03 < share < 0.30
