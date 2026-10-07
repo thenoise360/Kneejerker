@@ -25,6 +25,7 @@ DATA_ROUTE_STUBS = {
     '/api/club/1/prediction-record': ('load_prediction_record', {'status': 'ready', 'games': []}),
     '/api/player/1/momentum': ('load_player_momentum', {'status': 'not_ready', 'message': {'title': 't', 'body': 'b'}}),
     '/api/discover/momentum-strip': ('load_momentum_strip', {'heating_up': [], 'cooling_off': []}),
+    '/api/player/1/last-season': ('load_last_season', {'played': False, 'headline': 'x', 'this_season_appearances': 0}),
 }
 
 

@@ -27,6 +27,7 @@ from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
 from .teamStrength import load_team_strength
 from .predictionRecord import load_prediction_record
 from .playerMomentum import load_player_momentum, load_momentum_strip
+from .playerHistory import load_last_season
 
 # Remove ==================================================
 
@@ -271,6 +272,20 @@ def player_momentum(player_id):
         payload = load_player_momentum(player_id)
     except Exception as e:
         logger.error(f"Error loading player momentum: {e}")
+        return jsonify({'error': 'server_error'}), 500
+
+    if payload is None:
+        return jsonify({'error': 'unknown_player'}), 404
+
+    return jsonify(payload)
+
+@app.route('/api/player/<int:player_id>/last-season')
+def player_last_season(player_id):
+    logger.info(f"Request for player last season: player_id={player_id}")
+    try:
+        payload = load_last_season(player_id)
+    except Exception as e:
+        logger.error(f"Error loading player last season: {e}")
         return jsonify({'error': 'server_error'}), 500
 
     if payload is None:

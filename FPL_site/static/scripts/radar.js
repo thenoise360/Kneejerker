@@ -16,6 +16,7 @@ import { trackPlayerSummary } from './analytics.js';
 import { renderMomentumCard } from './lib/momentumView.js';
 import { sumNumbers, formatPoints } from './lib/numbers.js';
 import { buildFixtureList } from './lib/fixtureList.js';
+import { buildLastSeasonHtml } from './lib/lastSeasonView.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeRadar();
@@ -260,13 +261,15 @@ function initializeRadar() {
         };
 
         try {
-            const [summaryArr, fixtures, positionData, last5Data, indexScores, momentum] = await Promise.all([
+            const [summaryArr, fixtures, positionData, last5Data, indexScores, momentum, lastSeason] = await Promise.all([
                 fetchJsonSafe(`/get_player_summary?id=${playerId}`),
                 fetchJsonSafe(`/get_next_5_gameweeks?id=${playerId}`),
                 fetchJsonSafe('/api/top-5-players'),
                 fetchJsonSafe(`/get_player_last_5_points?id=${playerId}`),
                 fetchJsonSafe('/get_player_index_scores'),
-                fetchJsonSafe(`/api/player/${playerId}/momentum`)
+                fetchJsonSafe(`/api/player/${playerId}/momentum`),
+                // Last season's baseline. A failed fetch gives null and the line is left out.
+                fetchJsonSafe(`/api/player/${playerId}/last-season`)
             ]);
 
             const summary = Array.isArray(summaryArr) ? summaryArr[0] : summaryArr;
@@ -275,7 +278,7 @@ function initializeRadar() {
                 return;
             }
 
-            currentCards = buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum);
+            currentCards = buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum, lastSeason);
             currentMiniIndex = 0;
 
             sheetContent.innerHTML = `
@@ -346,7 +349,7 @@ function initializeRadar() {
         'Forward': 'forwards'
     };
 
-    function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum) {
+    function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum, lastSeason) {
         const safeLast5 = Array.isArray(last5Data) ? last5Data : [];
         // Coerce to real numbers: older responses sent totals as text.
         const last5Values = safeLast5.map(d => Number(d.points) || 0);
@@ -366,7 +369,7 @@ function initializeRadar() {
         const indexEntry = (rawIndexEntry && rawIndexEntry.web_name === summary.name) ? rawIndexEntry : null;
 
         const cards = [
-            buildFormCard(last5Values, avg5Values),
+            buildFormCard(last5Values, avg5Values, lastSeason),
             buildFixtureCard(fixtures),
             buildSeasonNumbersCard(summary),
             buildSetPieceCard(summary),
@@ -391,14 +394,18 @@ function initializeRadar() {
         </div>`;
     }
 
-    function buildFormCard(last5, avg5) {
+    function buildFormCard(last5, avg5, lastSeason) {
+        // buildLastSeasonHtml gives '' once this season has 6 or more appearances,
+        // so the line only ever appears while the chart has a small sample.
+        const lastSeasonHtml = buildLastSeasonHtml(lastSeason);
         if (!last5.length) {
-            return emptyStateCard('Form — last 5 vs average', "No recent gameweek data for this player yet.");
+            return emptyStateCard('Form — last 5 vs average', `No recent gameweek data for this player yet.${lastSeasonHtml}`);
         }
         return `<div class="mini-card mini-slide">
             <div class="mc-title">Form — last 5 vs average</div>
             <div style="margin: 10px 0;">${buildSparkline(last5, avg5)}</div>
             <div class="mc-caption">${describeForm(last5, avg5)}</div>
+            ${lastSeasonHtml}
         </div>`;
     }
 

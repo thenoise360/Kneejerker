@@ -1372,3 +1372,7 @@ body {
     padding: 2px 8px;
     border-radius: 100px;
 }
+
+/* Last-season line on the player Form card (scoped to the two new classes). */
+.last-season-line { margin-top: 8px; color: var(--charcoal); }
+.last-season-line + .recap-details { margin-top: 6px; padding-top: 6px; }
