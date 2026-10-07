@@ -17,7 +17,7 @@
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: var(--pink);
+    color: var(--pink-ink);
     margin-bottom: 6px;
 }
 
@@ -125,7 +125,7 @@
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: .05em;
-    color: var(--pink);
+    color: var(--pink-ink);
     margin-bottom: 12px;
 }
 

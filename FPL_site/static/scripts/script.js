@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.current_gw) {
                     const gwPill = document.getElementById('current-gw-pill');
-                    if (gwPill) gwPill.textContent = `GW ${data.current_gw}`;
+                    if (gwPill) gwPill.textContent = `Gameweek ${data.current_gw}`;
                 }
                 
                 if (data.deadline) {

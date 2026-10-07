@@ -22,6 +22,7 @@
     --plum-tint: #6a2a7c;
     --teal: #29C2B2;
     --pink: #F67CB0;
+    --pink-ink: #B83774; /* darker pink for TEXT: 5.5:1 on white, 5.2:1 on offwhite. Keep --pink for fills. */
     --charcoal: #333333;
     --offwhite: #F9F9F9;
     --grey: #E5E5E5;
@@ -1285,12 +1286,13 @@ a {
     background: rgba(75, 20, 91, .08);
     padding: 4px 10px;
     border-radius: 100px;
+    white-space: nowrap; /* "Gameweek 12" must never wrap */
 }
 
 .deadline {
     font-size: 11px;
     font-weight: 600;
-    color: var(--pink);
+    color: var(--pink-ink);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
