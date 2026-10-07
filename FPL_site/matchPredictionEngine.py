@@ -367,7 +367,9 @@ def persist_match_predictions(conn, rows):
          r['attack_rating'], r['defence_rating'], r['home_adv'], r['computed_at'])
         for r in rows
     ]
-    cursor.execute(f"DELETE FROM {PREDICTIONS_TABLE} WHERE gameweek < %s", (min(r['gameweek'] for r in rows),))
+    # Full replace (like persist_team_strengths): a season rollover must not leave
+    # last season's rows behind. DELETE + INSERT share one transaction and one commit.
+    cursor.execute(f"DELETE FROM {PREDICTIONS_TABLE}")
     cursor.executemany(f"""
         INSERT INTO {PREDICTIONS_TABLE}
             (fixture_code, team_id, gameweek, opponent_id, is_home,
