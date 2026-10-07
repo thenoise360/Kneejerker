@@ -13,6 +13,8 @@ import {
     formatStatValue,
     summaryRow
 } from './visuals.js';
+import { stripToCategories } from './lib/momentumView.js';
+import { escapeHtml } from './lib/escapeHtml.js';
 
 let allPlayers = [];
 let selectedPlayers = [];
@@ -285,8 +287,8 @@ function renderCategory(config, slotId) {
     const header = document.createElement('div');
     header.className = 'category-header';
     header.innerHTML = `
-        <h3 class="category-title">${config.title}</h3>
-        <p class="category-subtitle">${config.subtitle}</p>
+        <h3 class="category-title">${escapeHtml(config.title)}</h3>
+        <p class="category-subtitle">${escapeHtml(config.subtitle)}</p>
     `;
     categorySection.appendChild(header);
 
@@ -355,10 +357,10 @@ function createPlayerCard(player) {
     
     card.innerHTML = `
         <div class="p-card-top">
-            <div class="p-card-avatar">${getInitials(player.full_name)}</div>
+            <div class="p-card-avatar">${escapeHtml(getInitials(player.full_name))}</div>
             <div class="p-card-info">
-                <div class="p-card-name">${player.full_name}</div>
-                <div class="p-card-meta">${player.team_name} • ${player.position}</div>
+                <div class="p-card-name">${escapeHtml(player.full_name)}</div>
+                <div class="p-card-meta">${escapeHtml(player.team_name)}${player.position ? ` • ${escapeHtml(player.position)}` : ''}</div>
             </div>
             <div class="p-card-check" style="${isSelected ? '' : 'display:none'}">
                 <i class="bi bi-check-circle-fill"></i>
@@ -368,7 +370,7 @@ function createPlayerCard(player) {
             <div class="sparkline-placeholder"></div>
         </div>
         <div class="p-card-why">
-            ${player.why || 'Quietly delivering consistent returns.'}
+            ${escapeHtml(player.why || 'Quietly delivering consistent returns.')}
         </div>
     `;
 
@@ -1032,6 +1034,14 @@ const CATEGORY_SLOTS = {
     newManager: 'category-new-manager'
 };
 
+// The "Heating up / Cooling off" strip is behind a feature flag. The page
+// leaves a hidden marker saying whether it is on, and this reads it once.
+// Only when it is on do we add a slot for the strip.
+const momentumStripOn = document.getElementById('feature-flags')?.dataset.momentum === 'true';
+if (momentumStripOn) {
+    CATEGORY_SLOTS.heatingUp = 'category-heating-up';
+}
+
 /**
  * Loads and renders discovery categories from real backend sources. Renders
  * a skeleton placeholder for all 5 immediately, then fires all 5 fetches in
@@ -1050,7 +1060,9 @@ async function loadDiscoveryCategories() {
         loadWorthWatchingCategory(),
         loadMostConsistentCategory(),
         loadMomentumCategory(),
-        loadNewManagerCategory()
+        loadNewManagerCategory(),
+        // Only load the strip when its slot exists (the flag is on).
+        CATEGORY_SLOTS.heatingUp ? loadHeatingUpCategory() : Promise.resolve()
     ]);
 }
 
@@ -1185,6 +1197,42 @@ async function loadNewManagerCategory() {
         }
     } catch (error) {
         console.error('Discovery: Error loading "New manager in charge":', error);
+        document.getElementById(slotId)?.remove();
+    }
+}
+
+// 6. Heating up / Cooling off. Two groups drawn from one fetch. If the
+// server has nothing to say (both lists empty, not ready, or an error), the
+// skeleton is removed and the strip is hidden entirely.
+async function loadHeatingUpCategory() {
+    const slotId = CATEGORY_SLOTS.heatingUp;
+    try {
+        const response = await fetch('/api/discover/momentum-strip');
+        if (!response.ok) {
+            document.getElementById(slotId)?.remove();
+            return;
+        }
+        const groups = stripToCategories(await response.json());
+        if (groups.length === 0) {
+            document.getElementById(slotId)?.remove();
+            return;
+        }
+        // The first group takes over the skeleton. Each later group gets a
+        // fresh placeholder right after the one before it, so the order holds.
+        let previousId = slotId;
+        groups.forEach((group, index) => {
+            let targetId = slotId;
+            if (index > 0) {
+                targetId = `${slotId}-${index}`;
+                const placeholder = document.createElement('div');
+                placeholder.id = targetId;
+                document.getElementById(previousId)?.after(placeholder);
+            }
+            renderCategory(group, targetId);
+            previousId = targetId;
+        });
+    } catch (error) {
+        console.error('Discovery: Error loading "Heating up / Cooling off":', error);
         document.getElementById(slotId)?.remove();
     }
 }

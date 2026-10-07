@@ -55,3 +55,37 @@ def test_radar_leaves_out_the_slide_for_a_missing_momentum_payload():
                   encoding='utf-8').read()
     assert 'if (!res.ok) return null;' in source
     assert 'if (momentum) {' in source
+
+
+STRIP = {'heating_up': [{'id': 2, 'name': 'B', 'team': 'Chelsea', 'reason': 'Rising: kinder fixtures coming up.'}],
+         'cooling_off': [{'id': 4, 'name': 'D', 'team': 'Arsenal', 'reason': 'Cooling: tougher fixtures coming up.'}]}
+
+
+def test_strip_route_returns_both_lists(client, monkeypatch):
+    monkeypatch.setattr(views, 'load_momentum_strip', lambda: STRIP)
+    resp = client.get('/api/discover/momentum-strip')
+    assert resp.status_code == 200
+    assert resp.get_json() == STRIP
+
+
+def test_strip_never_exposes_score(client, monkeypatch):
+    monkeypatch.setattr(views, 'load_momentum_strip', lambda: STRIP)
+    text = client.get('/api/discover/momentum-strip').get_data(as_text=True)
+    assert 'score' not in text
+
+
+def test_strip_route_hides_errors(client, monkeypatch):
+    def boom():
+        raise RuntimeError('database exploded')
+    monkeypatch.setattr(views, 'load_momentum_strip', boom)
+    resp = client.get('/api/discover/momentum-strip')
+    assert resp.status_code == 500
+    assert resp.get_json() == {'error': 'server_error'}
+
+
+@pytest.mark.parametrize('flag', [True, False])
+def test_discovery_feature_flag_marker(client, monkeypatch, flag):
+    monkeypatch.setattr(views.current_config, 'FEATURE_MOMENTUM', flag, raising=False)
+    html = client.get('/discovery').get_data(as_text=True)
+    assert 'id="feature-flags"' in html
+    assert ('data-momentum="true"' in html) == flag

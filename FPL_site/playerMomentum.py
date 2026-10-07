@@ -326,11 +326,12 @@ def load_momentum_strip(limit=5):
                 WHERE label IN ('Rising', 'Cooling')
             """)
             rows = cursor.fetchall()
+            # Inside the same guard: a missing teams table also means "not ready".
+            teams = fetch_teams_for_season(cursor, season_start) or {}
         except ProgrammingError as e:
             if e.errno != errorcode.ER_NO_SUCH_TABLE:
                 raise
             return empty
-        teams = fetch_teams_for_season(cursor, season_start)
 
         def item(row):
             return {'id': row['player_id'], 'name': row['name'],

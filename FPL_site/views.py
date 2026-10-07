@@ -26,7 +26,7 @@ from .weekResolver import DEADLINE_FORMAT
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
 from .teamStrength import load_team_strength
 from .predictionRecord import load_prediction_record
-from .playerMomentum import load_player_momentum
+from .playerMomentum import load_player_momentum, load_momentum_strip
 
 # Remove ==================================================
 
@@ -151,7 +151,18 @@ def radar():
 def discovery():
     logger.info("Request for discovery page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('discovery.html', is_ajax=is_ajax, title='Discover', mixpanel_token=current_config.MIXPANEL_TOKEN)
+    return render_template('discovery.html', is_ajax=is_ajax, title='Discover', mixpanel_token=current_config.MIXPANEL_TOKEN,
+                           momentum=getattr(current_config, 'FEATURE_MOMENTUM', False))
+
+@app.route('/api/discover/momentum-strip')
+def discover_momentum_strip():
+    logger.info("Request for discover momentum strip")
+    try:
+        # The server sorts. The hidden score never leaves load_momentum_strip.
+        return jsonify(load_momentum_strip())
+    except Exception as e:
+        logger.error(f"Error loading momentum strip: {e}")
+        return jsonify({'error': 'server_error'}), 500
 
 @app.route('/api/net-transfers-in')
 def net_transfers_in():

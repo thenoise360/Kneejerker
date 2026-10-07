@@ -251,6 +251,25 @@ def test_strip_empty_when_no_table_or_connection(monkeypatch):
     assert pm.load_momentum_strip() == {'heating_up': [], 'cooling_off': []}
 
 
+def test_strip_empty_when_teams_missing_or_teams_table_missing(monkeypatch):
+    rows = [stored('Rising', 1.5, 1, 1, 'A'), stored('Cooling', -1.5, 4, 1, 'D')]
+    empty = {'heating_up': [], 'cooling_off': []}
+    # No teams result at all (None): never an exception.
+    monkeypatch.setattr(pm, 'connect_db', lambda: FakeConn(FakeCursor(rows)))
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: None)
+    strip = pm.load_momentum_strip()
+    assert [i['team'] for i in strip['heating_up'] + strip['cooling_off']] == ['', '']
+
+    # The teams table itself is missing (error 1146): empty lists.
+    def no_table(c, y):
+        raise ProgrammingError(msg='x', errno=1146)
+    conn = FakeConn(FakeCursor(rows))
+    monkeypatch.setattr(pm, 'connect_db', lambda: conn)
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', no_table)
+    assert pm.load_momentum_strip() == empty
+    assert conn.closed
+
+
 def test_run_daily_momentum_wires_fetchers_and_persists(monkeypatch):
     seen = {}
     monkeypatch.setattr(pm, 'fetch_player_rows', lambda c, y: [player(1)])
