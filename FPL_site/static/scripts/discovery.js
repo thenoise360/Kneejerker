@@ -4,7 +4,6 @@
  */
 import {
     buildSparkline,
-    buildFixtureChips,
     describeFixtureRun,
     buildOwnershipArea,
     buildMultiLineChart,
@@ -15,6 +14,9 @@ import {
 } from './visuals.js';
 import { stripToCategories } from './lib/momentumView.js';
 import { escapeHtml } from './lib/escapeHtml.js';
+import { POSITION_LABELS, positionLabel } from './lib/positions.js';
+import { sumNumbers, formatPoints } from './lib/numbers.js';
+import { buildFixtureList } from './lib/fixtureList.js';
 
 let allPlayers = [];
 let selectedPlayers = [];
@@ -34,9 +36,8 @@ const averagesCache = new Map(); // 'GKP'|'DEF'|'MID'|'FWD'|'overall' -> { avgPo
 // across the whole comparison panel.
 const COMPARISON_COLORS = ['var(--teal)', 'var(--pink)', 'var(--plum-tint)'];
 
-// Plain-language position labels for the average-line legend, matching the
-// GKP/DEF/MID/FWD -> full-name convention already used in radar.js.
-const POSITION_LABELS = { GKP: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' };
+// Plain-language position labels (POSITION_LABELS / positionLabel) live in
+// lib/positions.js so every place that shows a position uses the same words.
 
 const TRAY_CAP = 3;
 
@@ -257,7 +258,7 @@ function renderSearchResults(results, query) {
         row.innerHTML = `
             <div class="result-info">
                 <div class="result-name">${escapeHtml(player.full_name)}</div>
-                <div class="result-meta">${escapeHtml(player.team_name)} • ${escapeHtml(player.position)}</div>
+                <div class="result-meta">${escapeHtml(player.team_name)}${positionLabel(player.position) ? ` • ${escapeHtml(positionLabel(player.position))}` : ''}</div>
             </div>
             <div class="result-action">
                 <i class="bi bi-plus-circle"></i>
@@ -360,7 +361,7 @@ function createPlayerCard(player) {
             <div class="p-card-avatar">${escapeHtml(getInitials(player.full_name))}</div>
             <div class="p-card-info">
                 <div class="p-card-name">${escapeHtml(player.full_name)}</div>
-                <div class="p-card-meta">${escapeHtml(player.team_name)}${player.position ? ` • ${escapeHtml(player.position)}` : ''}</div>
+                <div class="p-card-meta" data-position="${escapeHtml(player.position || '')}">${escapeHtml(player.team_name)}${positionLabel(player.position) ? ` • ${escapeHtml(positionLabel(player.position))}` : ''}</div>
             </div>
             <div class="p-card-check" style="${isSelected ? '' : 'display:none'}">
                 <i class="bi bi-check-circle-fill"></i>
@@ -754,10 +755,10 @@ function buildSummarySingle(panelDataSingle) {
     const rows = [];
 
     if (form.length) {
-        const total = form.reduce((a, b) => a + b, 0);
-        const avgTotal = (avgForm || []).reduce((a, b) => a + b, 0);
+        const total = sumNumbers(form);
+        const avgTotal = sumNumbers(avgForm);
         const max = Math.max(total, avgTotal, 1);
-        rows.push(summaryRow('Form, last 5 gameweeks', `${total} pts`, `${avgLabel}: ${avgTotal} pts`, (total / max) * 100, (avgTotal / max) * 100));
+        rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} points`, `${avgLabel}: ${formatPoints(avgTotal)} points`, (total / max) * 100, (avgTotal / max) * 100));
     }
 
     const realFixtures = (fixtures || []).filter(f => f.homeOrAway !== 'Blank');
@@ -801,14 +802,14 @@ function buildSummaryComparison(panelDataComparison) {
     const players = panelDataComparison.players;
     const blocks = [];
 
-    const avgPointsTotal = (panelDataComparison.avgPoints || []).reduce((a, b) => a + b, 0);
+    const avgPointsTotal = sumNumbers(panelDataComparison.avgPoints);
     blocks.push(buildStatBlock(
         'Form, last 5 gameweeks', players,
         (p) => {
-            const total = p.form.reduce((a, b) => a + b, 0);
-            return { value: total, display: `${total} pts` };
+            const total = sumNumbers(p.form);
+            return { value: total, display: `${formatPoints(total)} points` };
         },
-        { avgValue: avgPointsTotal, compareText: `Dotted line: ${panelDataComparison.avgLabel.toLowerCase()} (${avgPointsTotal} pts)` }
+        { avgValue: avgPointsTotal, compareText: `Dotted line: ${panelDataComparison.avgLabel.toLowerCase()} (${formatPoints(avgPointsTotal)} points)` }
     ));
 
     if (players.some(p => (p.fixtures || []).some(f => f.homeOrAway !== 'Blank'))) {
@@ -887,7 +888,7 @@ function updatePanelUI() {
                     ${players.map((p, i) => `
                         <div class="mp-fixture-player">
                             <div class="mp-player-name"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${p.name}</div>
-                            <div class="fixture-chip-row">${buildFixtureChips(p.fixtures)}</div>
+                            ${buildFixtureList(p.fixtures, { compact: true })}
                             <p class="mp-note">${describeFixtureRun(p.fixtures)}</p>
                         </div>
                     `).join('')}
@@ -932,7 +933,7 @@ function updatePanelUI() {
             visualHtml = buildSparkline(panelData.form, panelData.avgForm);
             noteText = 'Consistent delivery over the last 5 gameweeks.';
         } else if (panelMetricIndex === 1) {
-            visualHtml = `<div class="fixture-chip-row">${buildFixtureChips(panelData.fixtures)}</div>`;
+            visualHtml = buildFixtureList(panelData.fixtures);
             noteText = describeFixtureRun(panelData.fixtures);
         } else if (panelMetricIndex === 2) {
             visualHtml = buildOwnershipArea(panelData.ownership, panelData.avgOwnership);

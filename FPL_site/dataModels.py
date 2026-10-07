@@ -1151,6 +1151,11 @@ def get_momentum_players():
         cursor.close()
         dbConnect.close()
 
+def new_manager_reason(manager_name, gameweek):
+    """Plain-words reason line shown on a new-manager player card."""
+    return f"New manager ({manager_name}) since gameweek {gameweek}. Their role could change."
+
+
 def get_new_manager_players():
     """
     Fetches players from teams with a new manager appointed within the last 4 gameweeks.
@@ -1217,7 +1222,7 @@ def get_new_manager_players():
                     'name': p['web_name'],
                     'team': p['team_name'],
                     'position': p['position'],
-                    'why': f"New manager ({team['manager_name']}) since GW{team['appointment_gameweek']} - role could change.",
+                    'why': new_manager_reason(team['manager_name'], team['appointment_gameweek']),
                     'shirt': player_shirts.get(p['team_code'], player_shirts['Unknown'])
                 })
                 
@@ -1301,7 +1306,7 @@ def next_5_gameweeks(player_id):
     gw = generateCurrentGameweek()
     
     # Always ensure you fetch all results or close the cursor before executing another query
-    query = f'SELECT id, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
+    query = f'SELECT id, name, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
     cursor.execute(query)
     teams = cursor.fetchall()  # Fetch all team information
 
@@ -1377,6 +1382,7 @@ def next_5_gameweeks(player_id):
         if not fixtures_in_gw:
             fixtures.append({
                 'teamName': '-',
+                'teamFullName': '',
                 'difficulty': "None",
                 'shirtImage': player_shirts['Unknown'],
                 'homeOrAway': 'Blank',
@@ -1401,6 +1407,7 @@ def next_5_gameweeks(player_id):
 
             fixtures.append({
                 'teamName': opponent,
+                'teamFullName': next(t['name'] for t in teams if t['id'] == opponent_id),
                 'difficulty': difficulty,
                 'shirtImage': player_shirts.get(opponent_code, player_shirts['Unknown']),
                 'homeOrAway': venue,
@@ -1769,14 +1776,19 @@ def get_player_last_5_points(player_id):
         rows = cursor.fetchall()
 
         by_gw = {row['gw']: row for row in rows}
-        
+
+        # SUM() comes back from MySQL as a Decimal, which JSON turns into a
+        # string and the browser then glues together instead of adding.
+        def as_int(value, default):
+            return int(value) if value is not None else default
+
         result = []
         for gw in gws_list:
             result.append({
                 'gw': gw,
-                'points': by_gw[gw]['points'] if gw in by_gw else 0,
-                'minutes': by_gw[gw]['minutes'] if gw in by_gw else 0,
-                'difficulty': by_gw[gw]['difficulty'] if gw in by_gw else 3
+                'points': as_int(by_gw[gw]['points'], 0) if gw in by_gw else 0,
+                'minutes': as_int(by_gw[gw]['minutes'], 0) if gw in by_gw else 0,
+                'difficulty': as_int(by_gw[gw]['difficulty'], None) if gw in by_gw else None
             })
         return result
     except Exception as e:
