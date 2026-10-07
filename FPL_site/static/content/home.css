@@ -680,6 +680,27 @@
 .recap-team-row .btn-pill { width: auto; padding: 10px 18px; }
 .welcome-back { border-left: 4px solid var(--teal); transition: opacity 200ms ease-in-out; }
 
+/* Player carousel cards (lib/playerCards.js), shared by the Radar sheet and the Discover panel.
+   Every card reads the same way: title, visual, one sentence, optional extra, then the switch.
+   Text is left aligned; a dial or chart fills the width of the visual area. */
+.player-card { display: flex; flex-direction: column; align-items: stretch; text-align: left; }
+.player-card .mc-title { margin-bottom: 10px; }
+.player-card-visual { width: 100%; }
+.player-card-caption { font-size: 13px; line-height: 1.5; color: var(--charcoal); margin: 10px 0 0; }
+.player-card-caption-item { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; white-space: nowrap; }
+.player-card .last-season-line { margin-top: 8px; }
+.player-card .empty-state { text-align: left; padding: 6px 0; }
+.player-card .numbers-toggle { align-self: flex-start; margin-top: 12px; }
+.player-card .momentum-signals { margin-top: 10px; }
+/* Label-and-value rows (the Ownership card). Text colours keep 4.5:1 on white. */
+.stat-rows { display: flex; flex-direction: column; }
+.stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: #666; padding: 8px 0; border-bottom: 1px solid var(--grey); }
+.stat-row:last-child { border-bottom: none; }
+.stat-row span:last-child { font-size: 16px; font-weight: 700; color: var(--charcoal); }
+.stat-row .stat-up { color: #0B7A6E; }
+.stat-row .stat-down { color: var(--pink-ink); }
+.summary-rows { display: flex; flex-direction: column; }
+
 /* Team strength card: verdict and gauges. Type sizes follow .outlook-phrase and .sub. */
 .card h3.strength-verdict { font-size: 17px; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 4px; }
 /* Darker teal for the usual tick and its key: 3:1 or better against white, unlike --teal. */

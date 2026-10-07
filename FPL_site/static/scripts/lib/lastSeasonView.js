@@ -4,7 +4,6 @@
 // History is background ("worth knowing"), never a reason to pick, so the
 // wording stays gentle. The numbers are opt in, on a quieter line right underneath.
 import { escapeHtml } from './escapeHtml.js';
-import { numbersToggle } from './numbersToggle.js';
 
 // Once a player has made 6 appearances this season the chart has a real
 // sample, so we stop showing last season. 5 or fewer appearances still shows.
@@ -26,9 +25,7 @@ export function buildLastSeasonHtml(payload) {
     const headline = `<div class="mc-caption last-season-line">${escapeHtml(payload.headline)}</div>`;
     // Players who did not play last season have no numbers to show.
     if (!payload.detail) return headline;
-    // Its own kj-numbers wrapper, so the switch only reveals this line and the
-    // block works wherever the Form card puts it.
-    return `<div class="kj-numbers">${headline}
-        <div class="mc-caption last-season-detail kj-num">${escapeHtml(payload.detail)}</div>
-        ${numbersToggle()}</div>`;
+    // The detail is opt in (kj-num): the Form card's own "Show the numbers" switch reveals it.
+    return `${headline}
+        <div class="mc-caption last-season-detail kj-num">${escapeHtml(payload.detail)}</div>`;
 }

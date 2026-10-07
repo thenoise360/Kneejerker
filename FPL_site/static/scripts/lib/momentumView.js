@@ -3,12 +3,10 @@
 // here, so they can be tested in Node. radar.js puts them in the player sheet.
 import { escapeHtml } from './escapeHtml.js';
 import { renderGauge } from './gauge.js';
+import { playerCard, CARD_TITLES } from './playerCards.js';
 
-// Every card in the player sheet carousel is wrapped like this, so the
-// slides line up and the layout holds on a narrow phone.
-function slide(inner) {
-    return `<div class="mini-card mini-slide">${inner}</div>`;
-}
+// The player sheet's slide class, so this card sizes like every other slide.
+const SLIDE = 'mini-card mini-slide';
 
 // One row per signal. The arrow is decoration (hidden from screen readers),
 // and the word beside it carries the meaning, so colour is never the only clue.
@@ -49,21 +47,30 @@ function zoneGauge(label) {
     })}</div>`;
 }
 
-export function renderMomentumCard(payload) {
-    // Anything that is not "ready" carries its own calm message, in the same slide style.
+// wrapperClass lets another carousel reuse the card with its own slide class.
+export function renderMomentumCard(payload, wrapperClass = SLIDE) {
+    // Anything that is not "ready" carries its own calm message, in the same card shape.
     if (payload.status !== 'ready') {
-        return slide(`
-        <div class="mc-title">${escapeHtml(payload.message.title)}</div>
-        <div class="mc-caption">${escapeHtml(payload.message.body)}</div>`);
+        return playerCard({ title: payload.message.title, caption: payload.message.body, wrapperClass });
     }
     const signals = payload.signals || [];
     const reason = reasonWithoutLabel(payload.label, payload.reason);
-    return slide(`
-        <div class="mc-title">Momentum</div>
-        ${zoneGauge(payload.label)}
-        ${reason ? `<p class="sub">${escapeHtml(reason)}</p>` : ''}
-        <ul class="recap-standouts momentum-signals">${signals.map(signalRow).join('')}</ul>
-        <div class="mc-caption">Looks at upcoming fixtures and key teammates coming in or out.</div>`);
+    // Same order as every other card: dial, one sentence, then the four signals
+    // behind it as the opt-in detail (kj-num), revealed by the card's switch.
+    const detail = signals.length
+        ? `<div class="kj-num">
+            <ul class="recap-standouts momentum-signals">${signals.map(signalRow).join('')}</ul>
+            <div class="mc-caption">Looks at upcoming fixtures and key teammates coming in or out.</div>
+        </div>`
+        : '';
+    return playerCard({
+        title: CARD_TITLES.momentum,
+        visual: zoneGauge(payload.label),
+        caption: reason,
+        extra: detail,
+        wrapperClass,
+        toggleLabel: 'Show the signals',
+    });
 }
 
 // A single line for a list of players. Used by the Discover strip.

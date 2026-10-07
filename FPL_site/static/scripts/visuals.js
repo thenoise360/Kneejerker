@@ -154,7 +154,8 @@ export function formatStatValue(v) {
  * One labelled bar-with-marker row: a solid bar for the player's own value,
  * a marker for whatever it's being compared against. Shared between the
  * player profile bottom sheet's Summary card (radar.js) and the Discovery
- * comparison panel's single-player Summary metric.
+ * comparison panel's single-player Summary metric. The comparison line under
+ * the bar is opt in (kj-num): the card's "Show the numbers" switch reveals it.
  */
 export function summaryRow(label, valueText, compareText, pct, comparePct) {
     const clampedPct = Math.max(0, Math.min(100, pct));
@@ -168,6 +169,6 @@ export function summaryRow(label, valueText, compareText, pct, comparePct) {
             <div class="bar-fill" style="width:${clampedPct}%;"></div>
             <div class="bar-marker" style="left:${clampedComparePct}%;"></div>
         </div>
-        <div class="summary-row-compare">${compareText}</div>
+        <div class="summary-row-compare kj-num">${compareText}</div>
     </div>`;
 }

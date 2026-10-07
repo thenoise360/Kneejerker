@@ -360,9 +360,10 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Left aligned, like the Radar sheet's player name. */
 .mp-header {
-    text-align: center;
-    margin-bottom: 20px;
+    text-align: left;
+    margin-bottom: 16px;
 }
 
 .mp-player-name {
@@ -390,6 +391,14 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
+}
+
+/* Cards built by lib/playerCards.js: left aligned like the Radar sheet, and a
+   steady minimum height so the arrows and dots don't jump as you swipe. */
+.mp-card.player-card {
+    align-items: stretch;
+    text-align: left;
+    min-height: 300px;
 }
 
 .mp-metric-title {
@@ -642,6 +651,12 @@
     transform: translate(-50%, 0);
 }
 
+/* At either end of the track, line the label up with the dot's inner side so it stays inside the card. */
+.mp-stat-dot-value.edge-end { transform: translate(calc(-100% + 6px), -100%); }
+.mp-stat-dot-value.edge-start { transform: translate(-6px, -100%); }
+.mp-stat-dot-value.below.edge-end { transform: translate(calc(-100% + 6px), 0); }
+.mp-stat-dot-value.below.edge-start { transform: translate(-6px, 0); }
+
 .mp-stat-avg-marker {
     position: absolute;
     top: -4px;
@@ -720,17 +735,8 @@
    not a chart, so they need to fill .mp-visual's width rather than shrink to
    content size and end up centred as a narrow column. */
 .mp-visual .season-grid,
-.mp-visual .mp-summary-rows,
-.mp-visual .fixture-list,
-.mp-visual .fixture-list-block {
+.mp-visual .mp-summary-rows {
     width: 100%;
-}
-
-/* The single-player fixture list reads left to right like the Radar card,
-   not centred like a chart. */
-.mp-visual .fixture-list,
-.mp-visual .fixture-list-block {
-    text-align: left;
 }
 
 .mp-summary-rows {
