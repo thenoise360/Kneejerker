@@ -315,7 +315,7 @@ function renderCategory(config, slotId) {
 /**
  * Grey pulsing placeholder for one category section, shown immediately on
  * page load (before any category data has arrived) so the page's eventual
- * shape is visible right away instead of staying blank while the 5 category
+ * shape is visible right away instead of staying blank while the category
  * fetches are in flight.
  * @param {string} slotId
  */
@@ -1037,7 +1037,7 @@ const CATEGORY_SLOTS = {
 
 /**
  * Loads and renders discovery categories from real backend sources. Renders
- * a skeleton placeholder for all 5 immediately, then fires all 5 fetches in
+ * a skeleton placeholder for every category immediately, then fires all the fetches in
  * parallel rather than one after another - each independently swaps its own
  * skeleton for real content (or removes it, for New manager in charge, if
  * it comes back empty) as soon as its own fetch resolves.
