@@ -55,6 +55,13 @@ def test_data_routes_respond(client):
         assert client.get(path).status_code == 200, path
 
 
+def test_hub_route_responds_with_flag_on(client, monkeypatch):
+    monkeypatch.setattr(views.current_config, 'THIS_WEEK_HUB', True, raising=False)
+    monkeypatch.setattr(views, 'get_this_week_hub',
+                        lambda *a, **k: {'status': 'unavailable', 'gameweek': 6})
+    assert client.get('/api/week/this-week?gameweek=6&last_gameweek=5').status_code == 200
+
+
 def test_week_page_is_v2_without_any_flag(client, calls):
     html = client.get('/this-week').get_data(as_text=True)
     for marker in ['data-week-v2="true"', 'id="decision-hub"', 'id="gw-panel-live"',

@@ -21,6 +21,7 @@ from .dataModels import (
 from .weekCopy import this_week_empty_copy, last_week_empty_copy
 from .lastWeekRecap import get_last_week_recap
 from .weekDecision import get_this_week_decision
+from .thisWeekHub import get_this_week_hub
 from .weekResolver import DEADLINE_FORMAT
 
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
@@ -138,6 +139,24 @@ def week_this_week_decision():
         return jsonify(get_this_week_decision(gameweek, last_gameweek, team_id=team_id))
     except Exception as e:
         logger.error(f"Error building this week's decision: {e}")
+        return jsonify({'error': 'server_error'}), 500
+
+
+@app.route('/api/week/this-week')
+def week_this_week_hub():
+    # Hidden until launch, so nobody can call it while the hub is behind the flag.
+    if not getattr(current_config, 'THIS_WEEK_HUB', False):
+        abort(404)
+    logger.info("Request for the This Week hub")
+    gameweek = _parse_gameweek(request.args.get('gameweek', ''))
+    if gameweek is None:
+        return jsonify({'error': 'invalid_gameweek'}), 400
+    last_gameweek = _parse_gameweek(request.args.get('last_gameweek', ''))
+    team_id = _parse_team_id(request.args.get('team_id'))
+    try:
+        return jsonify(get_this_week_hub(gameweek, last_gameweek, team_id=team_id))
+    except Exception as e:
+        logger.error(f"Error building the This Week hub: {e}")
         return jsonify({'error': 'server_error'}), 500
 
 @app.route('/radar')
