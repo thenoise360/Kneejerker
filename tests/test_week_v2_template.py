@@ -53,8 +53,15 @@ def test_pre_season_copy_appears():
 def test_closed_panel_content():
     html = render(_state('upcoming', gw=9))
     assert 'Your decisions for gameweek 9' in html
-    assert "This week&#39;s 5 decisions" in html or "This week's 5 decisions" in html
-    assert 'Coming soon' in html
+    assert 'Coming soon' not in html
+
+
+def test_decision_hub_carries_gameweeks():
+    html = render(_state('upcoming', gw=6, last='final', last_gw=5))
+    assert 'id="decision-hub"' in html
+    assert 'data-gameweek="6"' in html
+    assert 'data-last-gameweek="5"' in html
+    assert 'id="deadline-copy"' in html
 
 
 def test_last_week_final_renders_recap_slot():

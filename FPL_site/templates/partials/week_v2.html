@@ -49,10 +49,20 @@
             <div class="gw-panel" id="gw-panel-closed" style="display:none;">
                 <div class="eyebrow-sm">gameweek {{ this_week.gameweek }}</div>
                 <h2 class="title" style="margin-bottom:4px;">Your decisions for gameweek {{ this_week.gameweek }}</h2>
+                {# Calm deadline wording, written by weekV2.js in the visitor's own time zone #}
+                <p class="sub" id="deadline-copy" data-deadline="{{ this_week.deadline or '' }}"></p>
 
-                <div class="card" style="margin-top: 12px;">
-                    <h3>This week's 5 decisions</h3>
-                    <p class="sub">Coming soon. We'll walk through them with you.</p>
+                <div id="decision-hub"
+                     data-gameweek="{{ this_week.gameweek if this_week.gameweek is not none else '' }}"
+                     data-last-gameweek="{{ last_week.gameweek if last_week.status == 'final' else '' }}">
+                    <h3 style="margin-top:12px;">This week's decisions</h3>
+                    <div id="decision-slot">
+                        <div class="card" aria-busy="true" aria-label="Loading this week's decision">
+                            <div class="skeleton" style="height:18px; width:55%; margin-bottom:10px;"></div>
+                            <div class="skeleton" style="height:14px; width:85%;"></div>
+                        </div>
+                    </div>
+                    <p class="sub">More decisions are on the way. We'll add them here as they're ready.</p>
                 </div>
             </div>
 

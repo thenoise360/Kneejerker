@@ -18,6 +18,9 @@ WEEK_STATE = {
 DATA_ROUTE_STUBS = {
     '/api/week/last-week-recap?gameweek=5': ('get_last_week_recap', {
         'gameweek': 5, 'status': 'ready', 'guest': None, 'message': None, 'personal': None}),
+    '/api/week/this-week-decision?gameweek=6&last_gameweek=5': ('get_this_week_decision', {
+        'gameweek': 6, 'based_on': 'everyone', 'squad_gameweek': None, 'decision': None,
+        'message': {'title': 't', 'body': 'b'}}),
 }
 
 
