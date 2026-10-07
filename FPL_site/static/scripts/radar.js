@@ -5,7 +5,6 @@ import {
     isUserActive
 } from './utils.js';
 import {
-    difficultyColor,
     buildSparkline,
     describeFixtureRun,
     buildOwnershipArea,

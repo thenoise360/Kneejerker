@@ -130,8 +130,7 @@ export function buildOwnershipArea(history, avgHistory) {
 }
 
 // Season numbers grid (02.5): backend metric title -> plain-language label.
-// "Points per GBP1m" is spelled out in full per the no-acronyms rule, even
-// though the backend's own metric title still uses the "£1m" shorthand.
+// The pound sign is used rather than the letters "GBP" (an acronym).
 // Shared between the player profile bottom sheet (radar.js) and the
 // Discovery comparison panel's Season Numbers metric.
 export const SEASON_STATS = [
@@ -140,7 +139,7 @@ export const SEASON_STATS = [
     { metricTitle: 'Assists', label: 'Assists' },
     { metricTitle: 'Clean sheets', label: 'Clean sheets', positionsOnly: ['Goalkeeper', 'Defender'] },
     { metricTitle: 'Bonus points', label: 'Bonus points' },
-    { metricTitle: 'Points per £1m', label: 'Points per GBP1m' }
+    { metricTitle: 'Points per £1m', label: 'Points per £1m' }
 ];
 
 export function formatStatValue(v) {
