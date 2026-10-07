@@ -100,11 +100,12 @@ def fetch_team_code_map(cursor, year_start):
     rows can end up carrying a later season's id numbering (2024 did). Each player row in
     bootstrapstatic_elements records its own `team` id and `team_code` per gameweek, so a
     stray snapshot is outvoted: for each id we take the code seen in the most gameweeks,
-    breaking ties by the latest gameweek. Empty dict when the season has no snapshots.
+    breaking ties by the latest gameweek, then row count, then the larger code. Empty dict when the season has no snapshots.
     """
     cursor.execute(
         f"""SELECT team, team_code,
-                   COUNT(DISTINCT gameweek) AS gws, MAX(gameweek) AS last_gw
+                   COUNT(DISTINCT gameweek) AS gws, MAX(gameweek) AS last_gw,
+                   COUNT(*) AS n_rows
             FROM {db}.bootstrapstatic_elements
             WHERE year_start = %s AND team IS NOT NULL AND team_code IS NOT NULL
             GROUP BY team, team_code""",
@@ -112,7 +113,8 @@ def fetch_team_code_map(cursor, year_start):
     )
     best = {}
     for row in cursor.fetchall():
-        rank = (row['gws'], row['last_gw'])
+        # Third key (raw row count) and the code itself make a full tie deterministic.
+        rank = (row['gws'], row['last_gw'], row.get('n_rows', 0), row['team_code'])
         if row['team'] not in best or rank > best[row['team']][0]:
             best[row['team']] = (rank, row['team_code'])
     return {tid: code for tid, (_, code) in best.items()}
@@ -123,7 +125,8 @@ def kickoff_in_season_window(kickoff, year_start):
     True if `kickoff` ('YYYY-MM-DDTHH:MM:SSZ') is on or after 1 July of year_start and before
     1 July of the next year. The update job once wrote a new season's fixtures under the old
     year_start, so a season's table can hold other seasons' matches. Missing or unparseable
-    kickoffs are treated as outside the window.
+    kickoffs are treated as outside the window. Note: a season with matches after 1 July of its
+    end year (the 2019-20 COVID season ran to 26 July 2020) would lose those fixtures.
     """
     if not isinstance(kickoff, str):
         return False
@@ -771,16 +774,18 @@ def backtest_model(target_season, holdout_gw=25, gw_window=13):
 
         baseline_mean = float(np.mean([r['goals_h'] for r in rows] + [r['goals_a'] for r in rows]))
 
-        teams = fetch_teams_for_season(cursor, target_season)
-        id_to_code = {tid: t['code'] for tid, t in teams.items()}
+        id_to_code = fetch_team_code_map(cursor, target_season)
+        if not id_to_code:
+            id_to_code = {tid: t['code'] for tid, t in fetch_teams_for_season(cursor, target_season).items()}
 
         cursor.execute(f"""
-            SELECT event, team_h, team_a, team_h_score, team_a_score
+            SELECT event, team_h, team_a, team_h_score, team_a_score, kickoff_time
             FROM {db}.fixtures_fixtures
             WHERE year_start = %s AND finished = 1 AND event >= %s AND event < %s
               AND team_h_score IS NOT NULL AND team_a_score IS NOT NULL
         """, (target_season, holdout_gw, holdout_gw + gw_window))
-        held_out = cursor.fetchall()
+        held_out = [f for f in cursor.fetchall()
+                    if kickoff_in_season_window(f.get('kickoff_time'), target_season)]
 
         model_errors, baseline_errors = [], []
         for fx in held_out:

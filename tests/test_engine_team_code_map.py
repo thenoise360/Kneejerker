@@ -107,3 +107,14 @@ def test_guard_skips_a_map_where_two_ids_share_a_code(caplog):
         rows, _, _, _ = build_rating_dataset(cur, 2024, 5)
     assert rows == []
     assert any('2024' in m and 'roster' in m for m in caplog.messages)
+
+
+def test_a_full_tie_is_broken_deterministically_by_the_larger_code():
+    for rows in ([{'team': 1, 'team_code': 10, 'gws': 2, 'last_gw': 5},
+                  {'team': 1, 'team_code': 20, 'gws': 2, 'last_gw': 5}],
+                 [{'team': 1, 'team_code': 20, 'gws': 2, 'last_gw': 5},
+                  {'team': 1, 'team_code': 10, 'gws': 2, 'last_gw': 5}]):
+        class C(SnapshotCursor):
+            def fetchall(self):
+                return rows
+        assert fetch_team_code_map(C(), 2024) == {1: 20}
