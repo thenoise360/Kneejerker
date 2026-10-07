@@ -166,18 +166,20 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
 
 def _unpack_theta(theta, n):
     """
-    theta = [attack_0..attack_{n-1}, defence_0..defence_{n-1}, home_adv, rho].
+    theta = [attack_0..attack_{n-1}, defence_0..defence_{n-1}, home_adv, rho, intercept].
 
     All attacks are free. The old "attack_0 fixed at 0" constraint is gone: the
     shrinkage penalty already removes the attack+c / defence-c invariance (it
-    anchors the league level to the priors), and pinning an arbitrary team at 0
-    would fight a non-zero prior for that team.
+    anchors the ratings to the priors). The league scoring level is an
+    unpenalised `intercept` (global mean log-rate) so the penalty cannot drag
+    it towards one goal a game.
     """
     attack = theta[0:n]
     defence = theta[n:2 * n]
     home_adv = theta[2 * n]
     rho = theta[2 * n + 1]
-    return attack, defence, home_adv, rho
+    intercept = theta[2 * n + 2]
+    return attack, defence, home_adv, rho, intercept
 
 
 def _dc_tau(x, y, lam, mu, rho):
@@ -192,9 +194,9 @@ def _dc_tau(x, y, lam, mu, rho):
 
 def _dixon_coles_nll(theta, n, idx_h, idx_a, goals_h, goals_a, weights,
                      shrinkage=0.0, prior_att=None, prior_def=None):
-    attack, defence, home_adv, rho = _unpack_theta(theta, n)
-    lam = np.clip(np.exp(attack[idx_h] + defence[idx_a] + home_adv), 1e-6, 15.0)
-    mu = np.clip(np.exp(attack[idx_a] + defence[idx_h]), 1e-6, 15.0)
+    attack, defence, home_adv, rho, intercept = _unpack_theta(theta, n)
+    lam = np.clip(np.exp(intercept + attack[idx_h] + defence[idx_a] + home_adv), 1e-6, 15.0)
+    mu = np.clip(np.exp(intercept + attack[idx_a] + defence[idx_h]), 1e-6, 15.0)
     tau = np.clip(_dc_tau(goals_h, goals_a, lam, mu, rho), 1e-10, None)
     log_lik = weights * (np.log(tau) + poisson.logpmf(goals_h, lam) + poisson.logpmf(goals_a, mu))
     nll = -np.sum(log_lik)
@@ -247,9 +249,9 @@ def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE,
 
     prior_att, prior_def = team_priors(rows, codes, established_games, promoted_prior)
 
-    theta0 = np.zeros(2 * n + 2)
+    theta0 = np.zeros(2 * n + 3)
     theta0[2 * n] = HOME_ADV_INIT
-    bounds = [(-3.0, 3.0)] * (2 * n) + [(-1.0, 1.0), (-0.3, 0.3)]
+    bounds = [(-3.0, 3.0)] * (2 * n) + [(-1.0, 1.0), (-0.3, 0.3), (-2.0, 2.0)]
 
     result = minimize(
         _dixon_coles_nll, theta0,
@@ -260,7 +262,11 @@ def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE,
         logger.warning("fit_dixon_coles: optimizer did not converge cleanly (%s) - using best iterate anyway.",
                         result.message)
 
-    attack, defence, home_adv, rho = _unpack_theta(result.x, n)
+    attack, defence, home_adv, rho, intercept = _unpack_theta(result.x, n)
+    # Fold the league intercept into the ratings (half each) so that
+    # exp(attack_h + defence_a + home_adv) is the home rate everywhere downstream.
+    attack = attack + intercept / 2.0
+    defence = defence + intercept / 2.0
     ratings = {codes[i]: {'attack': float(attack[i]), 'defence': float(defence[i])} for i in range(n)}
     return ratings, float(home_adv), float(rho)
 

@@ -73,3 +73,16 @@ def test_shipped_constants_are_sane():
     assert SHRINKAGE > 0
     assert ESTABLISHED_GAMES == 38
     assert PROMOTED_PRIOR[0] < 0 < PROMOTED_PRIOR[1]
+
+
+def test_penalty_does_not_drag_league_scoring_level_towards_one_goal():
+    # A high-scoring league (2 goals a side on average) must still be predicted at ~2 a side
+    # under heavy shrinkage: the league level belongs to an unpenalised intercept.
+    rows = league_rows(4)
+    for r in rows:
+        r['goals_h'] += 1
+        r['goals_a'] += 1
+    ratings, home_adv, _ = fit_dixon_coles(rows, LEAGUE, GW, shrinkage=8.0)
+    away_pred = np.mean([np.exp(ratings[r['code_a']]['attack'] + ratings[r['code_h']]['defence']) for r in rows])
+    away_obs = np.mean([r['goals_a'] for r in rows])
+    assert abs(away_pred - away_obs) / away_obs < 0.03
