@@ -1306,7 +1306,7 @@ def next_5_gameweeks(player_id):
     gw = generateCurrentGameweek()
     
     # Always ensure you fetch all results or close the cursor before executing another query
-    query = f'SELECT id, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
+    query = f'SELECT id, name, short_name, code FROM {db}.bootstrapstatic_teams where year_start = {season_start};'
     cursor.execute(query)
     teams = cursor.fetchall()  # Fetch all team information
 
@@ -1382,6 +1382,7 @@ def next_5_gameweeks(player_id):
         if not fixtures_in_gw:
             fixtures.append({
                 'teamName': '-',
+                'teamFullName': '',
                 'difficulty': "None",
                 'shirtImage': player_shirts['Unknown'],
                 'homeOrAway': 'Blank',
@@ -1406,6 +1407,7 @@ def next_5_gameweeks(player_id):
 
             fixtures.append({
                 'teamName': opponent,
+                'teamFullName': next(t['name'] for t in teams if t['id'] == opponent_id),
                 'difficulty': difficulty,
                 'shirtImage': player_shirts.get(opponent_code, player_shirts['Unknown']),
                 'homeOrAway': venue,

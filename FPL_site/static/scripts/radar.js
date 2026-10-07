@@ -8,7 +8,6 @@ import {
     difficultyColor,
     buildSparkline,
     describeFixtureRun,
-    buildFixtureChips,
     buildOwnershipArea,
     SEASON_STATS,
     formatStatValue,
@@ -17,6 +16,7 @@ import {
 import { trackPlayerSummary } from './analytics.js';
 import { renderMomentumCard } from './lib/momentumView.js';
 import { sumNumbers, formatPoints } from './lib/numbers.js';
+import { buildFixtureList } from './lib/fixtureList.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeRadar();
@@ -429,17 +429,9 @@ function initializeRadar() {
             return emptyStateCard('Upcoming Fixtures', "No fixture data available for this player right now.");
         }
 
-        const chips = buildFixtureChips(fixtures);
-
-        const avgDots = fixtures.map(f => `<div class="diff-dot" style="background:${difficultyColor(f.leagueAverageDifficulty)};" title="League average difficulty for gameweek ${f.gameweek}: ${f.leagueAverageDifficulty ?? 'not available'}"></div>`).join('');
-
         return `<div class="mini-card mini-slide">
             <div class="mc-title">Upcoming Fixtures</div>
-            <div class="fixture-chip-row">${chips}</div>
-            <div class="fixture-compare-row">
-                <span class="fixture-compare-label">League average</span>
-                <div class="fixture-dot-row">${avgDots}</div>
-            </div>
+            ${buildFixtureList(fixtures)}
             <div class="mc-caption">${describeFixtureRun(fixtures)}</div>
         </div>`;
     }

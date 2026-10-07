@@ -98,21 +98,6 @@ export function buildSparkline(last5, avg5) {
     });
 }
 
-export function buildFixtureChips(fixtures) {
-    if (!fixtures || fixtures.length === 0) return '';
-    
-    return fixtures.map(f => {
-        if (f.homeOrAway === 'Blank') {
-            return `<div class="fixture-chip fixture-chip-blank" title="No fixture in gameweek ${f.gameweek}">
-                <span>GW${f.gameweek}</span><span>No fixture</span>
-            </div>`;
-        }
-        return `<div class="fixture-chip" style="background:${difficultyColor(f.difficulty)}; color:${difficultyTextColor(f.difficulty)};" title="Gameweek ${f.gameweek}, difficulty ${f.difficulty} of 5">
-            <span>${f.teamName}</span><span>${f.homeOrAway === 'Home' ? '(H)' : '(A)'}</span>
-        </div>`;
-    }).join('');
-}
-
 export function describeFixtureRun(fixtures) {
     const real = fixtures.filter(f => f.homeOrAway !== 'Blank');
     if (real.length < 2) {

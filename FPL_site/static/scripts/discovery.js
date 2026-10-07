@@ -4,7 +4,6 @@
  */
 import {
     buildSparkline,
-    buildFixtureChips,
     describeFixtureRun,
     buildOwnershipArea,
     buildMultiLineChart,
@@ -17,6 +16,7 @@ import { stripToCategories } from './lib/momentumView.js';
 import { escapeHtml } from './lib/escapeHtml.js';
 import { POSITION_LABELS, positionLabel } from './lib/positions.js';
 import { sumNumbers, formatPoints } from './lib/numbers.js';
+import { buildFixtureList } from './lib/fixtureList.js';
 
 let allPlayers = [];
 let selectedPlayers = [];
@@ -888,7 +888,7 @@ function updatePanelUI() {
                     ${players.map((p, i) => `
                         <div class="mp-fixture-player">
                             <div class="mp-player-name"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${p.name}</div>
-                            <div class="fixture-chip-row">${buildFixtureChips(p.fixtures)}</div>
+                            ${buildFixtureList(p.fixtures, { compact: true })}
                             <p class="mp-note">${describeFixtureRun(p.fixtures)}</p>
                         </div>
                     `).join('')}
@@ -933,7 +933,7 @@ function updatePanelUI() {
             visualHtml = buildSparkline(panelData.form, panelData.avgForm);
             noteText = 'Consistent delivery over the last 5 gameweeks.';
         } else if (panelMetricIndex === 1) {
-            visualHtml = `<div class="fixture-chip-row">${buildFixtureChips(panelData.fixtures)}</div>`;
+            visualHtml = buildFixtureList(panelData.fixtures);
             noteText = describeFixtureRun(panelData.fixtures);
         } else if (panelMetricIndex === 2) {
             visualHtml = buildOwnershipArea(panelData.ownership, panelData.avgOwnership);
