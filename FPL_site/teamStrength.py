@@ -184,7 +184,8 @@ def load_team_strength(team_id):
 
     conn = connect_db()
     if conn is None:
-        raise RuntimeError('could not connect to the database')
+        logger.error('load_team_strength: could not connect to the database.')
+        return dict(NOT_READY)
     try:
         cursor = conn.cursor(dictionary=True)
         team_id = int(team_id)
