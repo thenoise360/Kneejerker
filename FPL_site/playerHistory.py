@@ -37,10 +37,17 @@ def last_season_tier(points_per_appearance):
 
 
 def _distinct_matches(rows):
-    """The history table can hold the same match more than once; keep one per match."""
+    """
+    The history table can hold the same match more than once; keep one per match.
+    A player has one row per fixture, so the fixture id is the key (the round, opponent and
+    venue are the fallback for rows without one).
+    """
     seen, unique = set(), []
     for row in rows or []:
-        key = (row.get('round'), row.get('opponent_team'), row.get('was_home'))
+        if row.get('fixture') is not None:
+            key = ('fixture', row['fixture'])
+        else:
+            key = (row.get('round'), row.get('opponent_team'), row.get('was_home'))
         if key not in seen:
             seen.add(key)
             unique.append(row)
@@ -71,12 +78,19 @@ def last_season_baseline(rows, club_name):
 
 
 def _season_rows(cursor, element_id, year_start):
+    """
+    One player's match rows for one season. The update job has filed the next season's first
+    gameweek under the old year_start before, and those rows carry another season's player and
+    team ids, so anything kicking off outside the season's July-to-July window is dropped.
+    """
+    from FPL_site.matchPredictionEngine import kickoff_in_season_window
     cursor.execute(
-        "SELECT round, opponent_team, was_home, total_points, minutes, "
+        "SELECT round, fixture, kickoff_time, opponent_team, was_home, total_points, minutes, "
         "team_h_score, team_a_score FROM {db}.elementsummary_history "
         "WHERE element = %s AND year_start = %s".format(db=_db()),
         (element_id, year_start))
-    return cursor.fetchall()
+    rows = [r for r in cursor.fetchall() if kickoff_in_season_window(r.get('kickoff_time'), year_start)]
+    return _distinct_matches(rows)
 
 
 def _db():

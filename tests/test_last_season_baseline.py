@@ -6,9 +6,10 @@ import pytest
 from FPL_site import playerHistory as ph
 
 
-def rows(points_list, minutes=90):
+def rows(points_list, minutes=90, kickoff='2025-09-01T14:00:00Z'):
     """One history row per match, in separate gameweeks."""
-    return [{'round': i + 1, 'opponent_team': 5, 'was_home': 1, 'total_points': p,
+    return [{'round': i + 1, 'fixture': i + 1, 'kickoff_time': kickoff,
+             'opponent_team': 5, 'was_home': 1, 'total_points': p,
              'minutes': minutes if p is not None else 0} for i, p in enumerate(points_list)]
 
 
@@ -50,7 +51,7 @@ def test_no_appearances_gives_none():
 
 
 def test_duplicate_rows_for_one_match_count_once():
-    data = rows([6]) + rows([6])
+    data = rows([6]) + rows([6])  # same fixture twice
     assert ph.last_season_baseline(data, 'Brighton')['appearances'] == 1
 
 
@@ -89,7 +90,7 @@ def test_fetch_matches_the_player_by_code_and_uses_last_seasons_club():
     cur = cursor_for(
         this_el={'code': 223340, 'team_code': 3},
         last_el={'id': 16, 'team_code': 3},
-        history={(16, 2025): rows([8] * 34), (12, 2026): rows([6, 6])},
+        history={(16, 2025): rows([8] * 34), (12, 2026): rows([6, 6], kickoff='2026-09-01T14:00:00Z')},
         teams={(3, 2025): 'Arsenal'})
     out = ph.fetch_last_season_baseline(cur, 12, this_year=2026)
     assert out['played'] is True
@@ -161,3 +162,19 @@ def test_small_sample_headline_names_the_club_and_keeps_the_numbers_behind_detai
     assert out['detail'] == 'about 6.0 points a game across 4 games'
     for word in ('regular', 'steady', 'quiet'):
         assert word not in out['headline']
+
+
+def test_a_row_misfiled_from_another_season_is_ignored():
+    # The update job once wrote a new season's gameweek 1 under the old year_start.
+    stray = dict(rows([9])[0], fixture=999, round=1, kickoff_time='2026-08-15T14:00:00Z')
+    cur = cursor_for(this_el={'code': 1, 'team_code': 3}, last_el={'id': 4, 'team_code': 3},
+                     history={(4, 2025): rows([2] * 10) + [stray]}, teams={(3, 2025): 'Arsenal'})
+    out = ph.fetch_last_season_baseline(cur, 12, this_year=2026)
+    assert out['appearances'] == 10
+    assert out['points_per_appearance'] == 2.0
+
+
+def test_the_same_fixture_twice_counts_once_even_if_the_round_differs():
+    first = rows([5])[0]
+    again = dict(first, round=2)           # same fixture id, filed twice
+    assert ph.last_season_baseline([first, again], 'Arsenal')['appearances'] == 1

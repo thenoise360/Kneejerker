@@ -35,7 +35,8 @@ def test_result_is_from_the_players_club_perspective(was_home, h, a, text):
 
 
 def match(round_, opp, was_home, points=5, minutes=90, h=1, a=0):
-    return {'round': round_, 'opponent_team': opp, 'was_home': 1 if was_home else 0,
+    return {'round': round_, 'fixture': round_ * 100 + opp, 'kickoff_time': '2025-09-01T14:00:00Z',
+            'opponent_team': opp, 'was_home': 1 if was_home else 0,
             'total_points': points, 'minutes': minutes, 'team_h_score': h, 'team_a_score': a}
 
 
@@ -235,3 +236,10 @@ def test_facing_his_own_former_club_is_not_a_meeting():
 
 def test_an_opponent_whose_code_cannot_be_mapped_is_not_a_meeting():
     assert lookup(make([match(4, 9, True)]), opponent_id=99) == {'kind': 'no_meeting'}
+
+
+def test_a_misfiled_row_cannot_stand_in_for_a_meeting():
+    stray = dict(match(1, 9, True, points=15, h=9, a=0), fixture=7777, kickoff_time='2026-08-15T14:00:00Z')
+    out = lookup(make([stray, match(20, 9, True, points=2, h=0, a=0)]))
+    assert out['points'] == 2
+    assert lookup(make([stray])) == {'kind': 'no_meeting'}
