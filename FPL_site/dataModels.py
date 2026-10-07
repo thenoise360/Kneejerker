@@ -52,43 +52,62 @@ password = current_config.PASSWORD
 db = current_config.DATABASE
 
 season = "2025_2026"
-FALLBACK_SEASON_START = 2026
 
 NULL = None
 
-def connect_db():
+def connect_db(timeout=None):
     try:
+        extra = {'connection_timeout': timeout} if timeout else {}
         mydb = mysql.connector.connect(
             host=host,
             user=user,
             password=password,
             database=db,
+            **extra,
         )
         return mydb
     except Error as e:
         logger.error(f"Error while connecting to MySQL: {e}")
         return None
 
-# Resolve the season once, at import. A hard-coded year went stale at every summer rollover
-# (the new season's pre-season data was written under the old year until someone edited the
-# constant). The newest year_start in bootstrapstatic_teams is what the update job has most
-# recently written. Falls back to the constant when the database is unavailable and under
-# KJ_SKIP_DB_INIT, so tests and offline tooling never need a connection.
-def _resolve_season_start(default):
+# The season (year_start) is read from the database rather than hard-coded: a constant went stale
+# at every summer rollover, filing the new season's data under the old year until someone edited it.
+# The newest year_start in bootstrapstatic_teams is what the update job most recently wrote.
+#
+# Resolved once at import (the web app keeps that value until it restarts) and re-resolved by
+# refresh_season_start(), which the daily jobs call at run time. If the database cannot be reached
+# at import, we fall back to a year derived from today's date (a season starts in July-August), so
+# the value can be at most one season off, and the next successful refresh_season_start() fixes
+# it. A web process that booted on the fallback keeps it until restart. Under KJ_SKIP_DB_INIT
+# (tests, offline tooling) no connection is attempted.
+SEASON_CONNECT_TIMEOUT = 5
+
+
+def _calendar_season_start(today=None):
+    today = today or datetime.now()
+    return today.year if today.month >= 7 else today.year - 1
+
+
+FALLBACK_SEASON_START = _calendar_season_start()
+
+
+def _query_season_start():
+    """Newest year_start in the database, or None if unavailable (never raises)."""
     if os.environ.get('KJ_SKIP_DB_INIT') == '1':
-        return default
+        return None
     conn = None
     try:
-        conn = connect_db()
+        conn = connect_db(timeout=SEASON_CONNECT_TIMEOUT)
         if conn is None:
-            return default
+            logger.error("Could not connect to read the current season from the database.")
+            return None
         cursor = conn.cursor()
         cursor.execute(f'SELECT MAX(year_start) FROM {db}.bootstrapstatic_teams')
         row = cursor.fetchone()
-        return int(row[0]) if row and row[0] else default
+        return int(row[0]) if row and row[0] else None
     except Exception as e:
-        logger.warning(f"Could not resolve season_start from the database, using {default}: {e}")
-        return default
+        logger.error(f"Could not read the current season from the database: {e}")
+        return None
     finally:
         if conn is not None:
             try:
@@ -97,7 +116,29 @@ def _resolve_season_start(default):
                 pass
 
 
+def _resolve_season_start(default):
+    found = _query_season_start()
+    if found is None and os.environ.get('KJ_SKIP_DB_INIT') != '1':
+        logger.error(f"season_start falling back to {default}; refresh_season_start() will correct it.")
+    return found if found is not None else default
+
+
 season_start = _resolve_season_start(FALLBACK_SEASON_START)
+
+
+def current_season_start():
+    """The season as of now, read at call time (not frozen into an importing module's namespace)."""
+    return season_start
+
+
+def refresh_season_start():
+    """Re-read the season from the database. Keeps the current value if the database is unavailable."""
+    global season_start
+    found = _query_season_start()
+    if found is not None:
+        season_start = found
+    return season_start
+
 
 # Get us the current gameweek number
 def generateCurrentGameweek():

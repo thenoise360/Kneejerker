@@ -2,6 +2,7 @@ import os
 os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
 import logging
 import sys
+from datetime import datetime
 
 import pytest
 
@@ -73,31 +74,59 @@ def test_module_level_season_start_is_an_int_and_offline_under_skip_flag():
     assert dm.season_start == dm.FALLBACK_SEASON_START
 
 
+def test_calendar_fallback_rolls_over_in_july():
+    assert dm._calendar_season_start(datetime(2026, 10, 8)) == 2026
+    assert dm._calendar_season_start(datetime(2027, 2, 1)) == 2026
+    assert dm._calendar_season_start(datetime(2027, 6, 30)) == 2026
+    assert dm._calendar_season_start(datetime(2027, 7, 1)) == 2027
+
+
 def test_skip_flag_never_touches_the_database(monkeypatch):
-    monkeypatch.setattr(dm, 'connect_db', lambda: pytest.fail('connected'))
+    monkeypatch.setattr(dm, 'connect_db', lambda **k: pytest.fail('connected'))
     assert dm._resolve_season_start(2026) == 2026
 
 
-def test_reads_the_latest_year_from_the_database(monkeypatch):
+@pytest.fixture
+def live(monkeypatch):
     monkeypatch.delenv('KJ_SKIP_DB_INIT', raising=False)
-    conn = FakeConn(2027)
-    monkeypatch.setattr(dm, 'connect_db', lambda: conn)
+
+
+def test_reads_the_latest_year_from_the_database_with_a_short_timeout(live, monkeypatch):
+    conn, seen = FakeConn(2027), {}
+    monkeypatch.setattr(dm, 'connect_db', lambda **k: seen.update(k) or conn)
     assert dm._resolve_season_start(2026) == 2027
     assert 'MAX(year_start)' in conn.sql and conn.closed
+    assert 0 < seen['timeout'] <= 5
 
 
-def test_falls_back_when_the_database_is_unavailable(monkeypatch):
-    monkeypatch.delenv('KJ_SKIP_DB_INIT', raising=False)
-    monkeypatch.setattr(dm, 'connect_db', lambda: None)
+def test_falls_back_when_the_database_is_unavailable_and_logs_an_error(live, monkeypatch, caplog):
+    monkeypatch.setattr(dm, 'connect_db', lambda **k: None)
+    with caplog.at_level(logging.ERROR):
+        assert dm._resolve_season_start(2026) == 2026
+    assert any(r.levelno == logging.ERROR for r in caplog.records)
+
+
+def test_falls_back_when_the_query_fails_or_is_empty(live, monkeypatch, caplog):
+    monkeypatch.setattr(dm, 'connect_db', lambda **k: FakeConn(boom=True))
+    with caplog.at_level(logging.ERROR):
+        assert dm._resolve_season_start(2026) == 2026
+    assert any(r.levelno == logging.ERROR for r in caplog.records)
+    monkeypatch.setattr(dm, 'connect_db', lambda **k: FakeConn(None))
     assert dm._resolve_season_start(2026) == 2026
 
 
-def test_falls_back_when_the_query_fails_or_is_empty(monkeypatch):
-    monkeypatch.delenv('KJ_SKIP_DB_INIT', raising=False)
-    monkeypatch.setattr(dm, 'connect_db', lambda: FakeConn(boom=True))
-    assert dm._resolve_season_start(2026) == 2026
-    monkeypatch.setattr(dm, 'connect_db', lambda: FakeConn(None))
-    assert dm._resolve_season_start(2026) == 2026
+def test_refresh_fixes_a_season_that_stuck_on_the_fallback(live, monkeypatch):
+    monkeypatch.setattr(dm, 'season_start', 2026)
+    monkeypatch.setattr(dm, 'connect_db', lambda **k: FakeConn(2027))
+    assert dm.refresh_season_start() == 2027
+    assert dm.season_start == 2027 and dm.current_season_start() == 2027
+
+
+def test_refresh_keeps_the_current_season_when_the_database_blips(live, monkeypatch):
+    monkeypatch.setattr(dm, 'season_start', 2027)
+    monkeypatch.setattr(dm, 'connect_db', lambda **k: None)
+    assert dm.refresh_season_start() == 2027
+    assert dm.season_start == 2027
 
 
 def test_future_performance_model_shares_the_same_season():
