@@ -151,7 +151,49 @@ def test_outlook_payload_carries_last_meetings(monkeypatch):
     monkeypatch.setattr(h2h, 'current_season_start', lambda: 2025)
     monkeypatch.setattr(h2h, 'code_map_for_season', lambda c, y: {1: 10, 2: 20})
     monkeypatch.setattr(h2h, 'load_meeting_history',
-                        lambda c, seasons=None: [match(2024, 8, 20, 10, 0, 2)])
+                        lambda c, seasons=None, **kw: [match(2024, 8, 20, 10, 0, 2)])
     out = engine.load_team_fixture_outlook(1)
     assert out['fixtures'][0]['last_meetings'] == [
         {'season_label': '2024/25', 'is_home': False, 'result': 'won', 'score': '2–0'}]
+
+
+# ---- caching ------------------------------------------------------------
+import pytest
+import FPL_site.headToHead as _h2h
+
+
+@pytest.fixture(autouse=True)
+def _fresh_cache():
+    """Each test starts with an empty in-process cache so fakes cannot leak between tests."""
+    _h2h.clear_history_cache()
+    yield
+    _h2h.clear_history_cache()
+
+
+def test_second_call_makes_no_queries_for_completed_seasons():
+    cur = FakeCursor(
+        snapshots={2024: {1: 10, 2: 20}, 2025: {1: 10, 2: 20}},
+        fixtures={2024: [raw(8, 1, 2, 1, 0, '2024-10-05T15:00:00Z')],
+                  2025: [raw(5, 1, 2, 2, 2, '2025-09-20T15:00:00Z')]})
+    first = load_meeting_history(cursor=cur, seasons=[2024, 2025], current=2025)
+    after_first = cur.queries
+    second = load_meeting_history(cursor=cur, seasons=[2024, 2025], current=2025)
+    assert second == first
+    # Only the live season (2025) is read again: its fixtures, and its code map.
+    assert cur.queries - after_first == 2
+
+
+def test_second_call_reuses_a_supplied_current_code_map():
+    cur = FakeCursor(snapshots={2025: {1: 10, 2: 20}},
+                     fixtures={2025: [raw(5, 1, 2, 2, 2, '2025-09-20T15:00:00Z')]})
+    load_meeting_history(cursor=cur, seasons=[2025], current=2025, current_codes={1: 10, 2: 20})
+    assert cur.queries == 1   # fixtures only; no code map query
+
+
+def test_the_live_season_is_never_cached():
+    cur = FakeCursor(snapshots={2025: {1: 10, 2: 20}},
+                     fixtures={2025: [raw(5, 1, 2, 2, 2, '2025-09-20T15:00:00Z')]})
+    load_meeting_history(cursor=cur, seasons=[2025], current=2025)
+    cur.fixtures[2025].append(raw(9, 2, 1, 1, 0, '2025-12-01T15:00:00Z'))
+    again = load_meeting_history(cursor=cur, seasons=[2025], current=2025)
+    assert len(again) == 2

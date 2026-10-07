@@ -35,32 +35,58 @@ def code_map_for_season(cursor, year_start):
             if t.get('code') is not None}
 
 
-def load_meeting_history(cursor, seasons=None):
+# Finished seasons never change, so their mapped results are kept for the life of the
+# process, keyed by season. The live season is always read fresh.
+_COMPLETED_SEASONS = {}
+
+
+def clear_history_cache():
+    """Empty the in-process cache (used by tests)."""
+    _COMPLETED_SEASONS.clear()
+
+
+def _load_one_season(cursor, year, codes=None):
+    """Mapped, window-checked, de-duplicated results for one season."""
+    codes = codes if codes is not None else code_map_for_season(cursor, year)
+    games, seen = [], set()
+    for row in fetch_finished_fixtures(cursor, year):
+        if not kickoff_in_season_window(row.get('kickoff_time'), year):
+            continue
+        home, away = codes.get(row['team_h']), codes.get(row['team_a'])
+        if home is None or away is None:
+            continue
+        key = (year, row['event'], home, away)
+        if key in seen:
+            continue
+        seen.add(key)
+        games.append({
+            'season': year, 'event': row['event'], 'home_code': home, 'away_code': away,
+            'home_goals': row['team_h_score'], 'away_goals': row['team_a_score'],
+            'kickoff': row['kickoff_time'],
+        })
+    return games
+
+
+def load_meeting_history(cursor, seasons=None, current=None, current_codes=None):
     """
     Every finished fixture across `seasons` (default: all), as dicts keyed by team code:
     {season, event, home_code, away_code, home_goals, away_goals, kickoff}.
-    One pass per season, not one per fixture. Rows outside their season's July-to-July
-    window (misfiled by the update job) and rows whose teams cannot be mapped are dropped;
-    duplicates on (season, event, home code, away code) are kept once.
+    Rows outside their season's July-to-July window and rows whose teams cannot be mapped
+    are dropped; duplicates are kept once. Seasons before `current` are cached in memory;
+    `current` (default: the last season listed) is read each call, using `current_codes`
+    if the caller already has that season's id-to-code map.
     """
-    history, seen = [], set()
-    for year in (seasons if seasons is not None else seasons_to_load()):
-        codes = code_map_for_season(cursor, year)
-        for row in fetch_finished_fixtures(cursor, year):
-            if not kickoff_in_season_window(row.get('kickoff_time'), year):
-                continue
-            home, away = codes.get(row['team_h']), codes.get(row['team_a'])
-            if home is None or away is None:
-                continue
-            key = (year, row['event'], home, away)
-            if key in seen:
-                continue
-            seen.add(key)
-            history.append({
-                'season': year, 'event': row['event'], 'home_code': home, 'away_code': away,
-                'home_goals': row['team_h_score'], 'away_goals': row['team_a_score'],
-                'kickoff': row['kickoff_time'],
-            })
+    years = list(seasons) if seasons is not None else seasons_to_load()
+    if current is None:
+        current = years[-1] if years else None
+    history = []
+    for year in years:
+        if year < current:
+            if year not in _COMPLETED_SEASONS:
+                _COMPLETED_SEASONS[year] = _load_one_season(cursor, year)
+            history.extend(_COMPLETED_SEASONS[year])
+        else:
+            history.extend(_load_one_season(cursor, year, current_codes if year == current else None))
     return history
 
 

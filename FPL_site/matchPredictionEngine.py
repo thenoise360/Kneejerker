@@ -668,7 +668,7 @@ def _meetings_lookup(cursor, team_id, teams, rows):
         if not rows:
             return lambda opponent_id: []
         codes = code_map_for_season(cursor, current_season_start())
-        history = load_meeting_history(cursor)
+        history = load_meeting_history(cursor, current_codes=codes)
         mine = codes.get(team_id)
     except Exception as exc:
         logger.warning("last meetings unavailable: %s", exc)
