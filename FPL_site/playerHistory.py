@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 # A player counts as having "appeared" in a match when they were on the pitch for at least a minute.
 # Points per appearance at or above these lines pick the wording.
+# Fewer appearances than this is too small a sample for a rate to mean much.
+SMALL_SAMPLE_BELOW = 10
 REGULAR_FROM = 5.0
 STEADY_FROM = 3.0
 
@@ -63,7 +65,7 @@ def last_season_baseline(rows, club_name):
     return {
         'appearances': len(played),
         'points_per_appearance': per_game,
-        'tier': last_season_tier(per_game),
+        'tier': 'only a few games' if len(played) < SMALL_SAMPLE_BELOW else last_season_tier(per_game),
         'club': club_name,
     }
 
@@ -134,7 +136,10 @@ def fetch_last_season_baseline(cursor, player_id, this_year=None):
         out.update({'played': False, 'headline': DID_NOT_PLAY})
         return out
 
-    headline = 'Last season: ' + baseline['tier']
+    if baseline['appearances'] < SMALL_SAMPLE_BELOW:
+        headline = 'Only a few games last season'
+    else:
+        headline = 'Last season: ' + baseline['tier']
     if club:
         headline += ' (' + club + ')'
     out.update(baseline)

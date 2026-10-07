@@ -27,10 +27,10 @@ def test_tier_words(ppa, word):
 
 
 def test_baseline_counts_only_matches_with_minutes_and_rounds_to_one_place():
-    data = rows([10, 2, 3]) + [{'round': 9, 'opponent_team': 5, 'was_home': 0, 'total_points': 0, 'minutes': 0}]
+    data = rows([10, 2, 3] + [6] * 7) + [{'round': 39, 'opponent_team': 5, 'was_home': 0, 'total_points': 0, 'minutes': 0}]
     result = ph.last_season_baseline(data, 'Brighton')
-    assert result['appearances'] == 3
-    assert result['points_per_appearance'] == 5.0
+    assert result['appearances'] == 10
+    assert result['points_per_appearance'] == 5.7
     assert result['tier'] == 'a regular points-scorer'
     assert result['club'] == 'Brighton'
 
@@ -142,3 +142,22 @@ def test_route_returns_200_404_and_500(monkeypatch):
         raise RuntimeError('db down')
     monkeypatch.setattr(views, 'load_last_season', boom)
     assert client.get('/api/player/1/last-season').status_code == 500
+
+
+def test_fewer_than_ten_appearances_is_a_small_sample_with_no_rate_tier():
+    nine = ph.last_season_baseline(rows([8] * 9), 'Brentford')
+    assert nine['appearances'] == 9
+    assert nine['tier'] == 'only a few games'
+    ten = ph.last_season_baseline(rows([8] * 10), 'Brentford')
+    assert ten['appearances'] == 10
+    assert ten['tier'] == 'a regular points-scorer'
+
+
+def test_small_sample_headline_names_the_club_and_keeps_the_numbers_behind_details():
+    cur = cursor_for(this_el={'code': 1, 'team_code': 3}, last_el={'id': 4, 'team_code': 94},
+                     history={(4, 2025): rows([6] * 4)}, teams={(94, 2025): 'Brentford'})
+    out = ph.fetch_last_season_baseline(cur, 12, this_year=2026)
+    assert out['headline'] == 'Only a few games last season (Brentford)'
+    assert out['detail'] == 'about 6.0 points a game across 4 games'
+    for word in ('regular', 'steady', 'quiet'):
+        assert word not in out['headline']
