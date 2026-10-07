@@ -207,3 +207,10 @@ def test_no_digits_or_acronyms_anywhere():
             assert text
             assert not re.search(r'\d', text)
             assert not re.search(r'\b[A-Z]{2,}\b', text)
+
+
+def test_goalkeeper_wording_uses_the_goalkeepers_own_chance():
+    # A ruled-out goalkeeper reads "out" even when another key defender is only doubtful.
+    s = make(conceded_adjusted=1.3, missing=[player('defence', position=1, chance=0),
+                                             player('defence', position=2, chance=50)])
+    assert reason(s) == 'Their first-choice goalkeeper is out.'
