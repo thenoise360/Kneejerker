@@ -467,6 +467,12 @@ def run_daily_match_predictions():
             persist_team_strengths(conn, strengths)
         except Exception:
             logger.exception("Team strength failed; predictions were still saved.")
+        # Player momentum has its own guard too: it can never break predictions or strength.
+        try:
+            from FPL_site.playerMomentum import run_daily_momentum
+            run_daily_momentum(cursor, conn, current_gw)
+        except Exception:
+            logger.exception("Player momentum failed; predictions were still saved.")
         logger.info(
             f"Daily match-outcome prediction run complete for gameweek {current_gw}. "
             f"home_adv={home_adv:.3f}, rho={rho:.3f}, {len(rows)} rows written."
