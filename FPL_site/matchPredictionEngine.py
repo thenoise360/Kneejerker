@@ -40,6 +40,7 @@ MODEL_VERSION = 'dixon-coles-2026-10'
 KICKOFF_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 GAMEWEEKS_PER_SEASON = 38
+TEAMS_PER_SEASON = 20
 HISTORY_SEASONS_BACK = 3          # completed seasons pooled alongside the current one
 DECAY_RATE = 0.02                 # per-gameweek exponential decay across the pooled timeline
 STABLE_GAMES_THIS_SEASON = 5      # games played this season before a team's range stops widening
@@ -74,13 +75,17 @@ NEXT_N_GAMEWEEKS = 5
 #               Data fetching                  #
 #################################################
 
-def fetch_teams_for_season(cursor, year_start):
-    """id -> row for one season's team roster (id is only valid within that year_start)."""
+def fetch_team_rows(cursor, year_start):
     cursor.execute(
         f"SELECT id, code, name, short_name FROM {db}.bootstrapstatic_teams WHERE year_start = %s",
         (year_start,)
     )
-    return {row['id']: row for row in cursor.fetchall()}
+    return cursor.fetchall()
+
+
+def fetch_teams_for_season(cursor, year_start):
+    """id -> row for one season's team roster (id is only valid within that year_start)."""
+    return {row['id']: row for row in fetch_team_rows(cursor, year_start)}
 
 
 def fetch_finished_fixtures(cursor, year_start):
@@ -127,8 +132,18 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
     games_this_season = {}
 
     for season_index, year_start in enumerate(seasons):
-        teams = fetch_teams_for_season(cursor, year_start)
-        if not teams:
+        team_rows = fetch_team_rows(cursor, year_start)
+        if not team_rows:
+            continue
+        teams = {row['id']: row for row in team_rows}
+        if len(team_rows) != TEAMS_PER_SEASON or len(teams) != TEAMS_PER_SEASON:
+            # A roster that is not exactly 20 rows with 20 distinct ids has id collisions
+            # (seen in 2024, where a later bootstrap run overwrote ids), so every id -> code
+            # lookup for that season is wrong and its results would be credited to the wrong
+            # clubs. Skip the season rather than poison the fit. Kept as a tripwire.
+            logger.warning("build_rating_dataset: season %s has a corrupt team roster "
+                           "(%s rows, %s distinct ids, expected %s) - skipping it.",
+                           year_start, len(team_rows), len(teams), TEAMS_PER_SEASON)
             continue
         id_to_code = {tid: t['code'] for tid, t in teams.items()}
         season_offset = season_index * GAMEWEEKS_PER_SEASON
