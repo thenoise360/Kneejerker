@@ -14,41 +14,58 @@ const ready = {
     ],
 };
 
-test('default view is the label and reason only', () => {
-    const [before] = renderMomentumCard(ready).split('<details');
-    assert.match(before, /<h3 class="recap-verdict momentum-verdict">Rising<\/h3>/);
-    assert.match(before, /<p[^>]*>Kinder fixtures coming up\.<\/p>/);
-    assert.doesNotMatch(before, /Teammates/);
-});
-
-test('it is a carousel slide', () => {
-    assert.match(renderMomentumCard(ready), /^\s*<div class="mini-card mini-slide">/);
-});
-
-test('all four signals sit inside the details', () => {
+test('the slide uses the mini-card, mc-title and mc-caption classes', () => {
     const html = renderMomentumCard(ready);
-    const inside = html.split('<details')[1];
-    assert.match(inside, /<summary>See each signal<\/summary>/);
+    assert.match(html, /^\s*<div class="mini-card mini-slide">/);
+    assert.match(html, /<div class="mc-title">Momentum<\/div>/);
+    assert.match(html, /<div class="mc-caption">Looks at upcoming fixtures and key teammates coming in or out\.<\/div>/);
+    assert.doesNotMatch(html, /<h3|<details|momentum-verdict/);
+});
+
+test('the reason is a short line without the label prefix', () => {
+    assert.match(renderMomentumCard(ready), /<p class="sub">Kinder fixtures coming up\.<\/p>/);
+});
+
+test('the needle sits in the zone that matches the label', () => {
+    const needleX = label => Number(renderMomentumCard({ ...ready, label }).match(/class="gauge-needle" cx="([\d.-]+)"/)[1]);
+    assert.ok(needleX('Cooling') < 60);
+    assert.equal(needleX('Steady'), 80);
+    assert.ok(needleX('Rising') > 100);
+    // The needle for a label is always the same place, whatever else is in the payload.
+    assert.equal(needleX('Rising'), needleX('Rising'));
+});
+
+test('the gauge has three zones, word labels and the label as centre text', () => {
+    const html = renderMomentumCard(ready);
+    assert.equal((html.match(/class="gauge-zone"/g) || []).length, 3);
+    assert.match(html, /aria-label="Momentum: rising"/);
+    assert.match(html, />Cooling<\/text>/);
+    assert.match(html, /class="gauge-centre"[^>]*>Rising<\/text>/);
+});
+
+test('no score is used: an extra score changes nothing', () => {
+    assert.equal(renderMomentumCard({ ...ready, score: 0.87 }), renderMomentumCard(ready));
+    assert.equal(renderMomentumCard({ ...ready, score: -3 }), renderMomentumCard(ready));
+});
+
+test('an unknown label draws no gauge', () => {
+    assert.doesNotMatch(renderMomentumCard({ ...ready, label: 'Mystery' }), /<svg/);
+});
+
+test('all four signals show on the slide, each reason in a caption', () => {
+    const html = renderMomentumCard(ready);
     for (const name of ['Fixtures', 'Teammates', 'Position on the pitch', 'Manager change']) {
-        assert.ok(inside.includes(name), name);
+        assert.ok(html.includes(name), name);
     }
-    assert.match(inside, /<div class="sub">easier games ahead<\/div>/);
+    assert.match(html, /<div class="mc-caption">easier games ahead<\/div>/);
 });
 
 test('every arrow is paired with a word', () => {
-    const inside = renderMomentumCard(ready).split('<details')[1];
-    assert.match(inside, /<span aria-hidden="true">↑<\/span> Fixtures: Up/);
-    assert.match(inside, /<span aria-hidden="true">→<\/span> Teammates: No change/);
-    assert.match(inside, /<span aria-hidden="true">–<\/span> Position on the pitch: Not tracked yet/);
-    assert.match(inside, /<span aria-hidden="true">–<\/span> Manager change: Not tracked yet/);
-});
-
-test('the details use recap-details so the focus outline applies', () => {
-    assert.match(renderMomentumCard(ready), /<details class="recap-details">/);
-});
-
-test('the heading uses the momentum-verdict class', () => {
-    assert.match(renderMomentumCard(ready), /<h3 class="recap-verdict momentum-verdict">Rising<\/h3>/);
+    const html = renderMomentumCard(ready);
+    assert.match(html, /<span aria-hidden="true">↑<\/span> Fixtures: Up/);
+    assert.match(html, /<span aria-hidden="true">→<\/span> Teammates: No change/);
+    assert.match(html, /<span aria-hidden="true">–<\/span> Position on the pitch: Not tracked yet/);
+    assert.match(html, /<span aria-hidden="true">–<\/span> Manager change: Not tracked yet/);
 });
 
 test('a reason without the label prefix is still capitalised', () => {
