@@ -4,7 +4,8 @@
 // file only reads the page, fetches data, and puts HTML on the page.
 import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, renderRecapSkeleton, RECAP_LOAD_FAILED } from './lib/recapView.js';
 import { safeLocalStorage } from './lib/safeStorage.js';
-import { readTeamId, saveTeamId, clearTeamId } from './lib/teamId.js';
+import { readTeamId, saveTeamId, clearTeamId, parseTeamId } from './lib/teamId.js';
+import { renderHubBody } from './lib/hubView.js';
 import { welcomeBackMessage, readLastVisit, recordVisit } from './lib/returningUser.js';
 import { createLatestGuard } from './lib/latestOnly.js';
 import { renderDecision, renderDecisionSkeleton } from './lib/decisionView.js';
@@ -17,6 +18,7 @@ let deadlineTimer = null;
 // One guard per slot: a slow older answer must never overwrite a newer one.
 const recapGuard = createLatestGuard();
 const decisionGuard = createLatestGuard();
+const hubGuard = createLatestGuard();
 
 export function initializeWeekV2() {
     const lastWeekView = document.getElementById('last-week-view');
@@ -26,6 +28,9 @@ export function initializeWeekV2() {
     loadLastWeekRecap(lastWeekView);
     showDeadline();
     loadDecision();
+    adoptTeamFromAddress();
+    bindHubTeamForm();
+    loadHub();
 }
 
 function showWelcomeBack(lastWeekView) {
@@ -91,7 +96,8 @@ function bindChangeTeam(personalSlot, lastWeekView) {
         clearTeamId(safeLocalStorage(window));
         personalSlot.innerHTML = renderTeamPrompt();
         bindTeamForm(lastWeekView);
-        loadDecision();  // no team number any more, so This week falls back to the everyone view
+        loadDecision();
+        loadHub();  // the hub personalises too
     });
 }
 
@@ -109,7 +115,8 @@ function bindTeamForm(lastWeekView) {
             return;
         }
         loadLastWeekRecap(lastWeekView);
-        loadDecision();  // a saved team number also personalises This week
+        loadDecision();
+        loadHub();  // the hub personalises too
     });
     input.addEventListener('input', () => input.setCustomValidity(''));
 }
@@ -168,5 +175,66 @@ async function loadDecision() {
             title: "We couldn't load this week's decision",
             body: 'Nothing is wrong on your side. Try again in a moment.',
         });
+    }
+}
+
+// Without JavaScript, the hub's form reloads the page as /this-week?team_id=123.
+// If someone arrives that way, remember the number they typed, the same as the
+// other team forms do, so the next visit is personal straight away.
+function adoptTeamFromAddress() {
+    const fromAddress = parseTeamId(new URLSearchParams(window.location.search).get('team_id'));
+    if (fromAddress !== null) saveTeamId(safeLocalStorage(window), fromAddress);
+}
+
+// With JavaScript we can do better than a page reload: save the number, then
+// fetch just the hub. preventDefault() stops the browser's own form submit.
+function bindHubTeamForm() {
+    const form = document.getElementById('hub-team-form');
+    const input = document.getElementById('hub-team-input');
+    if (!form || !input) return;
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (saveTeamId(safeLocalStorage(window), input.value) === null) {
+            input.setCustomValidity('Please enter the number only, for example 1234567.');
+            input.reportValidity();
+            return;
+        }
+        loadHub();
+        loadDecision();
+    });
+    input.addEventListener('input', () => input.setCustomValidity(''));
+}
+
+// Fetches the hub as JSON and redraws its body with the conversational wording.
+// If anything goes wrong we simply keep what the server already drew: that
+// version is plainer, but it's correct, so there's nothing to "fix" on screen.
+async function loadHub() {
+    const hub = document.getElementById('this-week-hub');
+    const body = document.getElementById('hub-body');
+    const teamSlot = document.getElementById('hub-team-slot');
+    if (!hub || !body || !hub.dataset.gameweek) return;
+
+    const query = new URLSearchParams({ gameweek: hub.dataset.gameweek });
+    if (hub.dataset.lastGameweek) query.set('last_gameweek', hub.dataset.lastGameweek);
+    const teamId = readTeamId(safeLocalStorage(window));
+    if (teamId !== null) query.set('team_id', String(teamId));
+
+    const token = hubGuard.start();  // a newer request makes this one stale
+    body.setAttribute('aria-busy', 'true');
+    try {
+        const res = await fetch(`/api/week/this-week?${query}`);
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const data = await res.json();
+        if (!hubGuard.isLatest(token)) return;
+        if (data.status === 'ready') {
+            body.innerHTML = renderHubBody(data);
+            hub.dataset.basedOn = data.based_on;
+            // A known team doesn't need the "your team number" form any more.
+            if (teamSlot) teamSlot.hidden = data.based_on === 'your_team';
+        }
+    } catch (err) {
+        console.error("Failed to load this week's hub", err);
+    } finally {
+        if (hubGuard.isLatest(token)) body.removeAttribute('aria-busy');
     }
 }
