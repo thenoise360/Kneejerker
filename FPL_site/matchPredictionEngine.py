@@ -438,6 +438,14 @@ def log_predictions(conn, rows, now):
     logger.info(f"Logged {len(to_log)} pre-kickoff predictions ({MODEL_VERSION}).")
 
 
+def _safe_rollback(conn):
+    """Undo any half-finished write so the next step cannot commit it by accident."""
+    try:
+        conn.rollback()
+    except Exception:
+        logger.exception("Rollback failed.")
+
+
 def run_daily_match_predictions():
     """
     Daily job entry point (called from run_update.py, alongside
@@ -460,6 +468,7 @@ def run_daily_match_predictions():
             log_predictions(conn, rows, datetime.utcnow())
         except Exception:
             logger.exception("Prediction logging failed; predictions were still saved.")
+            _safe_rollback(conn)
         # Team strength has its own guard: a failure here must never undo the predictions.
         try:
             teams = fetch_teams_for_season(cursor, season_start)
@@ -467,6 +476,14 @@ def run_daily_match_predictions():
             persist_team_strengths(conn, strengths)
         except Exception:
             logger.exception("Team strength failed; predictions were still saved.")
+            _safe_rollback(conn)
+        # Player momentum has its own guard too: it can never break predictions or strength.
+        try:
+            from FPL_site.playerMomentum import run_daily_momentum
+            run_daily_momentum(cursor, conn, current_gw)
+        except Exception:
+            logger.exception("Player momentum failed; predictions were still saved.")
+            _safe_rollback(conn)
         logger.info(
             f"Daily match-outcome prediction run complete for gameweek {current_gw}. "
             f"home_adv={home_adv:.3f}, rho={rho:.3f}, {len(rows)} rows written."

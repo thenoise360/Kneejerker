@@ -15,6 +15,7 @@ import {
     summaryRow
 } from './visuals.js';
 import { trackPlayerSummary } from './analytics.js';
+import { renderMomentumCard } from './lib/momentumView.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeRadar();
@@ -259,12 +260,16 @@ function initializeRadar() {
         };
 
         try {
-            const [summaryArr, fixtures, positionData, last5Data, indexScores] = await Promise.all([
+            // The momentum card is behind a feature flag. The page leaves a hidden
+            // marker (see radar.html); we only ask the server when it says "true".
+            const momentumOn = document.getElementById('feature-flags')?.dataset.momentum === 'true';
+            const [summaryArr, fixtures, positionData, last5Data, indexScores, momentum] = await Promise.all([
                 fetchJsonSafe(`/get_player_summary?id=${playerId}`),
                 fetchJsonSafe(`/get_next_5_gameweeks?id=${playerId}`),
                 fetchJsonSafe('/api/top-5-players'),
                 fetchJsonSafe(`/get_player_last_5_points?id=${playerId}`),
-                fetchJsonSafe('/get_player_index_scores')
+                fetchJsonSafe('/get_player_index_scores'),
+                momentumOn ? fetchJsonSafe(`/api/player/${playerId}/momentum`) : null
             ]);
 
             const summary = Array.isArray(summaryArr) ? summaryArr[0] : summaryArr;
@@ -273,7 +278,7 @@ function initializeRadar() {
                 return;
             }
 
-            currentCards = buildMiniCards(summary, fixtures, positionData, last5Data, indexScores);
+            currentCards = buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum);
             currentMiniIndex = 0;
 
             sheetContent.innerHTML = `
@@ -344,7 +349,7 @@ function initializeRadar() {
         'Forward': 'forwards'
     };
 
-    function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores) {
+    function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum) {
         const safeLast5 = Array.isArray(last5Data) ? last5Data : [];
         const last5Values = safeLast5.map(d => d.points);
         const positionKey = POSITION_DATA_KEYS[summary.position_name];
@@ -362,7 +367,7 @@ function initializeRadar() {
         const rawIndexEntry = (indexScores || []).find(r => r.id === summary.id && r.web_name !== 'Mean') || null;
         const indexEntry = (rawIndexEntry && rawIndexEntry.web_name === summary.name) ? rawIndexEntry : null;
 
-        return [
+        const cards = [
             buildFormCard(last5Values, avg5Values),
             buildFixtureCard(fixtures),
             buildSeasonNumbersCard(summary),
@@ -371,6 +376,14 @@ function initializeRadar() {
             buildMarketActivityCard(summary),
             buildSummaryCard(summary, fixtures, last5Values, avg5Values, indexEntry)
         ];
+
+        // Momentum goes second, right after the form card. We only add it when
+        // the flag was on (so we fetched something) and the fetch worked; a
+        // failed fetch gives null, and then the card is simply left out.
+        if (momentum) {
+            cards.splice(1, 0, renderMomentumCard(momentum));
+        }
+        return cards;
     }
 
     function emptyStateCard(title, message) {

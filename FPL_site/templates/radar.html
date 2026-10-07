@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="app-body">
+    <div id="feature-flags" data-momentum="{{ 'true' if momentum else '' }}" hidden></div>
     <div id="radar-content">
         <!-- Market Movers (Sam's Lens) -->
         <div class="sam-lens" id="sam-view">
