@@ -103,8 +103,8 @@ function renderTray() {
         chip.dataset.playerId = player.id;
         const avatarStyle = isComparing ? ` style="background:${COMPARISON_COLORS[i]};"` : '';
         chip.innerHTML = `
-            <div class="chip-avatar"${avatarStyle}>${getInitials(player.full_name)}</div>
-            <div class="chip-name">${player.full_name}</div>
+            <div class="chip-avatar"${avatarStyle}>${escapeHtml(getInitials(player.full_name))}</div>
+            <div class="chip-name">${escapeHtml(player.full_name)}</div>
             <div class="chip-remove" data-action="remove">
                 <i class="bi bi-x"></i>
             </div>
@@ -256,8 +256,8 @@ function renderSearchResults(results, query) {
         row.className = 'search-result-row';
         row.innerHTML = `
             <div class="result-info">
-                <div class="result-name">${player.full_name}</div>
-                <div class="result-meta">${player.team_name} • ${player.position}</div>
+                <div class="result-name">${escapeHtml(player.full_name)}</div>
+                <div class="result-meta">${escapeHtml(player.team_name)} • ${escapeHtml(player.position)}</div>
             </div>
             <div class="result-action">
                 <i class="bi bi-plus-circle"></i>
