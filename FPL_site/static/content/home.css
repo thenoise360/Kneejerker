@@ -673,7 +673,8 @@
 .strength-swatch-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--plum); }
 
 /* Momentum slide: gauge and signal rows. Sizes follow the other player-sheet slides (.sub 13px, .mc-caption 11.5px). */
-.momentum-gauge { text-align: center; margin: 0 0 4px; }
+/* Capped so the SVG words render near 13px (14 units x 150/160), matching .sub and .mc-caption, instead of stretching to the slide width. */
+.momentum-gauge { max-width: 150px; margin: 0 auto 4px; text-align: center; }
 .momentum-gauge .gauge { display: block; margin: 0 auto; }
 .momentum-signals { font-size: 13px; margin-top: 6px; }
 .momentum-signal { padding: 6px 0; border-bottom: 1px solid var(--grey); }

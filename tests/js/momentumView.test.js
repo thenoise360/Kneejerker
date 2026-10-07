@@ -121,3 +121,13 @@ test('each signal row carries the momentum-signal class so its rules apply', () 
     assert.equal((html.match(/<li class="momentum-signal">/g) || []).length, 4);
     assert.doesNotMatch(html, /<li>/);
 });
+
+test('the momentum gauge wrapper carries the capped class, and the cap is in home.css', async () => {
+    const html = renderMomentumCard(ready);
+    assert.match(html, /<div class="momentum-gauge"><svg /);
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync(new URL('../../FPL_site/static/content/home.css', import.meta.url), 'utf8');
+    const max = Number(css.match(/\.momentum-gauge \{[^}]*max-width:\s*(\d+)px/)[1]);
+    // The 14 unit labels in a 160 unit wide box must come out at 13px or less.
+    assert.ok(max <= 180 && 14 * max / 160 <= 13.2, `max-width ${max}`);
+});
