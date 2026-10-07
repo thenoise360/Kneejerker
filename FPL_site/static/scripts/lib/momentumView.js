@@ -15,7 +15,7 @@ function slide(inner) {
 function signalRow(signal) {
     // Only draw the small explanation line if the server sent one.
     const reason = signal.reason ? `<div class="mc-caption">${escapeHtml(signal.reason)}</div>` : '';
-    return `<li><span aria-hidden="true">${escapeHtml(signal.arrow)}</span> `
+    return `<li class="momentum-signal"><span aria-hidden="true">${escapeHtml(signal.arrow)}</span> `
         + `${escapeHtml(signal.name)}: ${escapeHtml(signal.word)}${reason}</li>`;
 }
 

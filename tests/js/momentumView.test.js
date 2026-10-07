@@ -115,3 +115,9 @@ test('an empty list leaves its group out, and nothing at all gives no groups', (
     assert.deepEqual(stripToCategories({ status: 'not_ready' }), []);
     assert.deepEqual(stripToCategories(null), []);
 });
+
+test('each signal row carries the momentum-signal class so its rules apply', () => {
+    const html = renderMomentumCard(ready);
+    assert.equal((html.match(/<li class="momentum-signal">/g) || []).length, 4);
+    assert.doesNotMatch(html, /<li>/);
+});
