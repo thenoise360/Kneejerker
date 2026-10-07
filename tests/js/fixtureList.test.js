@@ -73,10 +73,12 @@ test('the caption follows the row text without changing it', () => {
     assert.equal(text(buildFixtureList([away])), 'Gameweek 12 · Crystal Palace, away · Tough');
 });
 
-test('did not play and first meeting have their own words; a new player has none', () => {
+test('did not play and not facing them have their own words; a new player has none', () => {
     const row = (lastTime) => text(buildFixtureList([{ ...away, lastTime }]));
     assert.ok(row({ kind: 'did_not_play' }).includes("Didn't play in this fixture last season"));
-    assert.ok(row({ kind: 'no_meeting' }).includes('First meeting in a while'));
+    assert.ok(row({ kind: 'no_meeting' }).includes("Didn't face them last season"));
+    // The data only covers one season of the player, so it must not claim a first meeting.
+    assert.ok(!row({ kind: 'no_meeting' }).includes('First meeting'));
     assert.equal(row({ kind: 'new_player' }), 'Gameweek 12 · Crystal Palace, away · Tough');
     assert.equal(row(null), 'Gameweek 12 · Crystal Palace, away · Tough');
 });

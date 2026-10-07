@@ -224,3 +224,14 @@ def test_the_route_asks_for_history(monkeypatch):
     monkeypatch.setattr(views, 'next_5_gameweeks', lambda pid, include_history=False: seen.update(h=include_history) or [])
     assert views.app.test_client().get('/get_next_5_gameweeks?id=1').status_code == 200
     assert seen['h'] is True
+
+
+def test_facing_his_own_former_club_is_not_a_meeting():
+    # Last season he played for Brighton (code 40); this season Brighton is the opponent.
+    cursor = make([match(4, 2, True)], last_el={'id': 16, 'team_code': BRIGHTON},
+                  this_el={'code': 223340, 'team_code': 3})
+    assert lookup(cursor) == {'kind': 'no_meeting'}
+
+
+def test_an_opponent_whose_code_cannot_be_mapped_is_not_a_meeting():
+    assert lookup(make([match(4, 9, True)]), opponent_id=99) == {'kind': 'no_meeting'}

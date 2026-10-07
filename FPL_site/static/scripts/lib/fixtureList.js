@@ -47,7 +47,7 @@ export function lastTimeCaption(lastTime) {
         return lastTimeTier(lastTime.points) + club;
     }
     if (lastTime.kind === 'did_not_play') return "Didn't play in this fixture last season";
-    if (lastTime.kind === 'no_meeting') return 'First meeting in a while';
+    if (lastTime.kind === 'no_meeting') return "Didn't face them last season";
     return ''; // new players have no history to talk about
 }
 
