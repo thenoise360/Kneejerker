@@ -63,3 +63,16 @@ test('escapes every value', () => {
 test('skeleton is marked busy', () => {
     assert.match(renderRecordSkeleton(), /aria-busy="true"/);
 });
+
+test('day one: only eyebrow, verdict and reason (no label, no details, no footer)', () => {
+    const html = renderRecord({ ...ready, games: [], headline: 'No finished games logged yet',
+        reason: 'We started keeping score on 8 October 2026. Check back after the next game.' });
+    assert.match(html, /<h3 class="recap-verdict">No finished games logged yet<\/h3>/);
+    assert.doesNotMatch(html, /<details|Early days|aria-hidden/);
+    assert.equal(html.match(/started keeping score/g).length, 1);
+});
+
+test('with games, the started-on date appears only once', () => {
+    const html = renderRecord(ready);
+    assert.equal(html.match(/8 October 2026/g).length, 1);
+});

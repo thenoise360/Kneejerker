@@ -42,12 +42,21 @@ export function renderRecord(payload) {
     if (payload.status !== 'ready') {
         return renderMessage(payload.message);
     }
+    const games = payload.games || [];
+    // Day one: nothing to count or label yet. The reason already says when we started.
+    if (!games.length) {
+        return `
+        <div class="card" id="prediction-record">
+            <div class="eyebrow-sm">how our predictions are doing</div>
+            <h3 class="recap-verdict">${escapeHtml(payload.headline)}</h3>
+            <p>${escapeHtml(payload.reason)}</p>
+        </div>`;
+    }
     // The icon is hidden from screen readers; the words alone say "early days".
     const early = payload.early_days_label
         ? `<p class="sub"><span aria-hidden="true">ⓘ</span> ${escapeHtml(payload.early_days_label)}</p>`
         : '';
-    const games = payload.games || [];
-    const list = games.length ? `<ul class="recap-standouts">${games.map(gameRow).join('')}</ul>` : '';
+    const list = `<ul class="recap-standouts">${games.map(gameRow).join('')}</ul>`;
     const started = payload.started_on
         ? `<p class="sub">We started keeping score on ${escapeHtml(longDate(payload.started_on))}.</p>`
         : '';
