@@ -13,6 +13,9 @@ import logging
 import math
 from datetime import datetime
 
+from mysql.connector import errorcode
+from mysql.connector.errors import ProgrammingError
+
 from FPL_site.dataModels import connect_db, season_start
 from FPL_site.strengthCopy import strength_summary
 
@@ -187,8 +190,15 @@ def load_team_strength(team_id):
         team_id = int(team_id)
         if team_id not in fetch_teams_for_season(cursor, season_start):
             return None
-        cursor.execute(f"SELECT * FROM {STRENGTH_TABLE} WHERE team_id = %s", (team_id,))
-        row = cursor.fetchone()
+        try:
+            cursor.execute(f"SELECT * FROM {STRENGTH_TABLE} WHERE team_id = %s", (team_id,))
+            row = cursor.fetchone()
+        except ProgrammingError as e:
+            # The table only appears after the first daily run; until then it is "not ready".
+            # Never create it here: a request path must not change the database.
+            if e.errno != errorcode.ER_NO_SUCH_TABLE:
+                raise
+            return dict(NOT_READY)
         if not row:
             return dict(NOT_READY)
         strength = {

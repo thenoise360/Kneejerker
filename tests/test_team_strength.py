@@ -241,3 +241,40 @@ def test_load_unknown_team_is_none(monkeypatch):
     monkeypatch.setattr(ts, 'connect_db', lambda: conn)
     monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: {1: {'id': 1, 'name': 'Arsenal'}})
     assert ts.load_team_strength(99) is None
+
+
+class MissingTableCursor(StrengthCursor):
+    """Raises a database error when the strength table is read."""
+    def __init__(self, errno):
+        super().__init__()
+        self.errno = errno
+
+    def execute(self, sql, params=None):
+        if STRENGTH_SELECT in sql:
+            raise ProgrammingError(msg='boom', errno=self.errno)
+        super().execute(sql, params)
+
+
+from mysql.connector.errors import ProgrammingError
+STRENGTH_SELECT = f'FROM {ts.STRENGTH_TABLE}'
+
+
+def test_load_not_ready_when_table_missing(monkeypatch):
+    conn = StrengthConn(MissingTableCursor(1146))
+    monkeypatch.setattr(ts, 'connect_db', lambda: conn)
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: {1: {'id': 1, 'name': 'Arsenal'}})
+    assert ts.load_team_strength(1)['status'] == 'not_ready'
+    assert conn.closed
+
+
+def test_other_database_errors_propagate(monkeypatch):
+    conn = StrengthConn(MissingTableCursor(1064))
+    monkeypatch.setattr(ts, 'connect_db', lambda: conn)
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: {1: {'id': 1, 'name': 'Arsenal'}})
+    with pytest.raises(ProgrammingError):
+        ts.load_team_strength(1)
+
+
+def test_load_not_ready_when_no_connection(monkeypatch):
+    monkeypatch.setattr(ts, 'connect_db', lambda: None)
+    assert ts.load_team_strength(1)['status'] == 'not_ready'
