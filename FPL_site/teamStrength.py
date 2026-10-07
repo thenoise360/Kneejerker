@@ -64,6 +64,10 @@ def team_absences(players):
     team_attack = sum(attack_totals)
     team_defence = sum(float(p['minutes'] or 0) for p in squad if p['element_type'] in (GOALKEEPER, DEFENDER))
 
+    # The first-choice goalkeeper is the one with the most minutes among the current squad.
+    keeper_minutes = [float(p['minutes'] or 0) for p in squad if p['element_type'] == GOALKEEPER]
+    top_keeper_minutes = max(keeper_minutes) if keeper_minutes else 0.0
+
     attack_share = defence_share = 0.0
     missing = []
     for p, involvement in zip(squad, attack_totals):
@@ -81,6 +85,8 @@ def team_absences(players):
             'role': 'attack' if raw_attack >= raw_defence else 'defence',
             'share': max(raw_attack, raw_defence),
             'chance': p.get('chance_of_playing_next_round') or 0,
+            'first_choice': (p['element_type'] == GOALKEEPER
+                             and float(p['minutes'] or 0) >= top_keeper_minutes),
         })
     return {'attack_share': attack_share, 'defence_share': defence_share, 'missing': missing}
 

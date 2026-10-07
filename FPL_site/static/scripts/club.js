@@ -2,6 +2,7 @@
 import { trackFixtureOutlookTap } from './analytics.js';
 import { createRangeBar } from './rangeBar.js';
 import { renderStrength, STRENGTH_LOAD_FAILED } from './lib/strengthView.js';
+import { renderRecord, RECORD_LOAD_FAILED } from './lib/recordView.js';
 import { renderMessage } from './lib/recapView.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,8 +18,9 @@ function initializeClubPage() {
 
     fetchOutlook(teamId);
 
-    // The strength card only exists in the page when the feature is switched on.
-    if (document.getElementById('team-strength-slot')) loadStrength(teamId);
+    // The two cards load on their own, so one failing never blocks the other.
+    loadStrength(teamId);
+    loadRecord(teamId);
 }
 
 async function loadStrength(teamId) {
@@ -31,6 +33,19 @@ async function loadStrength(teamId) {
         // A failure here must not disturb the fixtures below, so show a calm message.
         console.error('Failed to load team strength', err);
         slot.innerHTML = renderMessage(STRENGTH_LOAD_FAILED);
+    }
+}
+
+async function loadRecord(teamId) {
+    const slot = document.getElementById('prediction-record-slot');
+    try {
+        const res = await fetch(`/api/club/${teamId}/prediction-record`);
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        slot.innerHTML = renderRecord(await res.json());
+    } catch (err) {
+        // Same rule as strength: a failure here must not disturb the rest of the page.
+        console.error('Failed to load prediction record', err);
+        slot.innerHTML = renderMessage(RECORD_LOAD_FAILED);
     }
 }
 

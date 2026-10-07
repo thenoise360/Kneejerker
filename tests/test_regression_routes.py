@@ -22,6 +22,7 @@ DATA_ROUTE_STUBS = {
         'gameweek': 6, 'based_on': 'everyone', 'squad_gameweek': None, 'decision': None,
         'message': {'title': 't', 'body': 'b'}}),
     '/api/club/1/strength': ('load_team_strength', {'status': 'not_ready', 'message': {'title': 't', 'body': 'b'}}),
+    '/api/club/1/prediction-record': ('load_prediction_record', {'status': 'ready', 'games': []}),
 }
 
 
@@ -61,8 +62,7 @@ def test_week_page_is_v2_without_any_flag(client, calls):
     assert calls == ['get_week_view_state']
 
 
-@pytest.mark.parametrize('flag', [True, False])
-def test_club_strength_slot_follows_flag(client, monkeypatch, flag):
-    monkeypatch.setattr(views.current_config, 'FEATURE_TEAM_DETAIL', flag, raising=False)
+def test_club_page_always_has_both_cards(client):
     html = client.get('/club/1').get_data(as_text=True)
-    assert ('id="team-strength-slot"' in html) is flag
+    assert 'id="team-strength-slot"' in html
+    assert 'id="prediction-record-slot"' in html
