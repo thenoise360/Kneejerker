@@ -9,7 +9,7 @@ test('every position code becomes a plain word', () => {
     assert.equal(positionLabel('FWD'), 'Forward');
 });
 test('unknown codes pass through and missing ones are empty', () => {
-    assert.equal(positionLabel('MGR'), 'MGR');
+    assert.equal(positionLabel('XYZ'), 'XYZ');
     assert.equal(positionLabel(undefined), '');
     assert.equal(positionLabel(null), '');
 });
