@@ -78,6 +78,16 @@ def test_no_minutes_data_does_not_make_everyone_back():
     assert result[1]['signals'][1]['direction'] == 'same'
 
 
+def test_team_with_no_minutes_gets_no_false_back():
+    # Team 1 has played; team 2 has not kicked off yet (or has a blank gameweek).
+    players = [player(1, team=1, xg=1.0), player(2, team=1, xg=3.0, chance=100, name='A'),
+               player(3, team=2, xg=1.0), player(4, team=2, xg=3.0, chance=100, name='B')]
+    result = pm.build_all_momentum(players, {1: 90}, [], {})
+    assert result[1]['signals'][1]['direction'] == 'up'
+    assert result[3]['signals'][1]['direction'] == 'same'
+    assert 'back' not in (result[3]['signals'][1]['reason'] or '')
+
+
 def test_ruled_out_teammate_who_played_is_out():
     players = [player(1, xg=1.0), player(2, xg=3.0, chance=0, name='Saka')]
     result = pm.build_all_momentum(players, {1: 90, 2: 90}, [], {})

@@ -203,7 +203,6 @@ def build_all_momentum(players, last_minutes, upcoming, baselines):
     # Fallback baselines when a team has no stored strength: the league average.
     league_for = _mean(r['own_mean'] for r in upcoming)
     league_against = _mean(r['opp_mean'] for r in upcoming)
-    have_minutes = bool(last_minutes)
 
     results = {}
     for team_id, members in by_team.items():
@@ -211,12 +210,15 @@ def build_all_momentum(players, last_minutes, upcoming, baselines):
                        for p in members}
         total = sum(involvement.values())
         teammates = []
+        # A team has "played" only if one of its own players has minutes. A team
+        # that has not kicked off yet, or has a blank gameweek, has none.
+        team_played = any(last_minutes.get(p['id'], 0) > 0 for p in members)
         for p in members:
             chance = p.get('chance_of_playing_next_round')
-            if have_minutes:
+            if team_played:
                 played = last_minutes.get(p['id'], 0) > 0
             else:
-                # No minutes on record: assume nothing changed rather than call everyone "back".
+                # No minutes on record for this team: assume nothing changed rather than call everyone "back".
                 played = chance is None or chance >= OUT_BELOW_CHANCE
             teammates.append({'id': p['id'], 'name': p['web_name'],
                               'share': involvement[p['id']] / total if total > 0 else 0.0,
