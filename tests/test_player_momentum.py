@@ -137,7 +137,7 @@ def test_fixed_signal_order():
 def test_strongest_signal_gives_reason():
     fx = _sig('fixtures', 'up', 0.3, 'kinder fixtures coming up')
     tm = _sig('teammates', 'up', 0.2, 'Saka is back in the team')
-    assert player_momentum(fx, tm)['reason'] == 'Rising: Kinder fixtures coming up.'
+    assert player_momentum(fx, tm)['reason'] == 'Rising: kinder fixtures coming up.'
     tm = _sig('teammates', 'up', 0.4, 'Saka is back in the team')
     assert player_momentum(fx, tm)['reason'] == 'Rising: Saka is back in the team.'
 
