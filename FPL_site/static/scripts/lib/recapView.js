@@ -106,3 +106,12 @@ export function renderPersonalRecap(personal, gameweek) {
             <button type="button" class="btn-pill secondary" id="recap-change-team">Not your team? Change it</button>
         </div>`;
 }
+
+// The loading placeholder for the guest recap, same markup as the template's first paint.
+export function renderRecapSkeleton() {
+    return `
+        <div class="card" aria-busy="true" aria-label="Loading last week's recap">
+            <div class="skeleton" style="height:18px; width:60%; margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px; width:90%;"></div>
+        </div>`;
+}

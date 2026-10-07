@@ -32,3 +32,13 @@ export function renderDecision(payload) {
             </details>
         </div>`;
 }
+
+// The loading placeholder, shared by the template's first paint and by reloads
+// in weekV2.js. aria-busy tells screen readers the content is still arriving.
+export function renderDecisionSkeleton() {
+    return `
+        <div class="card" aria-busy="true" aria-label="Loading this week's decision">
+            <div class="skeleton" style="height:18px; width:55%; margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px; width:85%;"></div>
+        </div>`;
+}

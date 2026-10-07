@@ -53,3 +53,8 @@ test('no digit appears before the details element', () => {
     assert.doesNotMatch(visible, /\d/);
     assert.match(inside, /1\.2 goals/);
 });
+
+test('skeleton is marked busy', async () => {
+    const { renderDecisionSkeleton } = await import('../../FPL_site/static/scripts/lib/decisionView.js');
+    assert.match(renderDecisionSkeleton(), /aria-busy="true"/);
+});

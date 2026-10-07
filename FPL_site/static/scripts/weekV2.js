@@ -2,17 +2,21 @@
 // DOM glue for the rebuilt Week tab (behind FEATURE_WEEK_V2). All the
 // decisions about *what* to show live in the pure modules under lib/; this
 // file only reads the page, fetches data, and puts HTML on the page.
-import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, RECAP_LOAD_FAILED } from './lib/recapView.js';
+import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, renderRecapSkeleton, RECAP_LOAD_FAILED } from './lib/recapView.js';
 import { safeLocalStorage } from './lib/safeStorage.js';
 import { readTeamId, saveTeamId, clearTeamId } from './lib/teamId.js';
 import { welcomeBackMessage, readLastVisit, recordVisit } from './lib/returningUser.js';
-import { renderDecision } from './lib/decisionView.js';
+import { createLatestGuard } from './lib/latestOnly.js';
+import { renderDecision, renderDecisionSkeleton } from './lib/decisionView.js';
 import { describeDeadline } from './lib/deadlineCopy.js';
 
 // How often the deadline wording is refreshed while the page stays open.
 const DEADLINE_REFRESH_MS = 60 * 1000;
 // Remembered at module level so a second run of the setup can stop the first timer.
 let deadlineTimer = null;
+// One guard per slot: a slow older answer must never overwrite a newer one.
+const recapGuard = createLatestGuard();
+const decisionGuard = createLatestGuard();
 
 export function initializeWeekV2() {
     const lastWeekView = document.getElementById('last-week-view');
@@ -50,10 +54,14 @@ async function loadLastWeekRecap(lastWeekView) {
     const query = new URLSearchParams({ gameweek });
     if (teamId !== null) query.set('team_id', String(teamId));
 
+    const token = recapGuard.start();  // taken before the await, so older requests go stale
+    guestSlot.innerHTML = renderRecapSkeleton();
+
     try {
         const res = await fetch(`/api/week/last-week-recap?${query}`);
         if (!res.ok) throw new Error(`status ${res.status}`);
         const data = await res.json();
+        if (!recapGuard.isLatest(token)) return;  // a newer request has taken over
         if (data.status !== 'ready') {
             guestSlot.innerHTML = renderMessage(data.message);
             return;
@@ -68,6 +76,7 @@ async function loadLastWeekRecap(lastWeekView) {
         }
     } catch (err) {
         console.error('Failed to load last week recap', err);
+        if (!recapGuard.isLatest(token)) return;
         guestSlot.innerHTML = renderMessage(RECAP_LOAD_FAILED);
     }
 }
@@ -111,6 +120,13 @@ function showDeadline() {
     if (!el || !el.dataset.deadline) return;
 
     function update() {
+        // If the visitor has moved to another tab, this element is gone from the
+        // page, so stop the timer instead of letting it run forever.
+        if (!el.isConnected) {
+            clearInterval(deadlineTimer);
+            deadlineTimer = null;
+            return;
+        }
         // No time zone passed, so the browser shows the visitor's local time.
         el.textContent = describeDeadline(el.dataset.deadline, new Date()) || '';
     }
@@ -134,12 +150,18 @@ async function loadDecision() {
     const teamId = readTeamId(safeLocalStorage(window));
     if (teamId !== null) query.set('team_id', String(teamId));
 
+    const token = decisionGuard.start();  // taken before the await, so older requests go stale
+    slot.innerHTML = renderDecisionSkeleton();
+
     try {
         const res = await fetch(`/api/week/this-week-decision?${query}`);
         if (!res.ok) throw new Error(`status ${res.status}`);
-        slot.innerHTML = renderDecision(await res.json());
+        const data = await res.json();
+        if (!decisionGuard.isLatest(token)) return;  // a newer request has taken over
+        slot.innerHTML = renderDecision(data);
     } catch (err) {
         console.error("Failed to load this week's decision", err);
+        if (!decisionGuard.isLatest(token)) return;
         slot.innerHTML = renderMessage({
             title: "We couldn't load this week's decision",
             body: 'Nothing is wrong on your side. Try again in a moment.',
