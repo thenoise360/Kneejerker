@@ -20,6 +20,8 @@ class FakeCursor:
         self.sql, self.year = sql, params[0] if params else None
 
     def fetchall(self):
+        if 'bootstrapstatic_elements' in self.sql:
+            return []          # no snapshots: exercises the teams-table fallback
         if 'bootstrapstatic_teams' in self.sql:
             if self.year == 2024:
                 return roster(23, 20, 500)

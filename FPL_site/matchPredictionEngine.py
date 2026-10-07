@@ -92,6 +92,32 @@ def fetch_teams_for_season(cursor, year_start):
     return {row['id']: row for row in fetch_team_rows(cursor, year_start)}
 
 
+def fetch_team_code_map(cursor, year_start):
+    """
+    {team id: team code} for one season, read from the player snapshots.
+
+    bootstrapstatic_teams is overwritten in place by every bootstrap run, so a season's
+    rows can end up carrying a later season's id numbering (2024 did). Each player row in
+    bootstrapstatic_elements records its own `team` id and `team_code` per gameweek, so a
+    stray snapshot is outvoted: for each id we take the code seen in the most gameweeks,
+    breaking ties by the latest gameweek. Empty dict when the season has no snapshots.
+    """
+    cursor.execute(
+        f"""SELECT team, team_code,
+                   COUNT(DISTINCT gameweek) AS gws, MAX(gameweek) AS last_gw
+            FROM {db}.bootstrapstatic_elements
+            WHERE year_start = %s AND team IS NOT NULL AND team_code IS NOT NULL
+            GROUP BY team, team_code""",
+        (year_start,)
+    )
+    best = {}
+    for row in cursor.fetchall():
+        rank = (row['gws'], row['last_gw'])
+        if row['team'] not in best or rank > best[row['team']][0]:
+            best[row['team']] = (rank, row['team_code'])
+    return {tid: code for tid, (_, code) in best.items()}
+
+
 def fetch_finished_fixtures(cursor, year_start):
     cursor.execute(
         f"""SELECT event, team_h, team_a, team_h_score, team_a_score
@@ -136,20 +162,27 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
     games_this_season = {}
 
     for season_index, year_start in enumerate(seasons):
-        team_rows = fetch_team_rows(cursor, year_start)
-        if not team_rows:
-            continue
-        teams = {row['id']: row for row in team_rows}
-        if len(team_rows) != TEAMS_PER_SEASON or len(teams) != TEAMS_PER_SEASON:
-            # A roster that is not exactly 20 rows with 20 distinct ids has id collisions
-            # (seen in 2024, where a later bootstrap run overwrote ids), so every id -> code
-            # lookup for that season is wrong and its results would be credited to the wrong
-            # clubs. Skip the season rather than poison the fit. Kept as a tripwire.
+        id_to_code = fetch_team_code_map(cursor, year_start)
+        if not id_to_code:
+            # No player snapshots for this season: fall back to the teams table.
+            team_rows = fetch_team_rows(cursor, year_start)
+            if not team_rows:
+                continue
+            id_to_code = {row['id']: row['code'] for row in team_rows}
+            n_rows = len(team_rows)
+        else:
+            n_rows = len(id_to_code)
+        if (n_rows != TEAMS_PER_SEASON or len(id_to_code) != TEAMS_PER_SEASON
+                or len(set(id_to_code.values())) != TEAMS_PER_SEASON):
+            # A season must map exactly 20 ids to 20 distinct codes. Anything else means id
+            # collisions (seen in 2024, where a later bootstrap run overwrote the teams
+            # table), so results would be credited to the wrong clubs. Skip the season
+            # rather than poison the fit. Kept as a tripwire.
             logger.warning("build_rating_dataset: season %s has a corrupt team roster "
-                           "(%s rows, %s distinct ids, expected %s) - skipping it.",
-                           year_start, len(team_rows), len(teams), TEAMS_PER_SEASON)
+                           "(%s rows, %s distinct ids, %s distinct codes, expected %s) - skipping it.",
+                           year_start, n_rows, len(id_to_code),
+                           len(set(id_to_code.values())), TEAMS_PER_SEASON)
             continue
-        id_to_code = {tid: t['code'] for tid, t in teams.items()}
         season_offset = season_index * GAMEWEEKS_PER_SEASON
 
         for fx in fetch_finished_fixtures(cursor, year_start):
