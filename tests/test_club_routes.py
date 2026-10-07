@@ -33,3 +33,26 @@ def test_strength_route_hides_errors(client, monkeypatch):
     resp = client.get('/api/club/1/strength')
     assert resp.status_code == 500
     assert resp.get_json() == {'error': 'server_error'}
+
+
+def test_prediction_record_route_ready(client, monkeypatch):
+    monkeypatch.setattr(views, 'load_prediction_record', lambda team_id: {'status': 'ready', 'games': []})
+    resp = client.get('/api/club/1/prediction-record')
+    assert resp.status_code == 200
+    assert resp.get_json()['status'] == 'ready'
+
+
+def test_prediction_record_route_unknown_team(client, monkeypatch):
+    monkeypatch.setattr(views, 'load_prediction_record', lambda team_id: None)
+    resp = client.get('/api/club/99/prediction-record')
+    assert resp.status_code == 404
+    assert resp.get_json() == {'error': 'unknown_team'}
+
+
+def test_prediction_record_route_hides_errors(client, monkeypatch):
+    def boom(team_id):
+        raise RuntimeError('database exploded')
+    monkeypatch.setattr(views, 'load_prediction_record', boom)
+    resp = client.get('/api/club/1/prediction-record')
+    assert resp.status_code == 500
+    assert resp.get_json() == {'error': 'server_error'}

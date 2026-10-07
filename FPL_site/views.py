@@ -25,6 +25,7 @@ from .weekResolver import DEADLINE_FORMAT
 
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
 from .teamStrength import load_team_strength
+from .predictionRecord import load_prediction_record
 
 # Remove ==================================================
 
@@ -246,6 +247,20 @@ def club_strength(team_id):
         payload = load_team_strength(team_id)
     except Exception as e:
         logger.error(f"Error loading club strength: {e}")
+        return jsonify({'error': 'server_error'}), 500
+
+    if payload is None:
+        return jsonify({'error': 'unknown_team'}), 404
+
+    return jsonify(payload)
+
+@app.route('/api/club/<int:team_id>/prediction-record')
+def club_prediction_record(team_id):
+    logger.info(f"Request for club prediction record: team_id={team_id}")
+    try:
+        payload = load_prediction_record(team_id)
+    except Exception as e:
+        logger.error(f"Error loading club prediction record: {e}")
         return jsonify({'error': 'server_error'}), 500
 
     if payload is None:

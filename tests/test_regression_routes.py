@@ -22,6 +22,7 @@ DATA_ROUTE_STUBS = {
         'gameweek': 6, 'based_on': 'everyone', 'squad_gameweek': None, 'decision': None,
         'message': {'title': 't', 'body': 'b'}}),
     '/api/club/1/strength': ('load_team_strength', {'status': 'not_ready', 'message': {'title': 't', 'body': 'b'}}),
+    '/api/club/1/prediction-record': ('load_prediction_record', {'status': 'ready', 'games': []}),
 }
 
 
