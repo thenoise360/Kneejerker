@@ -23,6 +23,50 @@ function pill(difficulty) {
     return `<span class="fixture-list-pill" style="background:${difficultyColor(difficulty)}; color:${difficultyTextColor(difficulty)};">${word}</span>`;
 }
 
+// What the player scored the last time they met this opponent, as a plain word.
+// These lines match playerHistory.py on the server: 8 or more is a big return,
+// 3 to 7 is steady, and 2 or less is quiet. History is background, so the
+// wording is gentle and never tells anyone what to do.
+const BIG_RETURN_FROM = 8;
+const STEADY_RETURN_FROM = 3;
+
+export function lastTimeTier(points) {
+    const n = Number(points);
+    if (n >= BIG_RETURN_FROM) return 'Big return last time';
+    if (n >= STEADY_RETURN_FROM) return 'Steady return last time';
+    return 'Quiet game last time';
+}
+
+// The small line under a row, or '' when there is nothing to say.
+// f.lastTime comes from the server: { kind: 'played' | 'did_not_play' | 'no_meeting' | 'new_player' } or null.
+export function lastTimeCaption(lastTime) {
+    if (!lastTime) return '';
+    if (lastTime.kind === 'played') {
+        // 'club' is only set when the player has since changed club.
+        const club = lastTime.club ? ` · Last season, for ${lastTime.club}` : '';
+        return lastTimeTier(lastTime.points) + club;
+    }
+    if (lastTime.kind === 'did_not_play') return "Didn't play in this fixture last season";
+    if (lastTime.kind === 'no_meeting') return 'First meeting in a while';
+    return ''; // new players have no history to talk about
+}
+
+// One sentence for the "See the numbers" list, or '' when there are no numbers.
+function lastTimeNumbers(f) {
+    const lt = f.lastTime;
+    const team = f.teamFullName || f.teamName;
+    const lead = `Gameweek ${f.gameweek}, ${team}: `;
+    if (!lt) return '';
+    if (lt.kind === 'played') {
+        const points = `${lt.points} ${Number(lt.points) === 1 ? 'point' : 'points'}`;
+        const minutes = `${lt.minutes} ${Number(lt.minutes) === 1 ? 'minute' : 'minutes'}`;
+        return `${lead}${points}, ${minutes}, ${lt.result} ${lt.is_home ? 'at home' : 'away'}`;
+    }
+    if (lt.kind === 'did_not_play') return `${lead}did not play`;
+    if (lt.kind === 'no_meeting') return `${lead}the clubs did not meet`;
+    return '';
+}
+
 // options.compact makes the rows slightly smaller (used when stacking one
 // list per player in the comparison view).
 export function buildFixtureList(fixtures, options = {}) {
@@ -35,7 +79,22 @@ export function buildFixtureList(fixtures, options = {}) {
         // Prefer the full team name; fall back to whatever name we were given.
         const team = escapeHtml(f.teamFullName || f.teamName);
         const venue = f.homeOrAway === 'Home' ? 'home' : 'away';
-        return `<li class="fixture-list-row"><span>${week}</span> · <span>${team}, ${venue}</span> · ${pill(f.difficulty)}</li>`;
+        const caption = lastTimeCaption(f.lastTime);
+        const captionHtml = caption ? ` <span class="fixture-list-caption">${escapeHtml(caption)}</span>` : '';
+        return `<li class="fixture-list-row"><span>${week}</span> · <span>${team}, ${venue}</span> · ${pill(f.difficulty)}${captionHtml}</li>`;
     }).join('');
-    return `<ul class="fixture-list${options.compact ? ' fixture-list-compact' : ''}">${rows}</ul>`;
+    const list = `<ul class="fixture-list${options.compact ? ' fixture-list-compact' : ''}">${rows}</ul>`;
+
+    // One "See the numbers" block under the whole list, only if some row has numbers.
+    const numbers = fixtures
+        .filter(f => f.homeOrAway !== 'Blank')
+        .map(lastTimeNumbers)
+        .filter(Boolean)
+        .map(line => `<li>${escapeHtml(line)}</li>`)
+        .join('');
+    const details = numbers ? `<details class="recap-details">
+            <summary>See the numbers</summary>
+            <ul class="fixture-list-numbers">${numbers}</ul>
+        </details>` : '';
+    return list + details;
 }

@@ -1417,6 +1417,15 @@ def next_5_gameweeks(player_id):
 
     fixtures = list()
 
+    # How this player did against each opponent last season, loaded once for the whole list.
+    # History is background: if it can't be read, the fixtures still come back without it.
+    from FPL_site import playerHistory
+    try:
+        history_context = playerHistory.fetch_last_time_context(cursor, player_id)
+    except Exception as e:
+        logger.error(f"Could not load last season's meetings for player {player_id}: {e}")
+        history_context = None
+
     while i < gw + 6:
         team_id = player_info['team_id']
         query = f'''
@@ -1458,7 +1467,8 @@ def next_5_gameweeks(player_id):
                 'shirtImage': player_shirts['Unknown'],
                 'homeOrAway': 'Blank',
                 'gameweek': i,
-                'leagueAverageDifficulty': league_avg_difficulty
+                'leagueAverageDifficulty': league_avg_difficulty,
+                'lastTime': None
             })
             i += 1
             continue
@@ -1483,7 +1493,8 @@ def next_5_gameweeks(player_id):
                 'shirtImage': player_shirts.get(opponent_code, player_shirts['Unknown']),
                 'homeOrAway': venue,
                 'gameweek': i,
-                'leagueAverageDifficulty': league_avg_difficulty
+                'leagueAverageDifficulty': league_avg_difficulty,
+                'lastTime': playerHistory.last_time_for(history_context, opponent_id, venue == 'Home')
             })
 
         i += 1             

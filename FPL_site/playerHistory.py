@@ -161,3 +161,95 @@ def load_last_season(player_id):
             cursor.close()
     finally:
         connection.close()
+
+
+# ---------------------------------------------------------------------------
+# "Last time against them" for the upcoming fixture list
+# ---------------------------------------------------------------------------
+
+def last_time_tier(points):
+    """A plain-language word for what the player scored in the meeting."""
+    if points >= BIG_RETURN_FROM:
+        return 'Big return last time'
+    if points >= STEADY_RETURN_FROM:
+        return 'Steady return last time'
+    return 'Quiet game last time'
+
+
+def result_wording(was_home, home_score, away_score):
+    """'won 3–1' / 'drew 1–1' / 'lost 0–2', the player's own club's score written first."""
+    own, theirs = (home_score, away_score) if was_home else (away_score, home_score)
+    own, theirs = own or 0, theirs or 0
+    verb = 'won' if own > theirs else 'lost' if own < theirs else 'drew'
+    return '{} {}–{}'.format(verb, own, theirs)
+
+
+def pick_meeting(matches, is_home):
+    """
+    One match from the games against an opponent. With two meetings (home and away) take the
+    one at the same venue as the upcoming fixture; with a single meeting take it whatever the venue.
+    """
+    if not matches:
+        return None
+    same_venue = [m for m in matches if bool(m.get('was_home')) == bool(is_home)]
+    return (same_venue or matches)[0]
+
+
+def fetch_last_time_context(cursor, player_id, this_year=None):
+    """
+    Everything needed to answer "last time against them" for one player, loaded once for the
+    whole fixture list. The player is matched to last season by code, and opponents by team
+    code (ids differ between seasons). Returns None for an unknown player.
+    """
+    from FPL_site.matchPredictionEngine import fetch_team_code_map
+    if this_year is None:
+        from FPL_site.dataModels import current_season_start
+        this_year = current_season_start()
+    last_year = this_year - 1
+
+    mine = _this_season_player(cursor, player_id, this_year)
+    if not mine or mine.get('code') is None:
+        return None
+
+    before = _last_season_player(cursor, mine['code'], last_year)
+    if not before:
+        return {'status': 'new_player'}
+
+    this_codes = fetch_team_code_map(cursor, this_year)
+    last_codes = fetch_team_code_map(cursor, last_year)
+
+    by_opponent = {}
+    for row in _distinct_matches(_season_rows(cursor, before['id'], last_year)):
+        opponent_code = last_codes.get(row.get('opponent_team'))
+        if opponent_code is not None:
+            by_opponent.setdefault(opponent_code, []).append(row)
+
+    # Name the old club only when the player has moved since.
+    club = None
+    if before.get('team_code') != mine.get('team_code'):
+        club = _team_name(cursor, before.get('team_code'), last_year)
+
+    return {'status': 'ok', 'this_codes': this_codes, 'by_opponent': by_opponent, 'club': club}
+
+
+def last_time_for(context, opponent_id, is_home):
+    """The `lastTime` value for one upcoming fixture (see next_5_gameweeks)."""
+    if context is None:
+        return None
+    if context.get('status') == 'new_player':
+        return {'kind': 'new_player'}
+    opponent_code = context['this_codes'].get(opponent_id)
+    meeting = pick_meeting(context['by_opponent'].get(opponent_code, []), is_home)
+    if meeting is None:
+        return {'kind': 'no_meeting'}
+    if (meeting.get('minutes') or 0) <= 0:
+        return {'kind': 'did_not_play'}
+    was_home = bool(meeting.get('was_home'))
+    return {
+        'kind': 'played',
+        'points': meeting.get('total_points') or 0,
+        'minutes': meeting.get('minutes'),
+        'result': result_wording(was_home, meeting.get('team_h_score'), meeting.get('team_a_score')),
+        'is_home': was_home,
+        'club': context.get('club'),
+    }
