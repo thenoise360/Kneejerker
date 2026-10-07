@@ -16,7 +16,8 @@ NOW = datetime(2026, 10, 10, 12, 0)
 
 def test_only_future_kickoffs_are_logged():
     rows = [row(1, 1, '2026-10-10T11:30:00Z'), row(2, 1, '2026-10-10T12:00:00Z'),
-            row(3, 1, '2026-10-10T14:00:00Z'), row(4, 1, None), row(5, 1, 'garbage')]
+            row(3, 1, '2026-10-10T14:00:00Z'), row(4, 1, None), row(5, 1, 'garbage'),
+            row(6, 1, 20261010140000)]
     assert [r['fixture_code'] for r in loggable_rows(rows, NOW)] == [3]
 
 
@@ -59,3 +60,29 @@ def test_nothing_to_log_writes_nothing():
     conn = FakeConn()
     log_predictions(conn, [row(1, 1, '2026-10-10T11:30:00Z')], NOW)
     assert conn.cur.calls == [] and not conn.committed
+
+
+def test_logging_failure_does_not_fail_the_match_job(monkeypatch):
+    import FPL_site.matchPredictionEngine as engine
+
+    class Conn:
+        closed = False
+
+        def cursor(self, **kwargs):
+            return FakeCursor()
+
+        def close(self):
+            self.closed = True
+
+    persisted = []
+    monkeypatch.setattr(engine, 'connect_db', lambda: Conn())
+    monkeypatch.setattr(engine, 'fit_current_ratings', lambda cursor: ({}, 0.3, 0.0, {}, 6))
+    monkeypatch.setattr(engine, 'build_fixture_predictions', lambda *a, **k: [row(3, 1, '2026-10-10T14:00:00Z')])
+    monkeypatch.setattr(engine, 'persist_match_predictions', lambda conn, rows: persisted.append(rows))
+
+    def boom(conn, rows, now):
+        raise RuntimeError('log table broken')
+
+    monkeypatch.setattr(engine, 'log_predictions', boom)
+    engine.run_daily_match_predictions()
+    assert len(persisted) == 1

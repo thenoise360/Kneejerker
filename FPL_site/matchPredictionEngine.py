@@ -392,7 +392,7 @@ def persist_match_predictions(conn, rows):
 def _kickoff(row):
     try:
         return datetime.strptime(row.get('kickoff_time') or '', KICKOFF_FORMAT)
-    except ValueError:
+    except (ValueError, TypeError):
         return None
 
 
@@ -455,7 +455,10 @@ def run_daily_match_predictions():
         rows = build_fixture_predictions(cursor, season_start, current_gw, ratings, home_adv, games_this_season)
         persist_match_predictions(conn, rows)
         # Keep an honest, append-only record of what we predicted before kickoff.
-        log_predictions(conn, rows, datetime.utcnow())
+        try:
+            log_predictions(conn, rows, datetime.utcnow())
+        except Exception:
+            logger.exception("Prediction logging failed; predictions were still saved.")
         logger.info(
             f"Daily match-outcome prediction run complete for gameweek {current_gw}. "
             f"home_adv={home_adv:.3f}, rho={rho:.3f}, {len(rows)} rows written."
