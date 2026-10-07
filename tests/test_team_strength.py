@@ -278,3 +278,19 @@ def test_other_database_errors_propagate(monkeypatch):
 def test_load_not_ready_when_no_connection(monkeypatch):
     monkeypatch.setattr(ts, 'connect_db', lambda: None)
     assert ts.load_team_strength(1)['status'] == 'not_ready'
+
+
+def test_missing_goalkeeper_is_first_choice_only_with_most_minutes():
+    players = [player(1, position=1, minutes=2000, chance=0, name='Starter'),
+               player(2, position=1, minutes=90, chance=0, name='Backup'),
+               player(3, position=1, minutes=3000, status='u', name='Left')]
+    by_name = {m['name']: m for m in team_absences(players)['missing']}
+    assert by_name['Starter']['first_choice'] is True
+    assert by_name['Backup']['first_choice'] is False
+
+
+def test_first_choice_flows_through_build_team_strengths():
+    teams = {1: {'code': 11, 'name': 'Arsenal'}}
+    rows = [player(1, position=1, minutes=2000, chance=0), player(2, position=1, minutes=90, chance=0)]
+    missing = build_team_strengths(teams, {}, 0.3, rows)[1]['missing']
+    assert {m['name']: m['first_choice'] for m in missing} == {'P1': True, 'P2': False}

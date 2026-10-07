@@ -55,7 +55,8 @@ def _missing_reason(key, role):
         return 'A few squad players are missing.'
     # "out" is only true when nobody counted has any chance of playing.
     status = 'out' if all(p.get('chance', 0) == 0 for p in key) else 'out or doubtful'
-    goalkeepers = [p for p in key if p.get('position') == GOALKEEPER]
+    # A back-up goalkeeper is not named as "first-choice"; he counts as a regular defender.
+    goalkeepers = [p for p in key if p.get('position') == GOALKEEPER and p.get('first_choice')]
     if role == 'defence' and goalkeepers:
         # The goalkeeper sentence is about the goalkeeper alone, so only their chance counts.
         keeper_status = 'out' if goalkeepers[0].get('chance', 0) == 0 else 'out or doubtful'

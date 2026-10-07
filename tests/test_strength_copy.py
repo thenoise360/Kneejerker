@@ -126,7 +126,7 @@ def test_all_out_keeps_plain_wording():
 
 
 def test_doubtful_goalkeeper():
-    s = make(conceded_adjusted=1.3, missing=[player('defence', position=1, chance=75)])
+    s = make(conceded_adjusted=1.3, missing=[dict(player('defence', position=1, chance=75), first_choice=True)])
     assert reason(s) == 'Their first-choice goalkeeper is out or doubtful.'
 
 
@@ -151,7 +151,7 @@ def test_possessive_defence_headline():
 
 
 def test_goalkeeper_reason():
-    s = make(conceded_adjusted=1.3, missing=[player('defence', position=1), player('defence', position=2)])
+    s = make(conceded_adjusted=1.3, missing=[dict(player('defence', position=1), first_choice=True), player('defence', position=2)])
     assert reason(s) == 'Their first-choice goalkeeper is out.'
 
 
@@ -211,6 +211,11 @@ def test_no_digits_or_acronyms_anywhere():
 
 def test_goalkeeper_wording_uses_the_goalkeepers_own_chance():
     # A ruled-out goalkeeper reads "out" even when another key defender is only doubtful.
-    s = make(conceded_adjusted=1.3, missing=[player('defence', position=1, chance=0),
+    s = make(conceded_adjusted=1.3, missing=[dict(player('defence', position=1, chance=0), first_choice=True),
                                              player('defence', position=2, chance=50)])
     assert reason(s) == 'Their first-choice goalkeeper is out.'
+
+
+def test_backup_goalkeeper_counts_as_a_regular_defender():
+    s = make(conceded_adjusted=1.3, missing=[dict(dict(player('defence', position=1), first_choice=True), first_choice=False)])
+    assert reason(s) == 'One of their regular defenders is out.'
