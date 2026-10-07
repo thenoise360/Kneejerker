@@ -1769,14 +1769,19 @@ def get_player_last_5_points(player_id):
         rows = cursor.fetchall()
 
         by_gw = {row['gw']: row for row in rows}
-        
+
+        # SUM() comes back from MySQL as a Decimal, which JSON turns into a
+        # string and the browser then glues together instead of adding.
+        def as_int(value, default):
+            return int(value) if value is not None else default
+
         result = []
         for gw in gws_list:
             result.append({
                 'gw': gw,
-                'points': by_gw[gw]['points'] if gw in by_gw else 0,
-                'minutes': by_gw[gw]['minutes'] if gw in by_gw else 0,
-                'difficulty': by_gw[gw]['difficulty'] if gw in by_gw else 3
+                'points': as_int(by_gw[gw]['points'], 0) if gw in by_gw else 0,
+                'minutes': as_int(by_gw[gw]['minutes'], 0) if gw in by_gw else 0,
+                'difficulty': as_int(by_gw[gw]['difficulty'], None) if gw in by_gw else 3
             })
         return result
     except Exception as e:

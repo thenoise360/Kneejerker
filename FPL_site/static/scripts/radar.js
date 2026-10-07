@@ -16,6 +16,7 @@ import {
 } from './visuals.js';
 import { trackPlayerSummary } from './analytics.js';
 import { renderMomentumCard } from './lib/momentumView.js';
+import { sumNumbers, formatPoints } from './lib/numbers.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeRadar();
@@ -348,7 +349,8 @@ function initializeRadar() {
 
     function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum) {
         const safeLast5 = Array.isArray(last5Data) ? last5Data : [];
-        const last5Values = safeLast5.map(d => d.points);
+        // Coerce to real numbers: older responses sent totals as text.
+        const last5Values = safeLast5.map(d => Number(d.points) || 0);
         const positionKey = POSITION_DATA_KEYS[summary.position_name];
         const avg5Values = (positionData && positionKey && positionData[positionKey])
                      ? positionData[positionKey].averageScores
@@ -402,8 +404,8 @@ function initializeRadar() {
     }
 
     function describeForm(last5, avg5) {
-        const total = last5.reduce((a, b) => a + b, 0);
-        const avgTotal = avg5.reduce((a, b) => a + b, 0);
+        const total = sumNumbers(last5);
+        const avgTotal = sumNumbers(avg5);
         if (total === 0 && avgTotal === 0) {
             return "No points on the board across these 5 gameweeks yet.";
         }
@@ -414,10 +416,10 @@ function initializeRadar() {
             return `Streaky — swinging between ${Math.min(...last5)} and ${Math.max(...last5)} points across these 5 gameweeks.`;
         }
         if (total > avgTotal) {
-            return `Consistently above the position average over these 5 gameweeks (${total} vs ${avgTotal} points).`;
+            return `Consistently above the position average over these 5 gameweeks (${formatPoints(total)} vs ${formatPoints(avgTotal)} points).`;
         }
         if (total < avgTotal) {
-            return `Below the position average over these 5 gameweeks (${total} vs ${avgTotal} points).`;
+            return `Below the position average over these 5 gameweeks (${formatPoints(total)} vs ${formatPoints(avgTotal)} points).`;
         }
         return "Right in line with the position average over these 5 gameweeks.";
     }
@@ -560,10 +562,10 @@ function initializeRadar() {
         const rows = [];
 
         if (last5.length) {
-            const total = last5.reduce((a, b) => a + b, 0);
-            const avgTotal = avg5.reduce((a, b) => a + b, 0);
+            const total = sumNumbers(last5);
+            const avgTotal = sumNumbers(avg5);
             const max = Math.max(total, avgTotal, 1);
-            rows.push(summaryRow('Form, last 5 gameweeks', `${total} pts`, `Position average: ${avgTotal} pts`, (total / max) * 100, (avgTotal / max) * 100));
+            rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} pts`, `Position average: ${formatPoints(avgTotal)} pts`, (total / max) * 100, (avgTotal / max) * 100));
         }
 
         const realFixtures = (fixtures || []).filter(f => f.homeOrAway !== 'Blank');
