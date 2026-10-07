@@ -10,13 +10,15 @@ from FPL_site.strengthCopy import strength_summary
 
 def make(**over):
     base = {'scored': 2.0, 'scored_adjusted': 2.0, 'conceded': 1.0,
-            'conceded_adjusted': 1.0, 'league_scored': 1.4, 'missing': []}
+            'conceded_adjusted': 1.0, 'league_scored': 1.4,
+            # a minor absentee, so the numbers are allowed to speak; tests override as needed
+            'missing': [{'name': 'Minor', 'role': 'attack', 'share': 0.01, 'chance': 0, 'position': 3}]}
     base.update(over)
     return base
 
 
-def player(role='attack', share=0.2, position=3, name='Someone'):
-    return {'name': name, 'role': role, 'share': share, 'chance': 0, 'position': position}
+def player(role='attack', share=0.2, position=3, name='Someone', chance=0):
+    return {'name': name, 'role': role, 'share': share, 'chance': chance, 'position': position}
 
 
 def headline(strength):
@@ -98,8 +100,54 @@ def test_other_role_does_not_count():
     assert reason(s) == 'A few squad players are missing.'
 
 
-def test_no_missing_players_still_gives_a_reason():
+def test_nobody_missing_is_always_full_strength():
+    s = make(scored_adjusted=1.0, conceded_adjusted=2.0, missing=[])
+    assert headline(s) == 'Arsenal are at full strength'
+    assert reason(s) == 'Strong going forward, solid at the back.'
+
+
+def test_only_minor_absentees_still_gives_a_reason():
     assert reason(make(scored_adjusted=1.5)) == 'A few squad players are missing.'
+
+
+def test_one_doubtful_attacker():
+    s = make(scored_adjusted=1.5, missing=[player(chance=50)])
+    assert reason(s) == 'One of their main chance-creators is out or doubtful.'
+
+
+def test_mix_of_out_and_doubtful():
+    s = make(conceded_adjusted=1.3, missing=[player('defence', position=2), player('defence', position=2, chance=25)])
+    assert reason(s) == 'Two of their regular defenders are out or doubtful.'
+
+
+def test_all_out_keeps_plain_wording():
+    s = make(conceded_adjusted=1.3, missing=[player('defence', position=2, chance=0)] * 2)
+    assert reason(s) == 'Two of their regular defenders are out.'
+
+
+def test_doubtful_goalkeeper():
+    s = make(conceded_adjusted=1.3, missing=[player('defence', position=1, chance=75)])
+    assert reason(s) == 'Their first-choice goalkeeper is out or doubtful.'
+
+
+def test_unkeyed_doubtful_player_does_not_change_wording():
+    s = make(scored_adjusted=1.5, missing=[player(), player(share=0.05, chance=50)])
+    assert reason(s) == 'One of their main chance-creators is out.'
+
+
+@pytest.mark.parametrize('team,expected', [
+    ('Wolves', "Wolves' attack is weaker this week"),
+    ('Spurs', "Spurs' attack is weaker this week"),
+    ('Arsenal', "Arsenal's attack is weaker this week"),
+])
+def test_possessive_headline(team, expected):
+    out = strength_summary(team, make(scored_adjusted=1.5))
+    assert out['headline'] == expected
+
+
+def test_possessive_defence_headline():
+    out = strength_summary('Wolves', make(conceded_adjusted=1.5))
+    assert out['headline'] == "Wolves' defence is weaker this week"
 
 
 def test_goalkeeper_reason():

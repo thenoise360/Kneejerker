@@ -46,17 +46,23 @@ def _key_missing(missing, role):
     return [p for p in missing if p['role'] == role and p['share'] >= KEY_PLAYER_SHARE]
 
 
+def _possessive(name):
+    return name + "'" if name.endswith('s') else name + "'s"
+
+
 def _missing_reason(key, role):
-    if role == 'defence' and any(p.get('position') == GOALKEEPER for p in key):
-        return 'Their first-choice goalkeeper is out.'
     if not key:
         return 'A few squad players are missing.'
+    # "out" is only true when nobody counted has any chance of playing.
+    status = 'out' if all(p.get('chance', 0) == 0 for p in key) else 'out or doubtful'
+    if role == 'defence' and any(p.get('position') == GOALKEEPER for p in key):
+        return f'Their first-choice goalkeeper is {status}.'
     count = len(key)
     word = COUNT_WORDS.get(count, 'Several')
     group = 'main chance-creators' if role == 'attack' else 'regular defenders'
     if count == 1:
-        return f'{word} of their {group} is out.'
-    return f'{word} of their {group} are out.'
+        return f'{word} of their {group} is {status}.'
+    return f'{word} of their {group} are {status}.'
 
 
 def _baseline_reason(strength):
@@ -87,7 +93,9 @@ def strength_summary(team_name, strength):
     defence_change = _rise(strength['conceded'], strength['conceded_adjusted'])
     attack_tier, defence_tier = _tier(attack_change), _tier(defence_change)
 
-    if attack_tier is None and defence_tier is None:
+    # Absences are the only thing that moves the adjusted figures, so with
+    # nobody missing there is nothing to blame, whatever the numbers say.
+    if not strength['missing'] or (attack_tier is None and defence_tier is None):
         return {'headline': f'{team_name} are at full strength',
                 'reason': _baseline_reason(strength)}
 
@@ -98,5 +106,5 @@ def strength_summary(team_name, strength):
         role, area, tier = 'defence', 'defence', defence_tier
 
     qualifier = 'a little weaker' if tier == 'slight' else 'weaker'
-    return {'headline': f"{team_name}'s {area} is {qualifier} this week",
+    return {'headline': f"{_possessive(team_name)} {area} is {qualifier} this week",
             'reason': _missing_reason(_key_missing(strength['missing'], role), role)}
