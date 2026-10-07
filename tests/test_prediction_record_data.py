@@ -178,3 +178,17 @@ def test_predictions_are_rounded_to_one_decimal_but_verdict_uses_raw():
     assert game['predicted_for'] == 1.4 and game['predicted_against'] == 1.0
     raw = game_verdict(1.43727, 0.98412, 2, 1)
     assert game['verdict'] == raw
+
+
+def test_rows_without_a_score_are_skipped():
+    games = shape_games([row(h=None, a=None), row(gw=2, kickoff='b'), row(gw=3, kickoff='c', h=1, a=None)], TEAMS)
+    assert [g['gameweek'] for g in games] == [2]
+
+
+def test_record_sql_orders_by_kickoff_within_gameweek():
+    class C:
+        def execute(self, sql, params): self.sql = sql
+        def fetchall(self): return []
+    c = C()
+    fetch_record_rows(c, 1, 2026)
+    assert 'ORDER BY mine.gameweek, mine.kickoff_time' in c.sql

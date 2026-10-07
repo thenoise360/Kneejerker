@@ -42,7 +42,7 @@ def fetch_record_rows(cursor, team_id, year_start):
             WHERE mine.team_id = %s AND f.finished = 1
               AND mine.logged_at = (SELECT MAX(l.logged_at) FROM fixture_prediction_log l
                                     WHERE l.fixture_code = mine.fixture_code AND l.team_id = mine.team_id)
-            ORDER BY mine.gameweek
+            ORDER BY mine.gameweek, mine.kickoff_time
         """, (year_start, team_id))
         return cursor.fetchall()
     except ProgrammingError as e:
@@ -69,7 +69,8 @@ def shape_games(rows, teams):
     for r in rows:
         key = (r['gameweek'], r['kickoff_time'])
         opponent = teams.get(r['opponent_id'])
-        if key in seen or opponent is None:
+        # A finished fixture with no score yet cannot be judged, so leave it out.
+        if key in seen or opponent is None or r['team_h_score'] is None or r['team_a_score'] is None:
             continue
         seen.add(key)
         is_home = bool(r['is_home'])
