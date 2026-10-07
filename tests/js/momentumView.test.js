@@ -87,7 +87,7 @@ test('the strip becomes two groups with the right titles and one reason each', (
     });
     assert.deepEqual(groups.map(g => g.title), ['Heating up', 'Cooling off']);
     assert.deepEqual(groups[0].players, [{
-        id: 1, full_name: 'B', team_name: 'Chelsea', position: 'MID', why: 'Rising: kinder fixtures coming up.' }]);
+        id: 1, full_name: 'B', team_name: 'Chelsea', position: 'MID', why: 'Kinder fixtures coming up.' }]);
 });
 
 test('an empty list leaves its group out, and nothing at all gives no groups', () => {

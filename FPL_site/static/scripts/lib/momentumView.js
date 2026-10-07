@@ -58,8 +58,8 @@ export function renderStripItem(item) {
 // empty answer gives an empty list, and the page then hides the whole strip.
 export function stripToCategories(strip) {
     const groups = [
-        { title: 'Heating up', subtitle: 'Players whose week looks better than last', list: strip?.heating_up },
-        { title: 'Cooling off', subtitle: 'Players whose week looks harder than last', list: strip?.cooling_off },
+        { label: 'Rising', title: 'Heating up', subtitle: 'Players whose week looks better than last', list: strip?.heating_up },
+        { label: 'Cooling', title: 'Cooling off', subtitle: 'Players whose week looks harder than last', list: strip?.cooling_off },
     ];
     return groups
         .filter(group => Array.isArray(group.list) && group.list.length > 0)
@@ -68,7 +68,8 @@ export function stripToCategories(strip) {
             subtitle: group.subtitle,
             // The card wants these field names. The position is the short code the server sent.
             players: group.list.map(item => ({
-                id: item.id, full_name: item.name, team_name: item.team, position: item.position || '', why: item.reason,
+                id: item.id, full_name: item.name, team_name: item.team, position: item.position || '', // The group title already says Heating up or Cooling off, so drop the label from the reason.
+                why: reasonWithoutLabel(group.label, item.reason),
             })),
         }));
 }
