@@ -187,7 +187,7 @@ def test_each_fixture_gets_last_time_and_blank_weeks_get_none(monkeypatch):
     monkeypatch.setattr(ph, 'fetch_last_time_context', lambda cur, pid, this_year=None: 'CTX')
     monkeypatch.setattr(ph, 'last_time_for',
                         lambda ctx, opp, home: seen.append((ctx, opp, home)) or {'kind': 'no_meeting'})
-    fixtures = dataModels.next_5_gameweeks(1)
+    fixtures = dataModels.next_5_gameweeks(1, include_history=True)
     assert fixtures[0]['lastTime'] == {'kind': 'no_meeting'}
     assert seen == [('CTX', 7, True)]
     assert fixtures[1]['homeOrAway'] == 'Blank' and fixtures[1]['lastTime'] is None
@@ -201,6 +201,26 @@ def test_a_failed_history_lookup_leaves_fixtures_intact(monkeypatch):
     def boom(*a, **k):
         raise RuntimeError('no history')
     monkeypatch.setattr(ph, 'fetch_last_time_context', boom)
-    fixtures = dataModels.next_5_gameweeks(1)
+    fixtures = dataModels.next_5_gameweeks(1, include_history=True)
     assert fixtures[0]['teamFullName'] == 'Brighton'
     assert fixtures[0]['lastTime'] is None
+
+
+def test_history_is_not_fetched_unless_asked_for(monkeypatch):
+    """Worth-watching calls next_5_gameweeks 20 times and never reads lastTime."""
+    monkeypatch.setattr(dataModels, 'connect_db', lambda: Conn())
+    monkeypatch.setattr(dataModels, 'generateCurrentGameweek', lambda: 10)
+    calls = []
+    monkeypatch.setattr(ph, 'fetch_last_time_context', lambda *a, **k: calls.append(a))
+    fixtures = dataModels.next_5_gameweeks(1)
+    assert calls == []
+    assert fixtures[0]['teamFullName'] == 'Brighton'
+    assert fixtures[0]['lastTime'] is None
+
+
+def test_the_route_asks_for_history(monkeypatch):
+    from FPL_site import views
+    seen = {}
+    monkeypatch.setattr(views, 'next_5_gameweeks', lambda pid, include_history=False: seen.update(h=include_history) or [])
+    assert views.app.test_client().get('/get_next_5_gameweeks?id=1').status_code == 200
+    assert seen['h'] is True

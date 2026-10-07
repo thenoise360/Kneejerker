@@ -400,7 +400,7 @@ def get_player_next_5_gameweeks():
     logger.info("Request for get_next_5_gameweeks")
     try:
         player_id = request.args.get('id')
-        gameweeks = next_5_gameweeks(player_id)
+        gameweeks = next_5_gameweeks(player_id, include_history=True)
         return jsonify(gameweeks)
     except Exception as e:
         logger.error(f"Error: {str(e)}")

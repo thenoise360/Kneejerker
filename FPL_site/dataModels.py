@@ -1367,7 +1367,9 @@ def get_top_10_net_transfers_out():
     return data
 
 
-def next_5_gameweeks(player_id):
+def next_5_gameweeks(player_id, include_history=False):
+    # include_history adds 'lastTime' (how the player did against each opponent last season).
+    # It costs several extra queries, so only the single-player route asks for it.
 
     dbConnect = connect_db()
     if dbConnect is None:
@@ -1420,11 +1422,12 @@ def next_5_gameweeks(player_id):
     # How this player did against each opponent last season, loaded once for the whole list.
     # History is background: if it can't be read, the fixtures still come back without it.
     from FPL_site import playerHistory
-    try:
-        history_context = playerHistory.fetch_last_time_context(cursor, player_id)
-    except Exception as e:
-        logger.error(f"Could not load last season's meetings for player {player_id}: {e}")
-        history_context = None
+    history_context = None
+    if include_history:
+        try:
+            history_context = playerHistory.fetch_last_time_context(cursor, player_id)
+        except Exception as e:
+            logger.error(f"Could not load last season's meetings for player {player_id}: {e}")
 
     while i < gw + 6:
         team_id = player_info['team_id']
