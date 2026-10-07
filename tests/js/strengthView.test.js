@@ -12,13 +12,17 @@ const ready = {
     conceded: 1.0,
     conceded_adjusted: 1.1,
     league_scored: 1.5,
+    gauge: {
+        attack: { now: 0.8, usual: 1, words: 'Attack: weaker than usual, below average for the league' },
+        defence: { now: 1.364, usual: 1.5, words: 'Defence: leakier than usual, above average for the league' },
+    },
     missing: [{ name: 'Saka', position: 'midfielder', role: 'attack', share: 0.3, chance: 25 }],
 };
 
 test('verdict and reason first, with no digits before the details', () => {
     const html = renderStrength(ready);
     const [before, inside] = html.split('<details');
-    assert.match(before, /<div class="outlook-phrase strength-verdict">Arsenal&#39;s attack is weaker this week<\/div>/);
+    assert.match(before, /<h3 class="outlook-phrase strength-verdict">Arsenal&#39;s attack is weaker this week<\/h3>/);
     assert.match(before, /<p class="sub">Saka is likely to miss out\.<\/p>/);
     // Look at the visible text only: drop tags (h3 has a digit) and escape codes such as &#39;.
     assert.doesNotMatch(before.replace(/<[^>]*>/g, '').replace(/&#\d+;/g, ''), /\d/);
@@ -58,34 +62,55 @@ test('two gauges render for a ready payload, each with a legend', () => {
     assert.ok(html.includes('>Usual<') && html.includes('>This week<'));
 });
 
-test('gauge values are computed from the payload', () => {
+test('gauge positions come straight from the server ratios', () => {
     const g = gaugeInputs(ready);
-    assert.ok(Math.abs(g.attack.value - 1.2 / 1.5) < 1e-9);
-    assert.ok(Math.abs(g.attack.marker - 1.5 / 1.5) < 1e-9);
-    assert.ok(Math.abs(g.defence.value - 1.5 / 1.1) < 1e-9);
-    assert.ok(Math.abs(g.defence.marker - 1.5 / 1.0) < 1e-9);
-    assert.equal(g.attack.min, 0.4);
-    assert.equal(g.attack.max, 1.8);
-    assert.equal(g.defence.min, 0.4);
-    assert.equal(g.defence.max, 1.8);
+    assert.equal(g.attack.value, 0.8);
+    assert.equal(g.attack.marker, 1);
+    assert.equal(g.defence.value, 1.364);
+    assert.equal(g.defence.marker, 1.5);
+    for (const gauge of [g.attack, g.defence]) {
+        assert.equal(gauge.min, 0.4);
+        assert.equal(gauge.max, 1.8);
+    }
 });
 
-test('aria labels are words only', () => {
+test('the aria label is the server wording, with no digits', () => {
     const labels = [...renderStrength(ready).matchAll(/aria-label="([^"]*)"/g)].map(m => m[1]);
-    assert.ok(labels.length >= 2);
+    assert.equal(labels[0], 'Attack: weaker than usual, below average for the league');
+    assert.equal(labels[1], 'Defence: leakier than usual, above average for the league');
     for (const l of labels) assert.doesNotMatch(l, /\d/);
-    assert.match(labels[0], /Attack: weaker than usual, below average for the league/);
 });
 
-test('missing or zero league_scored leaves the gauges out but keeps the rest', () => {
-    for (const league_scored of [undefined, 0, null]) {
-        const html = renderStrength({ ...ready, league_scored });
-        assert.doesNotMatch(html, /<svg/);
+test('a missing gauge, or missing ratios, leaves the gauges out but keeps the rest', () => {
+    const broken = [
+        { gauge: undefined }, { gauge: null }, { gauge: {} },
+        { gauge: { attack: { now: NaN, usual: 1, words: 'x' }, defence: { now: undefined, usual: 1, words: 'y' } } },
+    ];
+    for (const over of broken) {
+        const html = renderStrength({ ...ready, ...over });
+        assert.doesNotMatch(html, /<svg|NaN/);
         assert.match(html, /strength-verdict/);
         assert.match(html, /See the numbers/);
     }
 });
 
-test('no heading above 16 pixels: the verdict is not an h3', () => {
-    assert.doesNotMatch(renderStrength(ready), /<h3/);
+test('one broken gauge is dropped and the other still draws', () => {
+    const html = renderStrength({ ...ready, gauge: { ...ready.gauge, attack: { now: null, usual: 1, words: 'x' } } });
+    assert.equal((html.match(/<svg /g) || []).length, 1);
+    assert.doesNotMatch(html, /NaN/);
+});
+
+test('the verdict is a heading, styled by its own scoped class', () => {
+    assert.match(renderStrength(ready), /<h3 class="outlook-phrase strength-verdict">/);
+});
+
+test('a slight headline never sits next to a gauge that says the same as usual', () => {
+    // Server words for the reviewer reproduction: both figures round to 1.0 but the drop is slight.
+    const html = renderStrength({
+        ...ready, headline: "Arsenal's attack is a little weaker this week", scored: 1.0, scored_adjusted: 1.0,
+        gauge: { ...ready.gauge, attack: { now: 0.71, usual: 0.75, words: 'Attack: a little weaker than usual, below average for the league' } },
+    });
+    assert.match(html, /a little weaker this week/);
+    assert.doesNotMatch(html, /same as usual/);
+    assert.match(html, /aria-label="Attack: a little weaker than usual/);
 });

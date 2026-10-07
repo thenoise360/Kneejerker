@@ -223,6 +223,9 @@ def test_load_ready(monkeypatch):
     assert payload['team_name'] == 'Arsenal'
     assert payload['scored'] == 1.5 and payload['scored_adjusted'] == 1.2
     assert payload['league_scored'] == 1.4
+    assert payload['gauge']['attack']['usual'] == round(1.54 / 1.4, 3)
+    assert payload['gauge']['attack']['now'] == round(1.21 / 1.4, 3)
+    assert payload['gauge']['defence']['words'].startswith('Defence: ')
     assert payload['missing'][0]['name'] == 'Saka'
     assert payload['headline'] and payload['reason']
     assert conn.closed

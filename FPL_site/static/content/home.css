@@ -661,7 +661,7 @@
 .welcome-back { border-left: 4px solid var(--teal); transition: opacity 200ms ease-in-out; }
 
 /* Team strength card: verdict and gauges. Type sizes follow .outlook-phrase and .sub. */
-.strength-verdict { margin-bottom: 4px; color: var(--charcoal); }
+.card h3.strength-verdict { font-size: inherit; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 4px; }
 /* Darker teal for the usual tick: 3:1 or better against white, unlike --teal. */
 .strength-gauges { --teal-ink: #0B7A6E; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
 @media (max-width: 340px) { .strength-gauges { grid-template-columns: 1fr; } }

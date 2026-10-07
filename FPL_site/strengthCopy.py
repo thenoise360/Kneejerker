@@ -112,3 +112,48 @@ def strength_summary(team_name, strength):
     qualifier = 'a little weaker' if tier == 'slight' else 'weaker'
     return {'headline': f"{_possessive(team_name)} {area} is {qualifier} this week",
             'reason': _missing_reason(_key_missing(strength['missing'], role), role)}
+
+
+def _versus_usual(change, worse):
+    """How this week compares with usual, using the same tiers as the headline."""
+    tier = _tier(change)
+    if tier is None:
+        return 'the same as usual'
+    return f"{'a little ' if tier == 'slight' else ''}{worse} than usual"
+
+
+def _versus_league(strong, weak):
+    """Where the usual level sits against the league, using the reason's limits."""
+    if strong:
+        return 'above average for the league'
+    if weak:
+        return 'below average for the league'
+    return 'about average for the league'
+
+
+def gauge_summary(strength):
+    """Gauge positions (as a share of the league average) and their spoken words.
+
+    The needle and the words come from the same thresholds as strength_summary,
+    so a gauge can never say "the same as usual" next to a "weaker" headline.
+    Returns None when there is no league average or no goals conceded to divide by.
+    """
+    league = strength['league_scored']
+    if not (league > 0) or not (strength['conceded'] > 0) or not (strength['conceded_adjusted'] > 0):
+        return None
+    attack_usual = strength['scored'] / league
+    defence_usual = league / strength['conceded']      # higher means it concedes less
+    conceded_ratio = _round(strength['conceded'] / league)
+    attack_ratio = _round(attack_usual)
+    attack_words = 'Attack: ' + ', '.join([
+        _versus_usual(_drop(strength['scored'], strength['scored_adjusted']), 'weaker'),
+        _versus_league(attack_ratio >= STRONG_RATIO, attack_ratio <= WEAK_RATIO)])
+    defence_words = 'Defence: ' + ', '.join([
+        _versus_usual(_rise(strength['conceded'], strength['conceded_adjusted']), 'leakier'),
+        _versus_league(conceded_ratio <= WEAK_RATIO, conceded_ratio >= STRONG_RATIO)])
+    return {
+        'attack': {'now': round(strength['scored_adjusted'] / league, 3), 'usual': round(attack_usual, 3),
+                   'words': attack_words},
+        'defence': {'now': round(league / strength['conceded_adjusted'], 3), 'usual': round(defence_usual, 3),
+                    'words': defence_words},
+    }

@@ -17,7 +17,7 @@ from mysql.connector import errorcode
 from mysql.connector.errors import ProgrammingError
 
 from FPL_site.dataModels import connect_db, season_start
-from FPL_site.strengthCopy import strength_summary
+from FPL_site.strengthCopy import strength_summary, gauge_summary
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +226,8 @@ def load_team_strength(team_id):
             'conceded_adjusted': round(strength['conceded_adjusted'], 1),
             # The league average goals scored, which the gauges compare each team against.
             'league_scored': round(strength['league_scored'], 2),
+            # Unrounded gauge positions and their words; the rounded figures above are for the written numbers.
+            'gauge': gauge_summary(strength),
             'missing': strength['missing'],
         }
     finally:

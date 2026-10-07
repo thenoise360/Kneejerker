@@ -28,37 +28,29 @@ const GAUGE_MIN = 0.4;
 const GAUGE_MAX = 1.8;
 
 // Where each gauge's needle and "usual" tick sit, as a share of the league
-// average goals scored. Returns null when the payload cannot support gauges
-// (no league average, or no goals conceded to divide by).
-export function gaugeInputs(payload) {
-    const league = Number(payload.league_scored);
-    if (!(league > 0) || !(payload.conceded > 0) || !(payload.conceded_adjusted > 0)) return null;
-    return {
-        attack: { value: payload.scored_adjusted / league, marker: payload.scored / league, min: GAUGE_MIN, max: GAUGE_MAX },
-        // Higher means it concedes less, so a taller needle is always better.
-        defence: { value: league / payload.conceded_adjusted, marker: league / payload.conceded, min: GAUGE_MIN, max: GAUGE_MAX },
-    };
+// average goals scored. The server works these out (unrounded, with the words
+// that describe them) so the gauges always agree with the headline. A gauge
+// whose figures are missing or not numbers is left out rather than drawn wrong.
+function oneGauge(entry) {
+    if (!entry || typeof entry.words !== 'string') return null;
+    const { now, usual } = entry;
+    if (typeof now !== 'number' || typeof usual !== 'number' || !Number.isFinite(now) || !Number.isFinite(usual)) return null;
+    return { value: now, marker: usual, min: GAUGE_MIN, max: GAUGE_MAX, words: entry.words };
 }
 
-// Words for the aria-label: how this week compares with usual, and with the league.
-function gaugeWords(name, input, worse, better) {
-    const diff = input.value - input.marker;
-    let versusUsual = 'the same as usual';
-    if (Math.abs(diff) >= 0.03) {
-        const size = Math.abs(diff) < 0.1 ? 'a little ' : '';
-        versusUsual = `${size}${diff < 0 ? worse : better} than usual`;
-    }
-    let versusLeague = 'about average for the league';
-    if (input.value < 0.9) versusLeague = 'below average for the league';
-    else if (input.value > 1.1) versusLeague = 'above average for the league';
-    return `${name}: ${versusUsual}, ${versusLeague}`;
+export function gaugeInputs(payload) {
+    const gauge = payload.gauge;
+    if (!gauge) return null;
+    const attack = oneGauge(gauge.attack);
+    const defence = oneGauge(gauge.defence);
+    return attack || defence ? { attack, defence } : null;
 }
 
 function gaugeBlock(input, labels) {
     const svg = renderGauge({
-        ...input,
+        value: input.value, marker: input.marker, min: input.min, max: input.max,
         leftLabel: labels.left, rightLabel: labels.right, centreLabel: labels.centre,
-        ariaLabel: gaugeWords(labels.centre, input, labels.left.toLowerCase(), labels.right.toLowerCase()),
+        ariaLabel: input.words,
     });
     // Each mark is paired with a word, so the legend never relies on colour.
     return `<div class="strength-gauge">${svg}
@@ -78,8 +70,8 @@ export function renderStrength(payload) {
     const inputs = gaugeInputs(payload);
     const gauges = inputs
         ? `<div class="strength-gauges">
-            ${gaugeBlock(inputs.attack, { left: 'Weaker', right: 'Stronger', centre: 'Attack' })}
-            ${gaugeBlock(inputs.defence, { left: 'Leakier', right: 'Tighter', centre: 'Defence' })}
+            ${inputs.attack ? gaugeBlock(inputs.attack, { left: 'Weaker', right: 'Stronger', centre: 'Attack' }) : ''}
+            ${inputs.defence ? gaugeBlock(inputs.defence, { left: 'Leakier', right: 'Tighter', centre: 'Defence' }) : ''}
         </div>`
         : '';
     // Template literal: backticks let us write HTML across several lines and
@@ -87,7 +79,7 @@ export function renderStrength(payload) {
     return `
         <div class="card" id="team-strength">
             <div class="eyebrow-sm">how strong are they this week</div>
-            <div class="outlook-phrase strength-verdict">${escapeHtml(payload.headline)}</div>
+            <h3 class="outlook-phrase strength-verdict">${escapeHtml(payload.headline)}</h3>
             <p class="sub">${escapeHtml(payload.reason)}</p>
             ${gauges}
             <details class="recap-details">
