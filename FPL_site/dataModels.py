@@ -1788,7 +1788,7 @@ def get_player_last_5_points(player_id):
                 'gw': gw,
                 'points': as_int(by_gw[gw]['points'], 0) if gw in by_gw else 0,
                 'minutes': as_int(by_gw[gw]['minutes'], 0) if gw in by_gw else 0,
-                'difficulty': as_int(by_gw[gw]['difficulty'], None) if gw in by_gw else 3
+                'difficulty': as_int(by_gw[gw]['difficulty'], None) if gw in by_gw else None
             })
         return result
     except Exception as e:

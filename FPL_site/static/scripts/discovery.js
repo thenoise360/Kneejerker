@@ -258,7 +258,7 @@ function renderSearchResults(results, query) {
         row.innerHTML = `
             <div class="result-info">
                 <div class="result-name">${escapeHtml(player.full_name)}</div>
-                <div class="result-meta">${escapeHtml(player.team_name)} • ${escapeHtml(positionLabel(player.position))}</div>
+                <div class="result-meta">${escapeHtml(player.team_name)}${positionLabel(player.position) ? ` • ${escapeHtml(positionLabel(player.position))}` : ''}</div>
             </div>
             <div class="result-action">
                 <i class="bi bi-plus-circle"></i>
@@ -361,7 +361,7 @@ function createPlayerCard(player) {
             <div class="p-card-avatar">${escapeHtml(getInitials(player.full_name))}</div>
             <div class="p-card-info">
                 <div class="p-card-name">${escapeHtml(player.full_name)}</div>
-                <div class="p-card-meta" data-position="${escapeHtml(player.position || '')}">${escapeHtml(player.team_name)}${player.position ? ` • ${escapeHtml(positionLabel(player.position))}` : ''}</div>
+                <div class="p-card-meta" data-position="${escapeHtml(player.position || '')}">${escapeHtml(player.team_name)}${positionLabel(player.position) ? ` • ${escapeHtml(positionLabel(player.position))}` : ''}</div>
             </div>
             <div class="p-card-check" style="${isSelected ? '' : 'display:none'}">
                 <i class="bi bi-check-circle-fill"></i>

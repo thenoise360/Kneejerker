@@ -22,7 +22,7 @@
     --plum-tint: #6a2a7c;
     --teal: #29C2B2;
     --pink: #F67CB0;
-    --pink-ink: #B83774; /* darker pink for TEXT: 5.5:1 on white, 5.2:1 on offwhite. Keep --pink for fills. */
+    --pink-ink: #B83774; /* darker pink for TEXT on white/offwhite ONLY: 5.5:1 on white, 5.2:1 on offwhite, but just 4.35:1 on --grey, so never use it on grey backgrounds. Keep --pink for fills. */
     --charcoal: #333333;
     --offwhite: #F9F9F9;
     --grey: #E5E5E5;

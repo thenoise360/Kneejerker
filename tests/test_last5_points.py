@@ -43,3 +43,4 @@ def test_last_5_points_are_plain_ints_not_decimals(monkeypatch):
     assert by_gw[4]['difficulty'] is None
     assert type(by_gw[4]['points']) is int
     assert by_gw[1]['points'] == 0
+    assert by_gw[1]['difficulty'] is None

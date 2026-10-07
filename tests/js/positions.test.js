@@ -16,3 +16,8 @@ test('unknown codes pass through and missing ones are empty', () => {
 test('the label map is exported for lookups by code', () => {
     assert.equal(POSITION_LABELS.MID, 'Midfielder');
 });
+
+test('managers get a plain label and the ALL fallback is hidden', () => {
+    assert.equal(positionLabel('MGR'), 'Manager');
+    assert.equal(positionLabel('ALL'), '');
+});

@@ -94,7 +94,7 @@ export function buildSparkline(last5, avg5) {
         series: [{ color: 'var(--teal)', values: last5 }],
         avgSeries: avg5,
         w: 260, h: 60, padTop: 6, padBottom: 14, padLeft: 22, padRight: 4,
-        formatValue: v => `${v}`
+        formatValue: v => `${Math.round(v)}`
     });
 }
 
