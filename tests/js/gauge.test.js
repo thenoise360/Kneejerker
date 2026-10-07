@@ -52,3 +52,39 @@ test('scales to its container', () => {
     assert.match(renderGauge(base), /width:100%; max-width:200px/);
     assert.match(renderGauge(base), /viewBox="0 0 160 90"/);
 });
+
+test('the marker is a short radial tick at the expected angle', () => {
+    const svg = renderGauge({ ...base, marker: 0.75 });   // a quarter of the way: 135 degrees
+    const m = svg.match(/class="gauge-marker" x1="([\d.-]+)" y1="([\d.-]+)" x2="([\d.-]+)" y2="([\d.-]+)"/);
+    const [x1, y1, x2, y2] = m.slice(1).map(Number);
+    const CX = 80, CY = 76;
+    const angleOf = (x, y) => Math.atan2(CY - y, x - CX) * 180 / Math.PI;
+    assert.ok(Math.abs(angleOf(x1, y1) - 135) < 0.5);
+    assert.ok(Math.abs(angleOf(x2, y2) - 135) < 0.5);
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    assert.ok(length > 13 && length < 15.5, `length ${length}`);
+    // Inner end is closer to the centre than the outer end, and the arc radius lies between them.
+    const r1 = Math.hypot(x1 - CX, y1 - CY), r2 = Math.hypot(x2 - CX, y2 - CY);
+    assert.ok(r1 < 60 && r2 > 60);
+    assert.match(svg, /class="gauge-marker"[^>]*stroke-width="3"/);
+});
+
+test('the marker colour and its legend swatch are at least 3:1 against white', async () => {
+    const { MARKER_COLOUR } = await import('../../FPL_site/static/scripts/lib/gauge.js');
+    const { contrastRatio } = await import('../../FPL_site/static/scripts/lib/contrast.js');
+    const { readFileSync } = await import('node:fs');
+    assert.ok(contrastRatio(MARKER_COLOUR, '#FFFFFF') >= 3);
+    const css = readFileSync(new URL('../../FPL_site/static/content/home.css', import.meta.url), 'utf8');
+    const swatch = css.match(/--teal-ink:\s*(#[0-9a-fA-F]{6})/)[1];
+    assert.equal(swatch.toUpperCase(), MARKER_COLOUR);
+    assert.ok(contrastRatio(swatch, '#FFFFFF') >= 3);
+});
+
+test('end labels are at least 11 pixels at a 130 pixel wide column and stay inside the box', () => {
+    const svg = renderGauge(base);
+    const sizes = [...svg.matchAll(/class="gauge-(?:end|centre)"[^>]*font-size="(\d+)"/g)].map(m => Number(m[1]));
+    assert.equal(sizes.length, 3);
+    for (const size of sizes) assert.ok(size * 130 / 160 >= 11, `size ${size}`);
+    assert.match(svg, /text-anchor="start"/);
+    assert.match(svg, /text-anchor="end"/);
+});
