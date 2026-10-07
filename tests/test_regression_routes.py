@@ -80,22 +80,36 @@ def test_club_page_always_has_both_cards(client):
     assert 'id="prediction-record-slot"' in html
 
 
-def test_hub_flag_defaults_off(monkeypatch):
-    # Reload the config with the variable removed, so a developer's own
-    # environment or .env file can't change the answer.
+def _reload_config_with(monkeypatch, value):
+    """The config's hub flag with THIS_WEEK_HUB set to value (None removes it).
+
+    Reloads the config so a developer's own environment or .env file can't change
+    the answer, then puts the real environment back.
+    """
     import importlib
     import dotenv
     # import_module, because the FPL_site package re-uses the name 'config' for something else.
     config = importlib.import_module('FPL_site.config')
-    monkeypatch.delenv('THIS_WEEK_HUB', raising=False)
-    monkeypatch.setattr(dotenv, 'load_dotenv', lambda *a, **k: False)  # keep .env from adding it back
+    if value is None:
+        monkeypatch.delenv('THIS_WEEK_HUB', raising=False)
+    else:
+        monkeypatch.setenv('THIS_WEEK_HUB', value)
+    monkeypatch.setattr(dotenv, 'load_dotenv', lambda *a, **k: False)  # keep .env from changing it
     try:
         reloaded = importlib.reload(config)
-        assert reloaded.DevelopmentConfig.THIS_WEEK_HUB is False
-        assert reloaded.ProductionConfig.THIS_WEEK_HUB is False
+        return reloaded.DevelopmentConfig.THIS_WEEK_HUB, reloaded.ProductionConfig.THIS_WEEK_HUB
     finally:
         monkeypatch.undo()  # put the real environment and loader back before the second reload
         importlib.reload(config)
+
+
+def test_hub_flag_defaults_on(monkeypatch):
+    assert _reload_config_with(monkeypatch, None) == (True, True)
+
+
+def test_hub_flag_can_still_be_switched_off(monkeypatch):
+    assert _reload_config_with(monkeypatch, '0') == (False, False)
+    assert _reload_config_with(monkeypatch, '1') == (True, True)
 
 
 def test_week_page_with_hub_flag_on(client, monkeypatch):
