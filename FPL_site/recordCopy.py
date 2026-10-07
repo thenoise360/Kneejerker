@@ -71,7 +71,7 @@ def record_summary(team_name, games, started_on):
 
     if average >= TREND_FROM:
         headline = f'{team_name} have been beating their chances'
-        reason = ("They've been winning by more than their chances suggest. "
+        reason = ("They've been doing better than their chances suggest. "
                   'That tends not to last.')
     elif average <= -TREND_FROM:
         headline = f'{team_name} have been falling short of their chances'

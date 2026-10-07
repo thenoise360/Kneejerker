@@ -43,7 +43,7 @@ def test_reasons():
     up = record_summary('Arsenal', games_with_average(8, 1), None)
     down = record_summary('Arsenal', games_with_average(8, -1), None)
     flat = record_summary('Arsenal', games_with_average(8, 0), None)
-    assert up['reason'] == "They've been winning by more than their chances suggest. That tends not to last."
+    assert up['reason'] == "They've been doing better than their chances suggest. That tends not to last."
     assert down['reason'] == "They've been doing worse than their chances suggest. That tends to turn around."
     assert flat['reason'] == 'Their results have matched their chances so far.'
 
