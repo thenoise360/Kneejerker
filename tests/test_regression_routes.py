@@ -27,6 +27,7 @@ DATA_ROUTE_STUBS = {
     '/api/player/1/momentum': ('load_player_momentum', {'status': 'not_ready', 'message': {'title': 't', 'body': 'b'}}),
     '/api/discover/momentum-strip': ('load_momentum_strip', {'heating_up': [], 'cooling_off': []}),
     '/api/player/1/last-season': ('load_last_season', {'played': False, 'headline': 'x', 'this_season_appearances': 0}),
+    '/get_next_5_gameweeks?id=1': ('next_5_gameweeks', [{'gameweek': 6, 'teamName': 'BHA', 'teamFullName': 'Brighton', 'homeOrAway': 'Home', 'difficulty': 3, 'lastTime': {'kind': 'played', 'points': 6, 'minutes': 90, 'result': 'won 3–1', 'is_home': True, 'club': None}}]),
 }
 
 
@@ -70,3 +71,9 @@ def test_club_page_always_has_both_cards(client):
     html = client.get('/club/1').get_data(as_text=True)
     assert 'id="team-strength-slot"' in html
     assert 'id="prediction-record-slot"' in html
+
+
+def test_next_5_gameweeks_route_carries_last_time(client):
+    rows = client.get('/get_next_5_gameweeks?id=1').get_json()
+    assert rows[0]['lastTime']['kind'] == 'played'
+    assert rows[0]['teamFullName'] == 'Brighton'
