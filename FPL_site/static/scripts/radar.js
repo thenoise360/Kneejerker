@@ -565,7 +565,7 @@ function initializeRadar() {
             const total = sumNumbers(last5);
             const avgTotal = sumNumbers(avg5);
             const max = Math.max(total, avgTotal, 1);
-            rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} pts`, `Position average: ${formatPoints(avgTotal)} pts`, (total / max) * 100, (avgTotal / max) * 100));
+            rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} points`, `Position average: ${formatPoints(avgTotal)} points`, (total / max) * 100, (avgTotal / max) * 100));
         }
 
         const realFixtures = (fixtures || []).filter(f => f.homeOrAway !== 'Blank');

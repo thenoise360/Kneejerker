@@ -16,6 +16,7 @@ import {
 import { stripToCategories } from './lib/momentumView.js';
 import { escapeHtml } from './lib/escapeHtml.js';
 import { POSITION_LABELS, positionLabel } from './lib/positions.js';
+import { sumNumbers, formatPoints } from './lib/numbers.js';
 
 let allPlayers = [];
 let selectedPlayers = [];
@@ -754,10 +755,10 @@ function buildSummarySingle(panelDataSingle) {
     const rows = [];
 
     if (form.length) {
-        const total = form.reduce((a, b) => a + b, 0);
-        const avgTotal = (avgForm || []).reduce((a, b) => a + b, 0);
+        const total = sumNumbers(form);
+        const avgTotal = sumNumbers(avgForm);
         const max = Math.max(total, avgTotal, 1);
-        rows.push(summaryRow('Form, last 5 gameweeks', `${total} pts`, `${avgLabel}: ${avgTotal} pts`, (total / max) * 100, (avgTotal / max) * 100));
+        rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} points`, `${avgLabel}: ${formatPoints(avgTotal)} points`, (total / max) * 100, (avgTotal / max) * 100));
     }
 
     const realFixtures = (fixtures || []).filter(f => f.homeOrAway !== 'Blank');
@@ -801,14 +802,14 @@ function buildSummaryComparison(panelDataComparison) {
     const players = panelDataComparison.players;
     const blocks = [];
 
-    const avgPointsTotal = (panelDataComparison.avgPoints || []).reduce((a, b) => a + b, 0);
+    const avgPointsTotal = sumNumbers(panelDataComparison.avgPoints);
     blocks.push(buildStatBlock(
         'Form, last 5 gameweeks', players,
         (p) => {
-            const total = p.form.reduce((a, b) => a + b, 0);
-            return { value: total, display: `${total} pts` };
+            const total = sumNumbers(p.form);
+            return { value: total, display: `${formatPoints(total)} points` };
         },
-        { avgValue: avgPointsTotal, compareText: `Dotted line: ${panelDataComparison.avgLabel.toLowerCase()} (${avgPointsTotal} pts)` }
+        { avgValue: avgPointsTotal, compareText: `Dotted line: ${panelDataComparison.avgLabel.toLowerCase()} (${formatPoints(avgPointsTotal)} points)` }
     ));
 
     if (players.some(p => (p.fixtures || []).some(f => f.homeOrAway !== 'Blank'))) {
