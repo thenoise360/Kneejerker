@@ -126,3 +126,20 @@ def test_last_week_view_carries_deadline_and_this_week_gameweek():
 def test_this_week_gameweek_attribute_is_empty_unless_upcoming(mode):
     html = render(_state(mode, gw=6, last='final', last_gw=5))
     assert 'data-this-week-gameweek=""' in html
+
+
+@pytest.mark.parametrize('mode', ['live', 'pre_season'])
+def test_decision_hooks_are_empty_outside_upcoming(mode):
+    html = render(_state(mode, gw=7, deadline='2026-10-10T10:00:00Z'))
+    hub = re.search(r'id="decision-hub"[^>]*data-gameweek="([^"]*)"', html, re.S)
+    deadline = re.search(r'id="deadline-copy" data-deadline="([^"]*)"', html)
+    assert hub.group(1) == ''
+    assert deadline.group(1) == ''
+
+
+def test_decision_hooks_are_set_when_upcoming():
+    html = render(_state('upcoming', gw=7, deadline='2026-10-10T10:00:00Z'))
+    hub = re.search(r'id="decision-hub"[^>]*data-gameweek="([^"]*)"', html, re.S)
+    deadline = re.search(r'id="deadline-copy" data-deadline="([^"]*)"', html)
+    assert hub.group(1) == '7'
+    assert deadline.group(1) == '2026-10-10T10:00:00Z'

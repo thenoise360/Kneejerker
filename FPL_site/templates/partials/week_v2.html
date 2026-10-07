@@ -45,15 +45,15 @@
                 <div id="live-gameweek-content" style="display:none;"></div>
             </div>
 
-            {# Upcoming gameweek. The decision hub lands in release 1.4. #}
+            {# Upcoming gameweek. The hooks below stay empty in other modes so weekV2.js loads nothing into a hidden panel. #}
             <div class="gw-panel" id="gw-panel-closed" style="display:none;">
                 <div class="eyebrow-sm">gameweek {{ this_week.gameweek }}</div>
                 <h2 class="title" style="margin-bottom:4px;">Your decisions for gameweek {{ this_week.gameweek }}</h2>
                 {# Calm deadline wording, written by weekV2.js in the visitor's own time zone #}
-                <p class="sub" id="deadline-copy" data-deadline="{{ this_week.deadline or '' }}"></p>
+                <p class="sub" id="deadline-copy" data-deadline="{{ this_week.deadline if this_week.mode == 'upcoming' and this_week.gameweek is not none and this_week.deadline else '' }}"></p>
 
                 <div id="decision-hub"
-                     data-gameweek="{{ this_week.gameweek if this_week.gameweek is not none else '' }}"
+                     data-gameweek="{{ this_week.gameweek if this_week.mode == 'upcoming' and this_week.gameweek is not none else '' }}"
                      data-last-gameweek="{{ last_week.gameweek if last_week.status == 'final' else '' }}">
                     <h3 style="margin-top:12px;">This week's decisions</h3>
                     <div id="decision-slot">
