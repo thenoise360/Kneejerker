@@ -51,7 +51,6 @@ user = current_config.USER
 password = current_config.PASSWORD
 db = current_config.DATABASE
 
-season = "2025_2026"
 
 NULL = None
 
@@ -1057,36 +1056,36 @@ def get_most_consistent_players():
     
     try:
         if current_gw == 0:
-            # Pre-season logic: Use end of last season (2025)
+            # Pre-season logic: Use end of last season (the season before the current one)
             # We must use 'code' to bridge between seasons as IDs may have changed
-            last_year = 2025
+            last_year = season_start - 1
             query = f"""
                 SELECT 
-                    e2026.id, 
-                    e2026.web_name,
-                    e2026.now_cost,
-                    e2026.team_code,
+                    e_cur.id, 
+                    e_cur.web_name,
+                    e_cur.now_cost,
+                    e_cur.team_code,
                     t.short_name as team_short_name,
                     et.singular_name_short as position,
                     stats.std_dev,
                     stats.avg_points
                 FROM (
                     SELECT 
-                        e2025.code,
+                        e_prev.code,
                         STDDEV_POP(h.total_points) as std_dev, 
                         AVG(h.total_points) as avg_points,
                         COUNT(CASE WHEN h.minutes >= 60 THEN 1 END) as starts
                     FROM {db}.elementsummary_history h
-                    JOIN {db}.bootstrapstatic_elements e2025 ON h.element = e2025.id AND e2025.year_start = {last_year}
+                    JOIN {db}.bootstrapstatic_elements e_prev ON h.element = e_prev.id AND e_prev.year_start = {last_year}
                     WHERE h.year_start = {last_year}
                     AND h.round BETWEEN 34 AND 38
-                    GROUP BY e2025.code
+                    GROUP BY e_prev.code
                     HAVING starts >= 4
                     AND avg_points >= 3.5
                 ) stats
-                JOIN {db}.bootstrapstatic_elements e2026 ON stats.code = e2026.code AND e2026.year_start = {season_start}
-                JOIN {db}.bootstrapstatic_teams t ON e2026.team = t.id AND t.year_start = {season_start}
-                JOIN {db}.bootstrapstatic_element_types et ON e2026.element_type = et.id
+                JOIN {db}.bootstrapstatic_elements e_cur ON stats.code = e_cur.code AND e_cur.year_start = {season_start}
+                JOIN {db}.bootstrapstatic_teams t ON e_cur.team = t.id AND t.year_start = {season_start}
+                JOIN {db}.bootstrapstatic_element_types et ON e_cur.element_type = et.id
                 ORDER BY stats.std_dev ASC
                 LIMIT 10
             """

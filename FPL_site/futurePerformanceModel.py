@@ -65,7 +65,6 @@ USER = current_config.USER
 PASSWORD = current_config.PASSWORD
 DB = current_config.DATABASE
 
-season = "2025_2026"
 # The season is read at call time from dataModels (see refresh_season_start); never frozen here.
 from FPL_site.dataModels import current_season_start, refresh_season_start
 
