@@ -13,6 +13,8 @@ class DevelopmentConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
     MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
+    # This Week hub (four weekly decisions). Off unless THIS_WEEK_HUB=1.
+    THIS_WEEK_HUB = os.getenv('THIS_WEEK_HUB', '0') == '1'
 
     # Print out the variables for debugging
     print(f"Development - HOST: {HOST}")
@@ -26,6 +28,8 @@ class ProductionConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
     MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
+    # This Week hub (four weekly decisions). Off unless THIS_WEEK_HUB=1.
+    THIS_WEEK_HUB = os.getenv('THIS_WEEK_HUB', '0') == '1'
 
     print(f"Production - MIXPANEL_TOKEN: {MIXPANEL_TOKEN}")
 

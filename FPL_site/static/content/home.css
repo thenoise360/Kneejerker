@@ -672,23 +672,18 @@
 .recap-team-row .btn-pill { width: auto; padding: 10px 18px; }
 .welcome-back { border-left: 4px solid var(--teal); transition: opacity 200ms ease-in-out; }
 
-/* Team strength card: verdict and gauges. Type sizes follow .outlook-phrase and .sub. */
-.card h3.strength-verdict { font-size: inherit; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 4px; }
-/* Darker teal for the usual tick: 3:1 or better against white, unlike --teal. */
-.strength-gauges { --teal-ink: #0B7A6E; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
-@media (max-width: 340px) { .strength-gauges { grid-template-columns: 1fr; } }
-.strength-gauge { min-width: 0; text-align: center; }
-.strength-gauge .gauge { display: block; margin: 0 auto; }
-.strength-legend { display: flex; justify-content: center; gap: 12px; font-size: 11.5px; color: #666; line-height: 1.4; margin-top: 2px; }
-.strength-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.strength-swatch-tick { display: inline-block; width: 3px; height: 12px; border-radius: 2px; background: var(--teal-ink); }
-.strength-swatch-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--plum); }
-
-/* Momentum slide: gauge and signal rows. Sizes follow the other player-sheet slides (.sub 13px, .mc-caption 11.5px). */
-/* Capped so the SVG words render near 13px (14 units x 150/160), matching .sub and .mc-caption, instead of stretching to the slide width. */
-.momentum-gauge { max-width: 150px; margin: 0 auto 4px; text-align: center; }
-.momentum-gauge .gauge { display: block; margin: 0 auto; }
-.momentum-signals { font-size: 13px; margin-top: 6px; }
-.momentum-signal { padding: 6px 0; border-bottom: 1px solid var(--grey); }
-.momentum-signal:last-child { border-bottom: none; }
-.momentum-signal .mc-caption { margin-top: 2px; }
+/* This Week hub (release 1). State badges always carry an icon and words, never colour alone. */
+.hub-notice { font-size: 13px; color: var(--charcoal); background: var(--offwhite); border: 1px solid var(--grey); border-radius: 12px; padding: 10px 12px; margin: 8px 0 12px; }
+.hub-headline { border-left: 4px solid var(--plum); }
+.hub-rows { list-style: none; padding: 0; margin: 0 0 12px; }
+.hub-row { border-radius: 12px; margin-bottom: 10px; }
+.hub-row-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hub-row-title { font-weight: 700; color: var(--charcoal); font-size: 15px; }
+.hub-row .sub { margin: 6px 0 0; }
+.hub-badge { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 100px; white-space: nowrap; }
+/* Text colours chosen for at least 4.5:1 contrast on their backgrounds. */
+.hub-badge--needs_look { background: var(--plum); color: #fff; }
+.hub-badge--nothing_to_do { background: var(--grey); color: var(--charcoal); }
+.hub-badge--decided { background: #1d7a70; color: #fff; }
+.hub-badge--needs_team { background: var(--offwhite); color: var(--plum); border: 1.5px solid var(--plum); }
+.hub-row[data-state="nothing_to_do"] { background: var(--offwhite); box-shadow: none; }

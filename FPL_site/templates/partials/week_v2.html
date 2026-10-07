@@ -55,6 +55,9 @@
                 <div id="decision-hub"
                      data-gameweek="{{ this_week.gameweek if this_week.mode == 'upcoming' and this_week.gameweek is not none else '' }}"
                      data-last-gameweek="{{ last_week.gameweek if last_week.status == 'final' else '' }}">
+                    {% if hub_enabled %}
+                    {% include 'partials/week_hub.html' %}
+                    {% else %}
                     <h3 style="margin-top:12px;">This week's decisions</h3>
                     <div id="decision-slot">
                         <div class="card" aria-busy="true" aria-label="Loading this week's decision">
@@ -63,6 +66,7 @@
                         </div>
                     </div>
                     <p class="sub">More decisions are on the way. We'll add them here as they're ready.</p>
+                    {% endif %}
                 </div>
             </div>
 

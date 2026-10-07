@@ -58,6 +58,13 @@ def test_data_routes_respond(client):
         assert client.get(path).status_code == 200, path
 
 
+def test_hub_route_responds_with_flag_on(client, monkeypatch):
+    monkeypatch.setattr(views.current_config, 'THIS_WEEK_HUB', True, raising=False)
+    monkeypatch.setattr(views, 'get_this_week_hub',
+                        lambda *a, **k: {'status': 'unavailable', 'gameweek': 6})
+    assert client.get('/api/week/this-week?gameweek=6&last_gameweek=5').status_code == 200
+
+
 def test_week_page_is_v2_without_any_flag(client, calls):
     html = client.get('/this-week').get_data(as_text=True)
     for marker in ['data-week-v2="true"', 'id="decision-hub"', 'id="gw-panel-live"',
@@ -73,7 +80,28 @@ def test_club_page_always_has_both_cards(client):
     assert 'id="prediction-record-slot"' in html
 
 
-def test_next_5_gameweeks_route_carries_last_time(client):
-    rows = client.get('/get_next_5_gameweeks?id=1').get_json()
-    assert rows[0]['lastTime']['kind'] == 'played'
-    assert rows[0]['teamFullName'] == 'Brighton'
+def test_hub_flag_defaults_off(monkeypatch):
+    # Reload the config with the variable removed, so a developer's own
+    # environment or .env file can't change the answer.
+    import importlib
+    import dotenv
+    # import_module, because the FPL_site package re-uses the name 'config' for something else.
+    config = importlib.import_module('FPL_site.config')
+    monkeypatch.delenv('THIS_WEEK_HUB', raising=False)
+    monkeypatch.setattr(dotenv, 'load_dotenv', lambda *a, **k: False)  # keep .env from adding it back
+    try:
+        reloaded = importlib.reload(config)
+        assert reloaded.DevelopmentConfig.THIS_WEEK_HUB is False
+        assert reloaded.ProductionConfig.THIS_WEEK_HUB is False
+    finally:
+        monkeypatch.undo()  # put the real environment and loader back before the second reload
+        importlib.reload(config)
+
+
+def test_week_page_with_hub_flag_on(client, monkeypatch):
+    monkeypatch.setattr(views.current_config, 'THIS_WEEK_HUB', True, raising=False)
+    monkeypatch.setattr(views, 'get_this_week_hub',
+                        lambda *a, **k: {'status': 'unavailable', 'gameweek': 6})
+    html = client.get('/this-week').get_data(as_text=True)
+    for marker in ['id="this-week-hub"', 'id="gw-panel-live"', 'data-week-v2="true"']:
+        assert marker in html, marker

@@ -21,6 +21,7 @@ from .dataModels import (
 from .weekCopy import this_week_empty_copy, last_week_empty_copy
 from .lastWeekRecap import get_last_week_recap
 from .weekDecision import get_this_week_decision
+from .thisWeekHub import get_this_week_hub
 from .weekResolver import DEADLINE_FORMAT
 
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
@@ -81,15 +82,26 @@ def _hours_since(deadline):
 
 
 def _week_v2_context():
-    """Template context for the Week tab rebuild."""
+    """Template context for the Week tab rebuild, plus the hub when THIS_WEEK_HUB is on."""
     week_state = get_week_view_state()
     this_week = week_state['this_week']
     last_week = week_state['last_week']
-    return {
+    context = {
         'week_state': week_state,
         'this_week_copy': this_week_empty_copy(this_week['mode'], _hours_since(this_week['deadline'])),
         'last_week_copy': last_week_empty_copy(last_week['status'], last_week['gameweek']),
+        'hub_enabled': getattr(current_config, 'THIS_WEEK_HUB', False),
+        'hub': None,
     }
+    if context['hub_enabled'] and this_week['mode'] == 'upcoming' and this_week['gameweek']:
+        last_gameweek = last_week['gameweek'] if last_week['status'] == 'final' else None
+        try:
+            # ?team_id= comes from the hub's plain form, so the page works without JavaScript.
+            context['hub'] = get_this_week_hub(this_week['gameweek'], last_gameweek,
+                                               team_id=_parse_team_id(request.args.get('team_id')))
+        except Exception as e:
+            logger.exception("Error building the This Week hub for the page")
+    return context
 
 GAMEWEEKS_IN_SEASON = 38
 
@@ -139,6 +151,24 @@ def week_this_week_decision():
         return jsonify(get_this_week_decision(gameweek, last_gameweek, team_id=team_id))
     except Exception as e:
         logger.error(f"Error building this week's decision: {e}")
+        return jsonify({'error': 'server_error'}), 500
+
+
+@app.route('/api/week/this-week')
+def week_this_week_hub():
+    # Hidden until launch, so nobody can call it while the hub is behind the flag.
+    if not getattr(current_config, 'THIS_WEEK_HUB', False):
+        abort(404)
+    logger.info("Request for the This Week hub")
+    gameweek = _parse_gameweek(request.args.get('gameweek', ''))
+    if gameweek is None:
+        return jsonify({'error': 'invalid_gameweek'}), 400
+    last_gameweek = _parse_gameweek(request.args.get('last_gameweek', ''))
+    team_id = _parse_team_id(request.args.get('team_id'))
+    try:
+        return jsonify(get_this_week_hub(gameweek, last_gameweek, team_id=team_id))
+    except Exception as e:
+        logger.exception("Error building the This Week hub")
         return jsonify({'error': 'server_error'}), 500
 
 @app.route('/radar')
