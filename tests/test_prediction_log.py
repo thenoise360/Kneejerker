@@ -86,3 +86,36 @@ def test_logging_failure_does_not_fail_the_match_job(monkeypatch):
     monkeypatch.setattr(engine, 'log_predictions', boom)
     engine.run_daily_match_predictions()
     assert len(persisted) == 1
+
+
+def test_strength_failure_rolls_back_before_momentum_runs(monkeypatch):
+    import FPL_site.matchPredictionEngine as engine
+    import FPL_site.playerMomentum as pm
+    events = []
+
+    class Conn:
+        def cursor(self, **kwargs):
+            return FakeCursor()
+
+        def rollback(self):
+            events.append('rollback')
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(engine, 'connect_db', lambda: Conn())
+    monkeypatch.setattr(engine, 'fit_current_ratings', lambda cursor: ({}, 0.3, 0.0, {}, 6))
+    monkeypatch.setattr(engine, 'build_fixture_predictions', lambda *a, **k: [])
+    monkeypatch.setattr(engine, 'persist_match_predictions', lambda conn, rows: None)
+    monkeypatch.setattr(engine, 'log_predictions', lambda conn, rows, now: None)
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda cursor, season: {})
+    monkeypatch.setattr(engine, 'build_team_strengths', lambda *a, **k: [])
+    monkeypatch.setattr(engine, 'fetch_squad_rows', lambda cursor, season: [])
+
+    def broken_persist(conn, strengths):
+        raise RuntimeError('insert failed after the delete')
+
+    monkeypatch.setattr(engine, 'persist_team_strengths', broken_persist)
+    monkeypatch.setattr(pm, 'run_daily_momentum', lambda cursor, conn, gw: events.append('momentum'))
+    engine.run_daily_match_predictions()
+    assert events == ['rollback', 'momentum']
