@@ -1,6 +1,8 @@
 /***** club.js *****/
 import { trackFixtureOutlookTap } from './analytics.js';
 import { createRangeBar } from './rangeBar.js';
+import { renderStrength, STRENGTH_LOAD_FAILED } from './lib/strengthView.js';
+import { renderMessage } from './lib/recapView.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeClubPage();
@@ -14,6 +16,22 @@ function initializeClubPage() {
     if (!teamId) return;
 
     fetchOutlook(teamId);
+
+    // The strength card only exists in the page when the feature is switched on.
+    if (document.getElementById('team-strength-slot')) loadStrength(teamId);
+}
+
+async function loadStrength(teamId) {
+    const slot = document.getElementById('team-strength-slot');
+    try {
+        const res = await fetch(`/api/club/${teamId}/strength`);
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        slot.innerHTML = renderStrength(await res.json());
+    } catch (err) {
+        // A failure here must not disturb the fixtures below, so show a calm message.
+        console.error('Failed to load team strength', err);
+        slot.innerHTML = renderMessage(STRENGTH_LOAD_FAILED);
+    }
 }
 
 async function fetchOutlook(teamId) {

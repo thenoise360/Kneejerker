@@ -13,6 +13,7 @@ class DevelopmentConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
     MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
+    FEATURE_TEAM_DETAIL = os.getenv('FEATURE_TEAM_DETAIL', '0') == '1'
 
     # Print out the variables for debugging
     print(f"Development - HOST: {HOST}")
@@ -26,6 +27,7 @@ class ProductionConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
     MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
+    FEATURE_TEAM_DETAIL = os.getenv('FEATURE_TEAM_DETAIL', '0') == '1'
 
     print(f"Production - MIXPANEL_TOKEN: {MIXPANEL_TOKEN}")
 

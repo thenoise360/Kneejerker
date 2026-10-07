@@ -15,6 +15,8 @@
         <h2 class="title" id="club-title" style="margin-bottom:4px;">Loading...</h2>
         <p class="sub">A plain-language read on the next few gameweeks - tap a fixture for the full picture.</p>
 
+        {% if team_detail %}<div id="team-strength-slot"><div class="card" aria-busy="true"><div class="skeleton" style="height:18px;width:60%;"></div></div></div>{% endif %}
+
         <div id="club-fixture-list">
             <div class="card"><div class="loader-small"></div></div>
         </div>
