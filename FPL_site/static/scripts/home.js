@@ -41,10 +41,17 @@ function initializeWeekState() {
         }
     }
 
-    if (plan.panel === 'live') {
-        initializeLiveGameweek();
-    } else {
-        stopLiveGameweekPolling();
+    // liveGameweek.js reads localStorage directly, which throws when site data is
+    // blocked. Catching it here means a failure in live mode can never stop the
+    // This week / Last week toggles from being bound.
+    try {
+        if (plan.panel === 'live') {
+            initializeLiveGameweek();
+        } else {
+            stopLiveGameweekPolling();
+        }
+    } catch (err) {
+        console.error('Live gameweek could not start or stop', err);
     }
 }
 
