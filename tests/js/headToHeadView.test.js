@@ -5,8 +5,8 @@ import { meetingsSummary, meetingLine, renderLastMeetings } from '../../FPL_site
 const m = (result, extra = {}) => ({ season_label: '2025/26', is_home: true, result, score: '3–1', ...extra });
 
 test('no meetings', () => {
-    assert.equal(meetingsSummary([]), 'First meeting in a while');
-    assert.equal(meetingsSummary(undefined), 'First meeting in a while');
+    assert.equal(meetingsSummary([]), 'No Premier League meetings in recent seasons');
+    assert.equal(meetingsSummary(undefined), 'No Premier League meetings in recent seasons');
 });
 
 test('exactly one meeting, each result', () => {
@@ -46,7 +46,7 @@ test('block shows the summary, the list, and the background caveat', () => {
 
 test('block with no meetings has no list', () => {
     const html = renderLastMeetings([]);
-    assert.match(html, /First meeting in a while/);
+    assert.match(html, /No Premier League meetings in recent seasons/);
     assert.doesNotMatch(html, /<li/);
 });
 

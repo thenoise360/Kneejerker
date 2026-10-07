@@ -15,15 +15,15 @@ const SINGLE = {
 };
 
 // One plain sentence about the recent record. Boundaries:
-//   0 meetings            -> first meeting in a while
+//   0 meetings            -> none in the data (Premier League only, since 2021)
 //   1 meeting             -> that result
 //   2 or more, none lost  -> unbeaten
 //   2 or more, none won   -> haven't beaten them
 //   anything else         -> mixed
 export function meetingsSummary(meetings) {
     const list = Array.isArray(meetings) ? meetings : [];
-    if (list.length === 0) return 'First meeting in a while';
-    if (list.length === 1) return SINGLE[list[0].result] || 'First meeting in a while';
+    if (list.length === 0) return 'No Premier League meetings in recent seasons';
+    if (list.length === 1) return SINGLE[list[0].result] || 'No Premier League meetings in recent seasons';
 
     const word = NUMBER_WORDS[list.length] || String(list.length);
     const anyLost = list.some((m) => m.result === 'lost');
