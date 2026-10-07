@@ -88,8 +88,9 @@ test('no digits appear in the visible text', () => {
 test('not_ready renders the calm message inside a slide', () => {
     const html = renderMomentumCard({ status: 'not_ready', message: { title: 'Not yet', body: 'Check back soon.' } });
     assert.match(html, /mini-slide/);
-    assert.match(html, /<h3 class="recap-verdict">Not yet<\/h3>/);
-    assert.doesNotMatch(html, /<details/);
+    assert.match(html, /<div class="mc-title">Not yet<\/div>/);
+    assert.match(html, /<div class="mc-caption">Check back soon\.<\/div>/);
+    assert.doesNotMatch(html, /<details|<svg/);
 });
 
 test('a null or missing reason shows nothing instead of the word Null', () => {
