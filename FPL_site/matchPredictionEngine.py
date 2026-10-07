@@ -29,7 +29,7 @@ from scipy.optimize import minimize
 from scipy.stats import poisson, nbinom
 
 from FPL_site.dataModels import connect_db, generateCurrentGameweek, db, season_start
-from FPL_site.teamStrength import build_team_strengths, fetch_squad_rows, persist_team_strengths
+from FPL_site.teamStrength import DEFAULT_RATING_KEY, rating_for, build_team_strengths, fetch_squad_rows, persist_team_strengths
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +256,9 @@ def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE,
     if n < 2 or not rows:
         logger.warning("fit_dixon_coles: not enough data to fit (n=%s teams, %s fixtures) - "
                         "falling back to league-average ratings for everyone.", n, len(rows))
-        return {c: {'attack': 0.0, 'defence': 0.0} for c in codes}, HOME_ADV_INIT, 0.0
+        fallback = {c: {'attack': 0.0, 'defence': 0.0} for c in codes}
+        fallback[DEFAULT_RATING_KEY] = {'attack': PROMOTED_PRIOR[0], 'defence': PROMOTED_PRIOR[1]}
+        return fallback, HOME_ADV_INIT, 0.0
 
     code_index = {c: i for i, c in enumerate(codes)}
     idx_h = np.array([code_index[r['code_h']] for r in rows])
@@ -287,6 +289,12 @@ def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE,
     attack = attack + intercept / 2.0
     defence = defence + intercept / 2.0
     ratings = {codes[i]: {'attack': float(attack[i]), 'defence': float(defence[i])} for i in range(n)}
+    # Reserved key: the rating for any team with no fixtures in the pool (a promoted side at
+    # gameweek 0): a typical promoted side with the league level folded in like the others.
+    # A reserved key (not a second return value) keeps every fit_dixon_coles caller and the
+    # ratings dict handed to teamStrength unchanged; lookups go through rating_for().
+    ratings[DEFAULT_RATING_KEY] = {'attack': float(PROMOTED_PRIOR[0] + intercept / 2.0),
+                                   'defence': float(PROMOTED_PRIOR[1] + intercept / 2.0)}
     return ratings, float(home_adv), float(rho)
 
 
@@ -374,7 +382,7 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
     # Persisted ratings are centred on the current teams' league average (the fit's
     # level includes the league scoring rate), so "attack above 0.15" on the club page
     # means "better than an average side". Expected goals use the uncentred ratings.
-    current = [ratings.get(t['code'], {'attack': 0.0, 'defence': 0.0}) for t in teams.values()]
+    current = [rating_for(ratings, t['code']) for t in teams.values()]
     mean_attack = float(np.mean([r['attack'] for r in current])) if current else 0.0
     mean_defence = float(np.mean([r['defence'] for r in current])) if current else 0.0
 
@@ -386,8 +394,8 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
             continue
 
         code_h, code_a = team_h_info['code'], team_a_info['code']
-        rating_h = ratings.get(code_h, {'attack': 0.0, 'defence': 0.0})
-        rating_a = ratings.get(code_a, {'attack': 0.0, 'defence': 0.0})
+        rating_h = rating_for(ratings, code_h)
+        rating_a = rating_for(ratings, code_a)
 
         lam_home = float(np.exp(rating_h['attack'] + rating_a['defence'] + home_adv))
         lam_away = float(np.exp(rating_a['attack'] + rating_h['defence']))
@@ -714,8 +722,8 @@ def backtest_model(target_season, holdout_gw=25, gw_window=13):
         model_errors, baseline_errors = [], []
         for fx in held_out:
             code_h, code_a = id_to_code.get(fx['team_h']), id_to_code.get(fx['team_a'])
-            rating_h = ratings.get(code_h, {'attack': 0.0, 'defence': 0.0})
-            rating_a = ratings.get(code_a, {'attack': 0.0, 'defence': 0.0})
+            rating_h = rating_for(ratings, code_h)
+            rating_a = rating_for(ratings, code_a)
             lam_home = float(np.exp(rating_h['attack'] + rating_a['defence'] + home_adv))
             lam_away = float(np.exp(rating_a['attack'] + rating_h['defence']))
 

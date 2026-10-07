@@ -101,3 +101,35 @@ def test_established_strong_team_shrinks_by_a_modest_share_under_decay():
     share = 1 - shrunk[1]['attack'] / raw[1]['attack']
     # Decay leaves ~46 effective games, so a top side loses roughly 10-15% of its rating.
     assert 0.03 < share < 0.30
+
+
+def test_unrated_promoted_code_gets_the_prior_based_rating_not_one_goal():
+    import numpy as np
+    from FPL_site.matchPredictionEngine import build_fixture_predictions, PROMOTED_PRIOR
+    from FPL_site.teamStrength import rating_for
+
+    rows = league_rows(4)
+    for r in rows:
+        r['goals_h'] += 1
+        r['goals_a'] += 1                      # a 2-goals-a-side league, so intercept is well above 0
+    ratings, home_adv, _ = fit_dixon_coles(rows, LEAGUE, GW)
+    promoted = rating_for(ratings, 777)        # code with no fixtures anywhere in the pool
+    assert abs(promoted['attack'] - PROMOTED_PRIOR[0]) > 0.2      # carries the league level, not raw prior
+    league_att = np.mean([ratings[c]['attack'] for c in LEAGUE])
+    assert promoted['attack'] > PROMOTED_PRIOR[0] + 0.2           # folded intercept/2 (~0.35)
+    assert promoted['attack'] < league_att                        # still a below-average attack
+
+    class Cur:
+        def __init__(self): self._r = []
+        def execute(self, sql, params=None):
+            self._r = ([{'id': 1, 'code': 777, 'name': 'P', 'short_name': 'P'},
+                        {'id': 2, 'code': 1, 'name': 'Q', 'short_name': 'Q'}]
+                       if 'bootstrapstatic_teams' in sql else
+                       [{'code': 9, 'event': 6, 'team_h': 1, 'team_a': 2, 'kickoff_time': None}])
+        def fetchall(self): return self._r
+
+    out = build_fixture_predictions(Cur(), 2026, 5, ratings, home_adv, {})
+    home = [r for r in out if r['is_home'] == 1][0]
+    expected = np.exp(promoted['attack'] + ratings[1]['defence'] + home_adv)
+    assert abs(home['expected_goals_mean'] - expected) < 0.5
+    assert abs(home['expected_goals_mean'] - np.exp(0 + ratings[1]['defence'] + home_adv)) > 0.1

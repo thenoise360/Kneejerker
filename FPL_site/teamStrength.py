@@ -98,6 +98,19 @@ def adjust(attack, defence, attack_share, defence_share):
     return attack_adj, defence_adj
 
 
+DEFAULT_RATING_KEY = '_default'
+
+
+def rating_for(ratings, code):
+    """
+    A team's rating, or - for a team with no fixtures in the pool (e.g. a promoted side
+    at gameweek 0) - the engine's default, a typical promoted side with the league scoring
+    level folded in (stored under a reserved key by fit_dixon_coles). Falls back to
+    (0, 0) only if the ratings dict has no default at all.
+    """
+    return ratings.get(code) or ratings.get(DEFAULT_RATING_KEY) or {'attack': 0.0, 'defence': 0.0}
+
+
 def goals_vs_average(attack, defence, league_mean_attack, league_mean_defence, home_adv):
     """Goals a game scored and conceded against an average side, with half the home edge."""
     scored = math.exp(attack + league_mean_defence + home_adv / 2)
@@ -107,12 +120,10 @@ def goals_vs_average(attack, defence, league_mean_attack, league_mean_defence, h
 
 def build_team_strengths(teams, ratings, home_adv, squad_rows):
     """{team_id: strength} for every team; an unrated team uses default ratings."""
-    # Same default the engine uses for a team it has no rating for.
-    default = {'attack': 0.0, 'defence': 0.0}
     rated = dict(teams)
     if not rated:
         return {}
-    ratings = {t['code']: ratings.get(t['code'], default) for t in rated.values()}
+    ratings = {t['code']: rating_for(ratings, t['code']) for t in rated.values()}
     mean_attack = sum(ratings[t['code']]['attack'] for t in rated.values()) / len(rated)
     mean_defence = sum(ratings[t['code']]['defence'] for t in rated.values()) / len(rated)
 
