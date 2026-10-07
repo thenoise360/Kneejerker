@@ -33,6 +33,10 @@ from FPL_site.dataModels import connect_db, generateCurrentGameweek, db, season_
 logger = logging.getLogger(__name__)
 
 PREDICTIONS_TABLE = 'team_fixture_predictions'
+LOG_TABLE = 'fixture_prediction_log'
+# Bump whenever the model changes, so the record can tell versions apart.
+MODEL_VERSION = 'dixon-coles-2026-10'
+KICKOFF_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 GAMEWEEKS_PER_SEASON = 38
 HISTORY_SEASONS_BACK = 3          # completed seasons pooled alongside the current one
@@ -75,7 +79,7 @@ def fetch_finished_fixtures(cursor, year_start):
 
 def fetch_upcoming_fixtures(cursor, year_start, from_gw, to_gw):
     cursor.execute(
-        f"""SELECT code, event, team_h, team_a
+        f"""SELECT code, event, team_h, team_a, kickoff_time
             FROM {db}.fixtures_fixtures
             WHERE year_start = %s AND finished = 0
               AND event BETWEEN %s AND %s""",
@@ -309,6 +313,7 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
 
         rows.append({
             'fixture_code': fx['code'], 'gameweek': fx['event'],
+            'kickoff_time': fx['kickoff_time'],
             'team_id': fx['team_h'], 'opponent_id': fx['team_a'], 'is_home': 1,
             **_distribution_columns(home_dist), 'computed_at': computed_at,
             'attack_rating': float(rating_h['attack']),
@@ -317,6 +322,7 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
         })
         rows.append({
             'fixture_code': fx['code'], 'gameweek': fx['event'],
+            'kickoff_time': fx['kickoff_time'],
             'team_id': fx['team_a'], 'opponent_id': fx['team_h'], 'is_home': 0,
             **_distribution_columns(away_dist), 'computed_at': computed_at,
             'attack_rating': float(rating_a['attack']),
@@ -383,6 +389,54 @@ def persist_match_predictions(conn, rows):
     logger.info(f"Persisted {len(records)} team-fixture predictions.")
 
 
+def _kickoff(row):
+    try:
+        return datetime.strptime(row.get('kickoff_time') or '', KICKOFF_FORMAT)
+    except ValueError:
+        return None
+
+
+def loggable_rows(rows, now):
+    """Only predictions made strictly before kickoff count toward the honest record."""
+    return [r for r in rows if _kickoff(r) is not None and _kickoff(r) > now]
+
+
+def log_predictions(conn, rows, now):
+    """Append today's pre-kickoff predictions. Re-running the same day changes nothing."""
+    to_log = loggable_rows(rows, now)
+    if not to_log:
+        return
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {LOG_TABLE} (
+            fixture_code INT NOT NULL,
+            team_id INT NOT NULL,
+            opponent_id INT NOT NULL,
+            gameweek INT NOT NULL,
+            is_home TINYINT NOT NULL,
+            kickoff_time VARCHAR(20) NOT NULL,
+            expected_goals_mean FLOAT,
+            expected_goals_low FLOAT,
+            expected_goals_high FLOAT,
+            model_version VARCHAR(40) NOT NULL,
+            logged_at DATETIME NOT NULL,
+            log_date DATE NOT NULL,
+            PRIMARY KEY (fixture_code, team_id, model_version, log_date)
+        )
+    """)
+    cursor.executemany(f"""
+        INSERT IGNORE INTO {LOG_TABLE}
+            (fixture_code, team_id, opponent_id, gameweek, is_home, kickoff_time,
+             expected_goals_mean, expected_goals_low, expected_goals_high,
+             model_version, logged_at, log_date)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, [(r['fixture_code'], r['team_id'], r['opponent_id'], r['gameweek'], r['is_home'],
+           r['kickoff_time'], r['expected_goals_mean'], r['expected_goals_low'],
+           r['expected_goals_high'], MODEL_VERSION, now, now.date()) for r in to_log])
+    conn.commit()
+    logger.info(f"Logged {len(to_log)} pre-kickoff predictions ({MODEL_VERSION}).")
+
+
 def run_daily_match_predictions():
     """
     Daily job entry point (called from run_update.py, alongside
@@ -400,6 +454,8 @@ def run_daily_match_predictions():
         ratings, home_adv, rho, games_this_season, current_gw = fit_current_ratings(cursor)
         rows = build_fixture_predictions(cursor, season_start, current_gw, ratings, home_adv, games_this_season)
         persist_match_predictions(conn, rows)
+        # Keep an honest, append-only record of what we predicted before kickoff.
+        log_predictions(conn, rows, datetime.utcnow())
         logger.info(
             f"Daily match-outcome prediction run complete for gameweek {current_gw}. "
             f"home_adv={home_adv:.3f}, rho={rho:.3f}, {len(rows)} rows written."
