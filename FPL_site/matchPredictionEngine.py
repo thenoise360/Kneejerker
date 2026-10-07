@@ -352,6 +352,13 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
     computed_at = datetime.utcnow()
     is_preseason = current_gw == 0
 
+    # Persisted ratings are centred on the current teams' league average (the fit's
+    # level includes the league scoring rate), so "attack above 0.15" on the club page
+    # means "better than an average side". Expected goals use the uncentred ratings.
+    current = [ratings.get(t['code'], {'attack': 0.0, 'defence': 0.0}) for t in teams.values()]
+    mean_attack = float(np.mean([r['attack'] for r in current])) if current else 0.0
+    mean_defence = float(np.mean([r['defence'] for r in current])) if current else 0.0
+
     rows = []
     for fx in fixtures:
         team_h_info = teams.get(fx['team_h'])
@@ -377,8 +384,8 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
             'kickoff_time': fx['kickoff_time'],
             'team_id': fx['team_h'], 'opponent_id': fx['team_a'], 'is_home': 1,
             **_distribution_columns(home_dist), 'computed_at': computed_at,
-            'attack_rating': float(rating_h['attack']),
-            'defence_rating': float(rating_h['defence']),
+            'attack_rating': float(rating_h['attack'] - mean_attack),
+            'defence_rating': float(rating_h['defence'] - mean_defence),
             'home_adv': float(home_adv)
         })
         rows.append({
@@ -386,8 +393,8 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
             'kickoff_time': fx['kickoff_time'],
             'team_id': fx['team_a'], 'opponent_id': fx['team_h'], 'is_home': 0,
             **_distribution_columns(away_dist), 'computed_at': computed_at,
-            'attack_rating': float(rating_a['attack']),
-            'defence_rating': float(rating_a['defence']),
+            'attack_rating': float(rating_a['attack'] - mean_attack),
+            'defence_rating': float(rating_a['defence'] - mean_defence),
             'home_adv': 0.0
         })
     return rows
