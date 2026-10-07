@@ -29,6 +29,7 @@ from scipy.optimize import minimize
 from scipy.stats import poisson, nbinom
 
 from FPL_site.dataModels import connect_db, generateCurrentGameweek, db, season_start
+from FPL_site.teamStrength import build_team_strengths, fetch_squad_rows, persist_team_strengths
 
 logger = logging.getLogger(__name__)
 
@@ -459,6 +460,13 @@ def run_daily_match_predictions():
             log_predictions(conn, rows, datetime.utcnow())
         except Exception:
             logger.exception("Prediction logging failed; predictions were still saved.")
+        # Team strength has its own guard: a failure here must never undo the predictions.
+        try:
+            teams = fetch_teams_for_season(cursor, season_start)
+            strengths = build_team_strengths(teams, ratings, home_adv, fetch_squad_rows(cursor, season_start))
+            persist_team_strengths(conn, strengths)
+        except Exception:
+            logger.exception("Team strength failed; predictions were still saved.")
         logger.info(
             f"Daily match-outcome prediction run complete for gameweek {current_gw}. "
             f"home_adv={home_adv:.3f}, rho={rho:.3f}, {len(rows)} rows written."

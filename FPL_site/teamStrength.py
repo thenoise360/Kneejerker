@@ -5,9 +5,20 @@ missing this week. Pure functions, apart from one read-only fetcher. Never uses 
 Influence, Creativity and Threat index: a player's weight is their share of the team's
 expected goals plus expected assists (attack) or of its goalkeeper-and-defender minutes (defence).
 
-The engine is deliberately not imported here: a later task wires this module into the engine.
+The engine is imported only inside load_team_strength, because the engine imports this module
+at the top and a module-level import back would be circular.
 """
+import json
+import logging
 import math
+from datetime import datetime
+
+from FPL_site.dataModels import connect_db, season_start
+from FPL_site.strengthCopy import strength_summary
+
+logger = logging.getLogger(__name__)
+
+STRENGTH_TABLE = 'team_strength'
 
 REPLACEMENT_COVER = 0.5  # a missing player's output is half replaced by the next player
 MAX_SHARE = 0.8          # no single absence can remove more than this share of a team
@@ -121,3 +132,82 @@ def build_team_strengths(teams, ratings, home_adv, squad_rows):
     for r in results.values():
         r['league_scored'] = league_scored
     return results
+
+
+def persist_team_strengths(conn, strengths):
+    """Replace the whole table with today's strengths, in one commit."""
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {STRENGTH_TABLE} (
+            team_id INT PRIMARY KEY,
+            name VARCHAR(60),
+            scored FLOAT,
+            scored_adjusted FLOAT,
+            conceded FLOAT,
+            conceded_adjusted FLOAT,
+            league_scored FLOAT,
+            missing_json TEXT,
+            computed_at DATETIME
+        )
+    """)
+    now = datetime.utcnow()
+    records = [
+        (s['team_id'], s['name'], s['scored'], s['scored_adjusted'], s['conceded'],
+         s['conceded_adjusted'], s['league_scored'], json.dumps(s['missing'], default=float), now)
+        for s in strengths.values()
+    ]
+    cursor.execute(f"DELETE FROM {STRENGTH_TABLE}")
+    if records:
+        cursor.executemany(f"""
+            INSERT INTO {STRENGTH_TABLE}
+                (team_id, name, scored, scored_adjusted, conceded, conceded_adjusted,
+                 league_scored, missing_json, computed_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, records)
+    conn.commit()
+
+
+NOT_READY = {
+    'status': 'not_ready',
+    'message': {'title': 'Team strength is on its way',
+                'body': "We're still working this out. Check back a little later."},
+}
+
+
+def load_team_strength(team_id):
+    """Live-route read: what the daily job stored. None for an unknown team."""
+    # Imported here, not at the top, to avoid a circular import with the engine.
+    from FPL_site.matchPredictionEngine import fetch_teams_for_season
+
+    conn = connect_db()
+    if conn is None:
+        raise RuntimeError('could not connect to the database')
+    try:
+        cursor = conn.cursor(dictionary=True)
+        team_id = int(team_id)
+        if team_id not in fetch_teams_for_season(cursor, season_start):
+            return None
+        cursor.execute(f"SELECT * FROM {STRENGTH_TABLE} WHERE team_id = %s", (team_id,))
+        row = cursor.fetchone()
+        if not row:
+            return dict(NOT_READY)
+        strength = {
+            'scored': float(row['scored']), 'scored_adjusted': float(row['scored_adjusted']),
+            'conceded': float(row['conceded']), 'conceded_adjusted': float(row['conceded_adjusted']),
+            'league_scored': float(row['league_scored']),
+            'missing': json.loads(row['missing_json'] or '[]'),
+        }
+        summary = strength_summary(row['name'], strength)
+        return {
+            'status': 'ready',
+            'team_name': row['name'],
+            'headline': summary['headline'],
+            'reason': summary['reason'],
+            'scored': round(strength['scored'], 1),
+            'scored_adjusted': round(strength['scored_adjusted'], 1),
+            'conceded': round(strength['conceded'], 1),
+            'conceded_adjusted': round(strength['conceded_adjusted'], 1),
+            'missing': strength['missing'],
+        }
+    finally:
+        conn.close()

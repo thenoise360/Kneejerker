@@ -151,3 +151,93 @@ def test_fetch_squad_rows_passes_year_twice():
     cursor = FakeCursor([{'id': 1}])
     assert fetch_squad_rows(cursor, 2026) == [{'id': 1}]
     assert cursor.executed[0][1] == (2026, 2026)
+
+
+# ---- Persistence and loading (Task 4) ----
+import json
+from datetime import datetime
+
+import FPL_site.teamStrength as ts
+import FPL_site.matchPredictionEngine as engine
+
+
+class StrengthCursor:
+    def __init__(self, rows=None):
+        self.calls = []
+        self.rows = rows or []
+
+    def execute(self, sql, params=None):
+        self.calls.append((sql, params))
+
+    def executemany(self, sql, params):
+        self.calls.append((sql, list(params)))
+
+    def fetchone(self):
+        return self.rows[0] if self.rows else None
+
+
+class StrengthConn:
+    def __init__(self, cursor=None):
+        self.cur = cursor or StrengthCursor()
+        self.committed = 0
+        self.closed = False
+
+    def cursor(self, **kwargs):
+        return self.cur
+
+    def commit(self):
+        self.committed += 1
+
+    def close(self):
+        self.closed = True
+
+
+def strength(tid, name='Arsenal'):
+    return {'team_id': tid, 'name': name, 'scored': 1.5, 'scored_adjusted': 1.2,
+            'conceded': 1.0, 'conceded_adjusted': 1.1, 'league_scored': 1.4,
+            'missing': [{'name': 'Saka', 'position': 'midfielder', 'role': 'attack', 'share': 0.3, 'chance': 25}]}
+
+
+def test_persist_replaces_table_in_one_commit():
+    conn = StrengthConn()
+    ts.persist_team_strengths(conn, {1: strength(1), 2: strength(2, 'Chelsea')})
+    sqls = [c[0] for c in conn.cur.calls]
+    assert f'CREATE TABLE IF NOT EXISTS {ts.STRENGTH_TABLE}' in sqls[0]
+    assert sqls[1].strip().startswith(f'DELETE FROM {ts.STRENGTH_TABLE}')
+    insert_sql, records = conn.cur.calls[2]
+    assert insert_sql.strip().startswith(f'INSERT INTO {ts.STRENGTH_TABLE}')
+    assert [r[0] for r in records] == [1, 2]
+    assert json.loads(records[0][7])[0]['name'] == 'Saka'
+    assert conn.committed == 1
+
+
+def test_load_ready(monkeypatch):
+    row = {'team_id': 1, 'name': 'Arsenal', 'scored': 1.54, 'scored_adjusted': 1.21,
+           'conceded': 1.0, 'conceded_adjusted': 1.06, 'league_scored': 1.4,
+           'missing_json': json.dumps(strength(1)['missing'])}
+    conn = StrengthConn(StrengthCursor([row]))
+    monkeypatch.setattr(ts, 'connect_db', lambda: conn)
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: {1: {'id': 1, 'name': 'Arsenal'}})
+    payload = ts.load_team_strength(1)
+    assert payload['status'] == 'ready'
+    assert payload['team_name'] == 'Arsenal'
+    assert payload['scored'] == 1.5 and payload['scored_adjusted'] == 1.2
+    assert payload['missing'][0]['name'] == 'Saka'
+    assert payload['headline'] and payload['reason']
+    assert conn.closed
+
+
+def test_load_not_ready_when_no_row(monkeypatch):
+    conn = StrengthConn(StrengthCursor([]))
+    monkeypatch.setattr(ts, 'connect_db', lambda: conn)
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: {1: {'id': 1, 'name': 'Arsenal'}})
+    payload = ts.load_team_strength(1)
+    assert payload['status'] == 'not_ready'
+    assert payload['message']['title'] == 'Team strength is on its way'
+
+
+def test_load_unknown_team_is_none(monkeypatch):
+    conn = StrengthConn(StrengthCursor([]))
+    monkeypatch.setattr(ts, 'connect_db', lambda: conn)
+    monkeypatch.setattr(engine, 'fetch_teams_for_season', lambda c, y: {1: {'id': 1, 'name': 'Arsenal'}})
+    assert ts.load_team_strength(99) is None
