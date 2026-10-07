@@ -81,15 +81,26 @@ def _hours_since(deadline):
 
 
 def _week_v2_context():
-    """Template context for the Week tab rebuild."""
+    """Template context for the Week tab rebuild, plus the hub when THIS_WEEK_HUB is on."""
     week_state = get_week_view_state()
     this_week = week_state['this_week']
     last_week = week_state['last_week']
-    return {
+    context = {
         'week_state': week_state,
         'this_week_copy': this_week_empty_copy(this_week['mode'], _hours_since(this_week['deadline'])),
         'last_week_copy': last_week_empty_copy(last_week['status'], last_week['gameweek']),
+        'hub_enabled': getattr(current_config, 'THIS_WEEK_HUB', False),
+        'hub': None,
     }
+    if context['hub_enabled'] and this_week['mode'] == 'upcoming' and this_week['gameweek']:
+        last_gameweek = last_week['gameweek'] if last_week['status'] == 'final' else None
+        try:
+            # ?team_id= comes from the hub's plain form, so the page works without JavaScript.
+            context['hub'] = get_this_week_hub(this_week['gameweek'], last_gameweek,
+                                               team_id=_parse_team_id(request.args.get('team_id')))
+        except Exception as e:
+            logger.error(f"Error building the This Week hub for the page: {e}")
+    return context
 
 GAMEWEEKS_IN_SEASON = 38
 

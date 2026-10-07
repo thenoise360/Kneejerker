@@ -1,0 +1,51 @@
+{# Read-only This Week hub (release 1, behind THIS_WEEK_HUB). Usable with no
+   JavaScript; hubView.js redraws #hub-body from /api/week/this-week. Included
+   inside home.html's content block, so no link or script tags here. #}
+{% from 'partials/hub_macros.html' import headline_line, row_line, state_badge %}
+{% set titles = {'injuries': 'Injuries', 'transfers': 'Transfers', 'chips': 'Chips', 'captaincy': 'Captain and vice'} %}
+<div id="this-week-hub"
+     data-gameweek="{{ this_week.gameweek if this_week.mode == 'upcoming' and this_week.gameweek is not none else '' }}"
+     data-last-gameweek="{{ last_week.gameweek if last_week.status == 'final' else '' }}"
+     data-based-on="{{ hub.based_on if hub and hub.based_on else '' }}">
+    <p class="hub-notice">We can't change your team for you. Decide here, then make the changes in the official app before the deadline.</p>
+    <div id="hub-body">
+    {% if hub and hub.status == 'ready' %}
+        <div class="card hub-headline">
+            <div class="eyebrow-sm">The big one this week</div>
+            <h3 class="recap-verdict">{{ headline_line(hub.headline) }}</h3>
+        </div>
+        <h3>This week's decisions</h3>
+        <ul class="hub-rows">
+        {% for key in ['injuries', 'transfers', 'chips', 'captaincy'] %}
+            {% set d = hub.decisions[key] %}
+            {% if d.state != 'not_ready' %}
+            <li class="card hub-row" data-key="{{ key }}" data-state="{{ d.state }}">
+                <div class="hub-row-head"><span class="hub-row-title">{{ titles[key] }}</span>{{ state_badge(d.state) }}</div>
+                <p class="sub">{{ row_line(key, d) }}</p>
+            </li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+        <p class="sub">More decisions are on the way. We'll add them here as they're ready.</p>
+    {% else %}
+        <div class="card">
+            <h3 class="recap-verdict">We couldn't load this week's decisions</h3>
+            <p>Nothing is wrong on your side. Try again in a moment.</p>
+        </div>
+    {% endif %}
+    </div>
+    <div id="hub-team-slot">
+    {% if not hub or hub.based_on != 'your_team' %}
+        <form class="card recap-team-form" id="hub-team-form" method="get" action="{{ url_for('home') }}">
+            {% if hub and hub.team_status == 'not_found' %}<p class="sub">We couldn't find that team number. Check it and try again.</p>
+            {% elif hub and hub.team_status == 'unavailable' %}<p class="sub">We couldn't reach the official game just now, so this is for everyone. Try again in a moment.</p>
+            {% elif hub and hub.team_status == 'invalid' %}<p class="sub">Team numbers are numbers only, for example 1234567.</p>{% endif %}
+            <label for="hub-team-input">Your team number, to make this about your team</label>
+            <div class="recap-team-row">
+                <input id="hub-team-input" name="team_id" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 1234567" required>
+                <button type="submit" class="btn-pill">Show my team</button>
+            </div>
+        </form>
+    {% endif %}
+    </div>
+</div>

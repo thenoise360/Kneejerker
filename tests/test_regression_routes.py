@@ -80,3 +80,12 @@ def test_club_page_always_has_both_cards(client):
 def test_hub_flag_defaults_off():
     from FPL_site.config import current_config
     assert getattr(current_config, 'THIS_WEEK_HUB', None) is False
+
+
+def test_week_page_with_hub_flag_on(client, monkeypatch):
+    monkeypatch.setattr(views.current_config, 'THIS_WEEK_HUB', True, raising=False)
+    monkeypatch.setattr(views, 'get_this_week_hub',
+                        lambda *a, **k: {'status': 'unavailable', 'gameweek': 6})
+    html = client.get('/this-week').get_data(as_text=True)
+    for marker in ['id="this-week-hub"', 'id="gw-panel-live"', 'data-week-v2="true"']:
+        assert marker in html, marker

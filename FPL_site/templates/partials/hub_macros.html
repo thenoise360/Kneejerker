@@ -1,0 +1,41 @@
+{# Short factual lines for the read-only hub, one per reason_key. hubCopy.js swaps
+   in the conversational wording when JavaScript runs; these are the no-JavaScript words. #}
+
+{% macro name_list(names) -%}
+{%- if names|length == 1 %}{{ names[0] }}{% else %}{{ names[:-1]|join(', ') }} and {{ names[-1] }}{% endif -%}
+{%- endmacro %}
+
+{% macro headline_line(h) -%}
+{%- if h.reason_key == 'starter_doubt' -%}
+  {%- if h.tier == 'confirmed' %}{{ h.player }} is set to miss this gameweek{% else %}{{ h.player }} is a doubt for this gameweek{% endif -%}
+{%- elif h.reason_key == 'starter_blank' -%}
+  {%- if h.players|length == 1 %}{{ h.player }} has no match this gameweek{% else %}{{ name_list(h.players) }} have no match this gameweek{% endif -%}
+{%- elif h.reason_key == 'unused_free_transfers' -%}
+  You have {{ h.count }} free transfer{{ 's' if h.count != 1 }} to use
+{%- elif h.reason_key == 'captain_choice' -%}
+  Our lean for captain: {{ h.player }}
+{%- else -%}
+  Captain numbers aren't in yet this week
+{%- endif -%}
+{%- endmacro %}
+
+{% macro row_line(key, d) -%}
+{%- if d.state == 'needs_team' -%}
+  Add your team number below to check your players
+{%- elif key == 'injuries' -%}
+  {%- if d.players %}To check: {{ name_list(d.players|map(attribute='name')|list) }}{% else %}No injury worries in your team this week{% endif -%}
+{%- elif key == 'captaincy' -%}
+  {%- if d.suggested and d.vice %}Our lean: {{ d.suggested.name }}, with {{ d.vice.name }} as vice
+  {%- elif d.suggested %}Our lean: {{ d.suggested.name }}
+  {%- else %}Captain numbers aren't in yet this week{% endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{# Every state is an icon AND words, never colour alone. The icon is hidden from
+   screen readers because the words already say it. #}
+{% macro state_badge(state) -%}
+{%- set badges = {'needs_look': ('!', 'Needs a look'), 'nothing_to_do': ('✓', 'Nothing to do this week'),
+                  'decided': ('✓', 'Decided'), 'needs_team': ('+', 'Add your team')} -%}
+{%- set icon, label = badges.get(state, ('•', 'Coming soon')) -%}
+<span class="hub-badge hub-badge--{{ state }}"><span aria-hidden="true">{{ icon }}</span> {{ label }}</span>
+{%- endmacro %}
