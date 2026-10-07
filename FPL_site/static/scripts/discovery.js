@@ -15,6 +15,7 @@ import {
 } from './visuals.js';
 import { stripToCategories } from './lib/momentumView.js';
 import { escapeHtml } from './lib/escapeHtml.js';
+import { POSITION_LABELS, positionLabel } from './lib/positions.js';
 
 let allPlayers = [];
 let selectedPlayers = [];
@@ -34,9 +35,8 @@ const averagesCache = new Map(); // 'GKP'|'DEF'|'MID'|'FWD'|'overall' -> { avgPo
 // across the whole comparison panel.
 const COMPARISON_COLORS = ['var(--teal)', 'var(--pink)', 'var(--plum-tint)'];
 
-// Plain-language position labels for the average-line legend, matching the
-// GKP/DEF/MID/FWD -> full-name convention already used in radar.js.
-const POSITION_LABELS = { GKP: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' };
+// Plain-language position labels (POSITION_LABELS / positionLabel) live in
+// lib/positions.js so every place that shows a position uses the same words.
 
 const TRAY_CAP = 3;
 
@@ -257,7 +257,7 @@ function renderSearchResults(results, query) {
         row.innerHTML = `
             <div class="result-info">
                 <div class="result-name">${escapeHtml(player.full_name)}</div>
-                <div class="result-meta">${escapeHtml(player.team_name)} • ${escapeHtml(player.position)}</div>
+                <div class="result-meta">${escapeHtml(player.team_name)} • ${escapeHtml(positionLabel(player.position))}</div>
             </div>
             <div class="result-action">
                 <i class="bi bi-plus-circle"></i>
@@ -360,7 +360,7 @@ function createPlayerCard(player) {
             <div class="p-card-avatar">${escapeHtml(getInitials(player.full_name))}</div>
             <div class="p-card-info">
                 <div class="p-card-name">${escapeHtml(player.full_name)}</div>
-                <div class="p-card-meta">${escapeHtml(player.team_name)}${player.position ? ` • ${escapeHtml(player.position)}` : ''}</div>
+                <div class="p-card-meta" data-position="${escapeHtml(player.position || '')}">${escapeHtml(player.team_name)}${player.position ? ` • ${escapeHtml(positionLabel(player.position))}` : ''}</div>
             </div>
             <div class="p-card-check" style="${isSelected ? '' : 'display:none'}">
                 <i class="bi bi-check-circle-fill"></i>

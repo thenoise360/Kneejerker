@@ -1151,6 +1151,11 @@ def get_momentum_players():
         cursor.close()
         dbConnect.close()
 
+def new_manager_reason(manager_name, gameweek):
+    """Plain-words reason line shown on a new-manager player card."""
+    return f"New manager ({manager_name}) since gameweek {gameweek}. Their role could change."
+
+
 def get_new_manager_players():
     """
     Fetches players from teams with a new manager appointed within the last 4 gameweeks.
@@ -1217,7 +1222,7 @@ def get_new_manager_players():
                     'name': p['web_name'],
                     'team': p['team_name'],
                     'position': p['position'],
-                    'why': f"New manager ({team['manager_name']}) since GW{team['appointment_gameweek']} - role could change.",
+                    'why': new_manager_reason(team['manager_name'], team['appointment_gameweek']),
                     'shirt': player_shirts.get(p['team_code'], player_shirts['Unknown'])
                 })
                 
