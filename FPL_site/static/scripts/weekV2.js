@@ -1,18 +1,31 @@
 /***** weekV2.js *****/
-// DOM glue for the rebuilt Week tab (behind FEATURE_WEEK_V2). All the
+// DOM glue for the rebuilt Week tab. All the
 // decisions about *what* to show live in the pure modules under lib/; this
 // file only reads the page, fetches data, and puts HTML on the page.
-import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, RECAP_LOAD_FAILED } from './lib/recapView.js';
+import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage, renderRecapSkeleton, RECAP_LOAD_FAILED } from './lib/recapView.js';
 import { safeLocalStorage } from './lib/safeStorage.js';
 import { readTeamId, saveTeamId, clearTeamId } from './lib/teamId.js';
 import { welcomeBackMessage, readLastVisit, recordVisit } from './lib/returningUser.js';
+import { createLatestGuard } from './lib/latestOnly.js';
+import { renderDecision, renderDecisionSkeleton } from './lib/decisionView.js';
+import { describeDeadline } from './lib/deadlineCopy.js';
+
+// How often the deadline wording is refreshed while the page stays open.
+const DEADLINE_REFRESH_MS = 60 * 1000;
+// Remembered at module level so a second run of the setup can stop the first timer.
+let deadlineTimer = null;
+// One guard per slot: a slow older answer must never overwrite a newer one.
+const recapGuard = createLatestGuard();
+const decisionGuard = createLatestGuard();
 
 export function initializeWeekV2() {
     const lastWeekView = document.getElementById('last-week-view');
-    // The flag-off page has no data-week-v2 attribute, so this is a no-op there.
+    // Only the Week page marks last-week-view with data-week-v2, so other pages do nothing here.
     if (!lastWeekView || lastWeekView.dataset.weekV2 !== 'true') return;
     showWelcomeBack(lastWeekView);
     loadLastWeekRecap(lastWeekView);
+    showDeadline();
+    loadDecision();
 }
 
 function showWelcomeBack(lastWeekView) {
@@ -41,12 +54,17 @@ async function loadLastWeekRecap(lastWeekView) {
     const query = new URLSearchParams({ gameweek });
     if (teamId !== null) query.set('team_id', String(teamId));
 
+    const token = recapGuard.start();  // taken before the await, so older requests go stale
+    guestSlot.innerHTML = renderRecapSkeleton();
+
     try {
         const res = await fetch(`/api/week/last-week-recap?${query}`);
         if (!res.ok) throw new Error(`status ${res.status}`);
         const data = await res.json();
+        if (!recapGuard.isLatest(token)) return;  // a newer request has taken over
         if (data.status !== 'ready') {
             guestSlot.innerHTML = renderMessage(data.message);
+            if (personalSlot) personalSlot.innerHTML = '';  // don't leave an old team's card showing
             return;
         }
         guestSlot.innerHTML = renderGuestRecap(data.guest, data.gameweek);
@@ -59,7 +77,9 @@ async function loadLastWeekRecap(lastWeekView) {
         }
     } catch (err) {
         console.error('Failed to load last week recap', err);
+        if (!recapGuard.isLatest(token)) return;
         guestSlot.innerHTML = renderMessage(RECAP_LOAD_FAILED);
+        if (personalSlot) personalSlot.innerHTML = '';
     }
 }
 
@@ -71,6 +91,7 @@ function bindChangeTeam(personalSlot, lastWeekView) {
         clearTeamId(safeLocalStorage(window));
         personalSlot.innerHTML = renderTeamPrompt();
         bindTeamForm(lastWeekView);
+        loadDecision();  // no team number any more, so This week falls back to the everyone view
     });
 }
 
@@ -88,6 +109,64 @@ function bindTeamForm(lastWeekView) {
             return;
         }
         loadLastWeekRecap(lastWeekView);
+        loadDecision();  // a saved team number also personalises This week
     });
     input.addEventListener('input', () => input.setCustomValidity(''));
+}
+
+// Writes the calm deadline wording, then keeps it fresh. The wording depends on
+// the time now (for example "tomorrow" becomes "today", then "has passed"), so
+// we re-run it every minute while the page is open.
+function showDeadline() {
+    const el = document.getElementById('deadline-copy');
+    if (!el || !el.dataset.deadline) return;
+
+    function update() {
+        // If the visitor has moved to another tab, this element is gone from the
+        // page, so stop the timer instead of letting it run forever.
+        if (!el.isConnected) {
+            clearInterval(deadlineTimer);
+            deadlineTimer = null;
+            return;
+        }
+        // No time zone passed, so the browser shows the visitor's local time.
+        el.textContent = describeDeadline(el.dataset.deadline, new Date()) || '';
+    }
+    update();
+
+    // Switching tabs re-runs this setup without a page reload. Clear the old
+    // timer first, or every visit would stack up another timer that never stops.
+    if (deadlineTimer !== null) clearInterval(deadlineTimer);
+    deadlineTimer = setInterval(update, DEADLINE_REFRESH_MS);
+}
+
+async function loadDecision() {
+    const hub = document.getElementById('decision-hub');
+    const slot = document.getElementById('decision-slot');
+    if (!hub || !slot || !hub.dataset.gameweek) return;
+
+    const query = new URLSearchParams({ gameweek: hub.dataset.gameweek });
+    if (hub.dataset.lastGameweek) query.set('last_gameweek', hub.dataset.lastGameweek);
+    // safeLocalStorage copes with blocked storage, so a failure here never
+    // leaves the loading skeleton spinning.
+    const teamId = readTeamId(safeLocalStorage(window));
+    if (teamId !== null) query.set('team_id', String(teamId));
+
+    const token = decisionGuard.start();  // taken before the await, so older requests go stale
+    slot.innerHTML = renderDecisionSkeleton();
+
+    try {
+        const res = await fetch(`/api/week/this-week-decision?${query}`);
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const data = await res.json();
+        if (!decisionGuard.isLatest(token)) return;  // a newer request has taken over
+        slot.innerHTML = renderDecision(data);
+    } catch (err) {
+        console.error("Failed to load this week's decision", err);
+        if (!decisionGuard.isLatest(token)) return;
+        slot.innerHTML = renderMessage({
+            title: "We couldn't load this week's decision",
+            body: 'Nothing is wrong on your side. Try again in a moment.',
+        });
+    }
 }

@@ -53,8 +53,15 @@ def test_pre_season_copy_appears():
 def test_closed_panel_content():
     html = render(_state('upcoming', gw=9))
     assert 'Your decisions for gameweek 9' in html
-    assert "This week&#39;s 5 decisions" in html or "This week's 5 decisions" in html
-    assert 'Coming soon' in html
+    assert 'Coming soon' not in html
+
+
+def test_decision_hub_carries_gameweeks():
+    html = render(_state('upcoming', gw=6, last='final', last_gw=5))
+    assert 'id="decision-hub"' in html
+    assert 'data-gameweek="6"' in html
+    assert 'data-last-gameweek="5"' in html
+    assert 'id="deadline-copy"' in html
 
 
 def test_last_week_final_renders_recap_slot():
@@ -88,17 +95,9 @@ def test_no_acronyms_in_partial_copy():
     assert not re.search(r'\b(GW|xG|xA)\b', visible)
 
 
-def test_flag_off_home_keeps_old_markup():
+def test_home_uses_partial():
     with app.test_request_context('/this-week'):
         html = render_template('home.html', is_ajax=True,
-                               gw_state={'state': 'none', 'gameweek': None})
-    assert 'Friend activity feed' in html
-    assert 'Team of the Week' in html
-
-
-def test_flag_on_home_uses_partial():
-    with app.test_request_context('/this-week'):
-        html = render_template('home.html', is_ajax=True, week_v2=True,
                                week_state=_state('upcoming', gw=4),
                                this_week_copy=None, last_week_copy=None)
     assert 'Friend activity feed' not in html
@@ -127,3 +126,20 @@ def test_last_week_view_carries_deadline_and_this_week_gameweek():
 def test_this_week_gameweek_attribute_is_empty_unless_upcoming(mode):
     html = render(_state(mode, gw=6, last='final', last_gw=5))
     assert 'data-this-week-gameweek=""' in html
+
+
+@pytest.mark.parametrize('mode', ['live', 'pre_season'])
+def test_decision_hooks_are_empty_outside_upcoming(mode):
+    html = render(_state(mode, gw=7, deadline='2026-10-10T10:00:00Z'))
+    hub = re.search(r'id="decision-hub"[^>]*data-gameweek="([^"]*)"', html, re.S)
+    deadline = re.search(r'id="deadline-copy" data-deadline="([^"]*)"', html)
+    assert hub.group(1) == ''
+    assert deadline.group(1) == ''
+
+
+def test_decision_hooks_are_set_when_upcoming():
+    html = render(_state('upcoming', gw=7, deadline='2026-10-10T10:00:00Z'))
+    hub = re.search(r'id="decision-hub"[^>]*data-gameweek="([^"]*)"', html, re.S)
+    deadline = re.search(r'id="deadline-copy" data-deadline="([^"]*)"', html)
+    assert hub.group(1) == '7'
+    assert deadline.group(1) == '2026-10-10T10:00:00Z'
