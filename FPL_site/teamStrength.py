@@ -32,7 +32,7 @@ def missing_fraction(chance):
     """How much of a player is missing: 0 when fit (or unknown), 1 when ruled out."""
     if chance is None:
         return 0.0
-    return min(1.0, max(0.0, 1 - chance / 100))
+    return min(1.0, max(0.0, 1 - float(chance) / 100))
 
 
 def _ratio(part, total):
@@ -86,10 +86,13 @@ def goals_vs_average(attack, defence, league_mean_attack, league_mean_defence, h
 
 
 def build_team_strengths(teams, ratings, home_adv, squad_rows):
-    """{team_id: strength} for every team that has an engine rating."""
-    rated = {tid: t for tid, t in teams.items() if t['code'] in ratings}
+    """{team_id: strength} for every team; an unrated team uses default ratings."""
+    # Same default the engine uses for a team it has no rating for.
+    default = {'attack': 0.0, 'defence': 0.0}
+    rated = dict(teams)
     if not rated:
         return {}
+    ratings = {t['code']: ratings.get(t['code'], default) for t in rated.values()}
     mean_attack = sum(ratings[t['code']]['attack'] for t in rated.values()) / len(rated)
     mean_defence = sum(ratings[t['code']]['defence'] for t in rated.values()) / len(rated)
 

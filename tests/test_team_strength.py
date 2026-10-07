@@ -120,10 +120,20 @@ def test_build_team_strengths():
     assert 'Keeper' not in by_name
 
 
-def test_build_team_strengths_skips_teams_without_ratings():
+def test_unrated_team_gets_a_row_from_default_ratings():
     teams = {1: {'id': 1, 'code': 10, 'name': 'Arsenal'}, 2: {'id': 2, 'code': 99, 'name': 'New'}}
-    ratings = {10: {'attack': 0.0, 'defence': 0.0}}
-    assert list(build_team_strengths(teams, ratings, 0.3, [])) == [1]
+    ratings = {10: {'attack': 0.4, 'defence': 0.0}}
+    result = build_team_strengths(teams, ratings, 0.3, [])
+    assert set(result) == {1, 2}
+    # league means are taken over both teams: attack mean 0.2, defence mean 0.0
+    assert result[2]['scored'] == pytest.approx(math.exp(0.0 + 0.0 + 0.15))
+    assert result[2]['conceded'] == pytest.approx(math.exp(0.2 + 0.0 + 0.15))
+
+
+def test_missing_fraction_accepts_decimal_and_numeric_string():
+    from decimal import Decimal
+    assert missing_fraction(Decimal('25')) == 0.75
+    assert missing_fraction('25') == 0.75
 
 
 class FakeCursor:
