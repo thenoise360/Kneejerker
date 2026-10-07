@@ -2,6 +2,7 @@
 // Turns the week's biggest decision into HTML. Pure: no DOM access.
 import { escapeHtml } from './escapeHtml.js';
 import { renderMessage } from './recapView.js';
+import { numbersToggle } from './numbersToggle.js';
 
 // Each kind gets an icon AND a word, so meaning never depends on colour alone.
 // aria-hidden hides the decorative icon from screen readers; they read the word.
@@ -17,19 +18,18 @@ export function renderDecision(payload) {
     const basedOn = payload.based_on === 'your_team' && payload.squad_gameweek
         ? `<p class="sub">Based on your team from gameweek ${escapeHtml(payload.squad_gameweek)}.</p>`
         : '';
+    // The figures behind the call, as a short list of facts under the reason, opt in.
     const details = (d.details || []).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
     // recap-verdict: the global ".card h3" style is small, uppercase and too
     // pale to read well, so the verdict reuses the readable heading class.
     return `
-        <div class="card" id="week-decision">
+        <div class="card kj-numbers" id="week-decision">
             <div class="eyebrow-sm"><span aria-hidden="true">${kind.icon}</span> ${kind.label}</div>
             <h3 class="recap-verdict">${escapeHtml(d.title)}</h3>
             <p>${escapeHtml(d.reason)}</p>
+            ${details ? `<ul class="decision-facts kj-num">${details}</ul>` : ''}
             ${basedOn}
-            <details class="recap-details">
-                <summary>See the numbers</summary>
-                <ul class="recap-standouts">${details}</ul>
-            </details>
+            ${details ? numbersToggle() : ''}
         </div>`;
 }
 

@@ -14,16 +14,24 @@ const ready = {
     ],
 };
 
-test('the slide uses the mini-card, mc-title and mc-caption classes', () => {
+test('the slide is a shared player card: title, dial, sentence, then the signals behind a switch', () => {
     const html = renderMomentumCard(ready);
-    assert.match(html, /^\s*<div class="mini-card mini-slide">/);
+    assert.match(html, /^<div class="mini-card mini-slide player-card kj-numbers">/);
     assert.match(html, /<div class="mc-title">Momentum<\/div>/);
+    // Same order as every other card.
+    const order = ['mc-title', 'momentum-gauge', 'player-card-caption', 'momentum-signals', 'Show the signals'].map(k => html.indexOf(k));
+    assert.deepEqual([...order].sort((a, b) => a - b), order);
+    assert.match(html, /<div class="kj-num">\s*<ul class="recap-standouts momentum-signals">/);
     assert.match(html, /<div class="mc-caption">Looks at upcoming fixtures and key teammates coming in or out\.<\/div>/);
     assert.doesNotMatch(html, /<h3|<details|momentum-verdict/);
 });
 
+test('another carousel can reuse the card with its own slide class', () => {
+    assert.match(renderMomentumCard(ready, 'mp-card'), /^<div class="mp-card player-card kj-numbers">/);
+});
+
 test('the reason is a short line without the label prefix', () => {
-    assert.match(renderMomentumCard(ready), /<p class="sub">Kinder fixtures coming up\.<\/p>/);
+    assert.match(renderMomentumCard(ready), /<p class="player-card-caption">Kinder fixtures coming up\.<\/p>/);
 });
 
 test('the needle sits in the zone that matches the label', () => {
@@ -89,8 +97,8 @@ test('not_ready renders the calm message inside a slide', () => {
     const html = renderMomentumCard({ status: 'not_ready', message: { title: 'Not yet', body: 'Check back soon.' } });
     assert.match(html, /mini-slide/);
     assert.match(html, /<div class="mc-title">Not yet<\/div>/);
-    assert.match(html, /<div class="mc-caption">Check back soon\.<\/div>/);
-    assert.doesNotMatch(html, /<details|<svg/);
+    assert.match(html, /<p class="player-card-caption">Check back soon\.<\/p>/);
+    assert.doesNotMatch(html, /<details|<svg|numbers-toggle/);
 });
 
 test('a null or missing reason shows nothing instead of the word Null', () => {

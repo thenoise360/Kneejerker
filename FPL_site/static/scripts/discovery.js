@@ -9,14 +9,16 @@ import {
     buildMultiLineChart,
     buildChartLegend,
     SEASON_STATS,
-    formatStatValue,
-    summaryRow
+    formatStatValue
 } from './visuals.js';
 import { stripToCategories } from './lib/momentumView.js';
 import { escapeHtml } from './lib/escapeHtml.js';
 import { POSITION_LABELS, positionLabel } from './lib/positions.js';
 import { sumNumbers, formatPoints } from './lib/numbers.js';
 import { buildFixtureList } from './lib/fixtureList.js';
+import {
+    CARD_ORDER, CARD_TITLES, playerCard, emptyPlayerCard, describeForm, seasonNumbers, summaryRows
+} from './lib/playerCards.js';
 
 let allPlayers = [];
 let selectedPlayers = [];
@@ -662,7 +664,10 @@ function buildStatBlock(label, players, valueFn, options = {}) {
     const dots = results.map((r, i) => {
         if (r.value === null || r.value === undefined) return '';
         const pct = pctOf(r.value);
-        const valueClass = belowLevel[i] ? 'mp-stat-dot-value below' : 'mp-stat-dot-value';
+        // Near either end of the track a centred label would spill out of the
+        // card ("41 poi…"), so anchor it to the dot's inner side instead.
+        const edge = pct > 85 ? ' edge-end' : (pct < 15 ? ' edge-start' : '');
+        const valueClass = `mp-stat-dot-value${belowLevel[i] ? ' below' : ''}${edge}`;
         return `<div class="${valueClass}" style="left:${pct}%; color:${COMPARISON_COLORS[i]};">${r.display}</div>
             <div class="mp-stat-dot" style="left:${pct}%; background:${COMPARISON_COLORS[i]};" title="${escapeHtml(players[i].name)}: ${r.display}"></div>`;
     }).join('');
@@ -681,37 +686,6 @@ function buildStatBlock(label, players, valueFn, options = {}) {
         </div>
         ${options.compareText ? `<div class="mp-stat-compare">${options.compareText}</div>` : ''}
     </div>`;
-}
-
-/**
- * Season Numbers content for a single player - same metrics/labels as
- * radar.js's player bottom sheet Season Numbers card (02.5).
- * @param {Object} summary
- */
-function buildSeasonNumbersSingle(summary) {
-    if (!summary.metrics || summary.metrics.length === 0) {
-        return { visual: '<p class="mp-note">Season totals aren\'t available for this player right now.</p>', note: '' };
-    }
-    const metricsByTitle = {};
-    summary.metrics.forEach(m => { metricsByTitle[m.title] = m; });
-
-    const cells = SEASON_STATS
-        .filter(s => !s.positionsOnly || s.positionsOnly.includes(summary.position_name))
-        .map(s => {
-            const m = metricsByTitle[s.metricTitle];
-            if (!m) return '';
-            return `<div>
-                <div class="val">${formatStatValue(m.value)}</div>
-                <div class="lbl">${s.label}</div>
-                <div class="lbl-avg">Position average: ${formatStatValue(m.averageValue)}</div>
-            </div>`;
-        }).join('');
-
-    const note = summary.is_pre_season
-        ? `Still last season's final numbers - these reset once gameweek 1 locks. Position average alongside for now.`
-        : `Season totals so far, with the average for other ${(summary.position_name || 'players').toLowerCase()}s alongside.`;
-
-    return { visual: `<div class="season-grid">${cells}</div>`, note };
 }
 
 /**
@@ -743,53 +717,6 @@ function buildSeasonNumbersComparison(players) {
         visual: `<div class="mp-stat-list">${blocks}</div>${legend}`,
         note: `The dotted tick under each dot is that player's own position average.`
     };
-}
-
-/**
- * Summary content for a single player - same 4 rows as radar.js's player
- * bottom sheet Summary card, reusing the shared summaryRow() bar+marker.
- * @param {Object} panelDataSingle
- */
-function buildSummarySingle(panelDataSingle) {
-    const { summary, fixtures, form, avgForm, avgLabel, indexEntry } = panelDataSingle;
-    const rows = [];
-
-    if (form.length) {
-        const total = sumNumbers(form);
-        const avgTotal = sumNumbers(avgForm);
-        const max = Math.max(total, avgTotal, 1);
-        rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} points`, `${avgLabel}: ${formatPoints(avgTotal)} points`, (total / max) * 100, (avgTotal / max) * 100));
-    }
-
-    const realFixtures = (fixtures || []).filter(f => f.homeOrAway !== 'Blank');
-    if (realFixtures.length) {
-        const avgDiff = realFixtures.reduce((a, f) => a + f.difficulty, 0) / realFixtures.length;
-        const withLeagueAvg = realFixtures.filter(f => f.leagueAverageDifficulty !== null && f.leagueAverageDifficulty !== undefined);
-        const leagueAvgDiff = withLeagueAvg.length
-            ? withLeagueAvg.reduce((a, f) => a + f.leagueAverageDifficulty, 0) / withLeagueAvg.length
-            : null;
-        const easePct = ((5 - avgDiff) / 4) * 100;
-        const leagueEasePct = leagueAvgDiff !== null ? ((5 - leagueAvgDiff) / 4) * 100 : 50;
-        const compareText = leagueAvgDiff !== null ? `League average: ${leagueAvgDiff.toFixed(1)}/5` : 'League average not available';
-        rows.push(summaryRow('Next 5 fixtures difficulty', `${avgDiff.toFixed(1)}/5`, compareText, easePct, leagueEasePct));
-    }
-
-    const pointsMetric = (summary.metrics || []).find(m => m.title === 'Points');
-    if (pointsMetric) {
-        const max = Math.max(pointsMetric.value, pointsMetric.averageValue, 1);
-        const label = summary.is_pre_season ? 'Season points (last season)' : 'Season points';
-        rows.push(summaryRow(label, formatStatValue(pointsMetric.value), `Position average: ${formatStatValue(pointsMetric.averageValue)}`, (pointsMetric.value / max) * 100, (pointsMetric.averageValue / max) * 100));
-    }
-
-    if (indexEntry) {
-        const playerScore = Number(indexEntry.player_score);
-        rows.push(summaryRow('Overall value score', `${playerScore.toFixed(0)}/100`, 'Scale: 0-100 across all players', playerScore, 50));
-    }
-
-    if (!rows.length) {
-        return { visual: '<p class="mp-note">Not enough data yet to summarise this player.</p>', note: '' };
-    }
-    return { visual: `<div class="mp-summary-rows">${rows.join('')}</div>`, note: "Each row uses the same numbers as the earlier cards - solid bar is this player, the marker is the average it's being judged against." };
 }
 
 /**
@@ -854,108 +781,124 @@ function buildSummaryComparison(panelDataComparison) {
 /**
  * Updates the Mode Panel UI based on current panelData and panelMetricIndex.
  */
+// Discover's panel shows these cards, in the shared order from playerCards.js
+// (the Radar sheet has the same cards plus a few more, in the same order).
+const PANEL_KEYS = CARD_ORDER.filter(key => ['form', 'fixtures', 'season', 'ownership', 'summary'].includes(key));
+const PANEL_CARD = 'mp-card';
+
+/**
+ * One single-player card for the given key, built with the shared card anatomy.
+ * @param {string} key
+ * @param {Object} data - panelData for one player
+ */
+function buildSingleCard(key, data) {
+    if (key === 'form') {
+        if (!data.form.length) return emptyPlayerCard(CARD_TITLES.form, 'No recent gameweek data for this player yet.', { wrapperClass: PANEL_CARD });
+        return playerCard({
+            title: CARD_TITLES.form,
+            visual: buildSparkline(data.form, data.avgForm),
+            caption: describeForm(data.form, data.avgForm, `the ${data.avgLabel.toLowerCase()}`),
+            wrapperClass: PANEL_CARD
+        });
+    }
+    if (key === 'fixtures') {
+        if (!data.fixtures || !data.fixtures.length) return emptyPlayerCard(CARD_TITLES.fixtures, 'No fixture data available for this player right now.', { wrapperClass: PANEL_CARD });
+        return playerCard({
+            title: CARD_TITLES.fixtures,
+            visual: buildFixtureList(data.fixtures),
+            caption: describeFixtureRun(data.fixtures),
+            wrapperClass: PANEL_CARD
+        });
+    }
+    if (key === 'season') {
+        const season = seasonNumbers(data.summary);
+        if (!season) return emptyPlayerCard(CARD_TITLES.season, "Season totals aren't available for this player right now.", { wrapperClass: PANEL_CARD });
+        return playerCard({ ...season, wrapperClass: PANEL_CARD });
+    }
+    if (key === 'ownership') {
+        return playerCard({
+            title: `${CARD_TITLES.ownership} (recent trend)`,
+            visual: buildOwnershipArea(data.ownership, data.avgOwnership),
+            caption: `Owned by ${data.summary.selected_by_percent}% of managers right now.`,
+            wrapperClass: PANEL_CARD
+        });
+    }
+    const rows = summaryRows({
+        summary: data.summary, fixtures: data.fixtures, form: data.form, avgForm: data.avgForm,
+        averageLabel: data.avgLabel, indexEntry: data.indexEntry
+    });
+    if (!rows) return emptyPlayerCard(CARD_TITLES.summary, 'Not enough data yet to summarise this player.', { wrapperClass: PANEL_CARD });
+    return playerCard({ title: CARD_TITLES.summary, ...rows, wrapperClass: PANEL_CARD });
+}
+
+/**
+ * One comparison card (2-3 players) for the given key, same anatomy as the single cards.
+ * @param {string} key
+ * @param {Object} data - panelData for the comparison
+ */
+function buildComparisonCard(key, data) {
+    const players = data.players; // 2-3, driven by the tray (cap: TRAY_CAP)
+    const playerLegendEntries = players.map((p, i) => ({ label: p.name, color: COMPARISON_COLORS[i] }));
+    const avgLegendEntry = { label: data.avgLabel, dashed: true };
+
+    if (key === 'form') { // one shared chart, one line per player, plus the average
+        const chart = buildMultiLineChart({
+            series: players.map((p, i) => ({ color: COMPARISON_COLORS[i], values: p.form, label: getInitials(p.name) })),
+            avgSeries: data.avgPoints,
+            w: 260, h: 90, padTop: 6, padBottom: 14, padLeft: 22, padRight: 4,
+            formatValue: v => `${v}`
+        });
+        return playerCard({
+            title: CARD_TITLES.form,
+            visual: chart + buildChartLegend([...playerLegendEntries, avgLegendEntry]),
+            caption: `The dashed line is the ${data.avgLabel.toLowerCase()}. Each line ends with that player's initial.`,
+            wrapperClass: PANEL_CARD
+        });
+    }
+    if (key === 'fixtures') { // one full-width block per player, stacked
+        return playerCard({
+            title: CARD_TITLES.fixtures,
+            visual: `<div class="mp-fixture-list">
+                ${players.map((p, i) => `
+                    <div class="mp-fixture-player">
+                        <div class="mp-player-name"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${escapeHtml(p.name)}</div>
+                        ${buildFixtureList(p.fixtures, { compact: true })}
+                        <p class="player-card-caption">${escapeHtml(describeFixtureRun(p.fixtures))}</p>
+                    </div>`).join('')}
+            </div>`,
+            wrapperClass: PANEL_CARD
+        });
+    }
+    if (key === 'ownership') { // one shared chart, one line per player, plus the average
+        const chart = buildMultiLineChart({
+            series: players.map((p, i) => ({ color: COMPARISON_COLORS[i], values: p.ownership, label: getInitials(p.name) })),
+            avgSeries: data.avgOwnership,
+            w: 260, h: 90, padTop: 6, padBottom: 16, padLeft: 24, padRight: 4,
+            formatValue: v => `${v.toFixed(1)}%`
+        });
+        return playerCard({
+            title: `${CARD_TITLES.ownership} (recent trend)`,
+            visual: chart + buildChartLegend([...playerLegendEntries, avgLegendEntry]),
+            captionHtml: players.map((p, i) => `<span class="player-card-caption-item"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${escapeHtml(p.name)}: ${escapeHtml(p.summary.selected_by_percent)}%</span>`).join(' '),
+            wrapperClass: PANEL_CARD
+        });
+    }
+    const { visual, note } = key === 'season' ? buildSeasonNumbersComparison(players) : buildSummaryComparison(data);
+    return playerCard({ title: CARD_TITLES[key], visual, caption: note, wrapperClass: PANEL_CARD });
+}
+
+/**
+ * Updates the Mode Panel UI based on current panelData and panelMetricIndex.
+ */
 function updatePanelUI() {
     const container = document.getElementById('mode-panel-container');
     if (!container || !panelData) return;
 
-    let headerHtml = '';
-    let contentHtml = '';
-    const metricTitles = ['Recent Form', 'Next 5 Fixtures', 'Ownership Trend', 'Season Numbers', 'Summary'];
-    const currentTitle = metricTitles[panelMetricIndex];
-
-    if (panelData.isComparison) {
-        const players = panelData.players; // 2-3, driven by the tray (cap: TRAY_CAP)
-        const playerLegendEntries = players.map((p, i) => ({ label: p.name, color: COMPARISON_COLORS[i] }));
-        const avgLegendEntry = { label: panelData.avgLabel, dashed: true };
-
-        headerHtml = `<h4 class="mp-player-name">Comparison</h4>`;
-
-        let visualHtml = '';
-        let noteHtml = '';
-
-        if (panelMetricIndex === 0) { // Form - one shared chart, one line per player, plus the average
-            const chart = buildMultiLineChart({
-                series: players.map((p, i) => ({ color: COMPARISON_COLORS[i], values: p.form, label: getInitials(p.name) })),
-                avgSeries: panelData.avgPoints,
-                w: 260, h: 90, padTop: 6, padBottom: 14, padLeft: 22, padRight: 4,
-                formatValue: v => `${v}`
-            });
-            visualHtml = `<div class="mp-visual">${chart}</div>${buildChartLegend([...playerLegendEntries, avgLegendEntry])}`;
-            noteHtml = `<p class="mp-note">Dashed line shows the ${panelData.avgLabel.toLowerCase()} over the same 5 gameweeks. The dot at the end of each line is that player's own initial.</p>`;
-        } else if (panelMetricIndex === 1) { // Fixtures - mobile-first: one full-width row per player, stacked vertically
-            visualHtml = `
-                <div class="mp-fixture-list">
-                    ${players.map((p, i) => `
-                        <div class="mp-fixture-player">
-                            <div class="mp-player-name"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${escapeHtml(p.name)}</div>
-                            ${buildFixtureList(p.fixtures, { compact: true })}
-                            <p class="mp-note">${describeFixtureRun(p.fixtures)}</p>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        } else if (panelMetricIndex === 2) { // Ownership - one shared chart, one line per player, plus the average
-            const chart = buildMultiLineChart({
-                series: players.map((p, i) => ({ color: COMPARISON_COLORS[i], values: p.ownership, label: getInitials(p.name) })),
-                avgSeries: panelData.avgOwnership,
-                w: 260, h: 90, padTop: 6, padBottom: 16, padLeft: 24, padRight: 4,
-                formatValue: v => `${v.toFixed(1)}%`
-            });
-            visualHtml = `<div class="mp-visual">${chart}</div>${buildChartLegend([...playerLegendEntries, avgLegendEntry])}`;
-            noteHtml = `
-                <div class="mp-comparison-note-row">
-                    ${players.map((p, i) => `<p class="mp-note"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${escapeHtml(p.name)}: ${p.summary.selected_by_percent}% ownership.</p>`).join('')}
-                </div>
-            `;
-        } else if (panelMetricIndex === 3) { // Season Numbers
-            const { visual, note } = buildSeasonNumbersComparison(players);
-            visualHtml = visual;
-            noteHtml = note ? `<p class="mp-note">${note}</p>` : '';
-        } else { // Summary
-            const { visual, note } = buildSummaryComparison(panelData);
-            visualHtml = visual;
-            noteHtml = note ? `<p class="mp-note">${note}</p>` : '';
-        }
-
-        contentHtml = `
-            <div class="mp-card">
-                <span class="mp-metric-title">${currentTitle}</span>
-                ${visualHtml}
-                ${noteHtml}
-            </div>
-        `;
-    } else {
-        headerHtml = `<h4 class="mp-player-name">${escapeHtml(panelData.name)}</h4>`;
-
-        let visualHtml = '';
-        let noteText = '';
-        if (panelMetricIndex === 0) {
-            visualHtml = buildSparkline(panelData.form, panelData.avgForm);
-            noteText = 'Consistent delivery over the last 5 gameweeks.';
-        } else if (panelMetricIndex === 1) {
-            visualHtml = buildFixtureList(panelData.fixtures);
-            noteText = describeFixtureRun(panelData.fixtures);
-        } else if (panelMetricIndex === 2) {
-            visualHtml = buildOwnershipArea(panelData.ownership, panelData.avgOwnership);
-            noteText = `Currently owned by ${panelData.summary.selected_by_percent}% of managers.`;
-        } else if (panelMetricIndex === 3) {
-            const { visual, note } = buildSeasonNumbersSingle(panelData.summary);
-            visualHtml = visual;
-            noteText = note;
-        } else {
-            const { visual, note } = buildSummarySingle(panelData);
-            visualHtml = visual;
-            noteText = note;
-        }
-
-        contentHtml = `
-            <div class="mp-card">
-                <span class="mp-metric-title">${currentTitle}</span>
-                <div class="mp-visual">${visualHtml}</div>
-                ${noteText ? `<p class="mp-note">${noteText}</p>` : ''}
-            </div>
-        `;
-    }
+    const key = PANEL_KEYS[panelMetricIndex];
+    const headerHtml = panelData.isComparison
+        ? `<h4 class="mp-player-name">Comparison</h4>`
+        : `<h4 class="mp-player-name">${escapeHtml(panelData.name)}</h4>`;
+    const contentHtml = panelData.isComparison ? buildComparisonCard(key, panelData) : buildSingleCard(key, panelData);
 
     container.innerHTML = `
         <div class="mp-header">
@@ -971,9 +914,9 @@ function updatePanelUI() {
                 <i class="bi bi-chevron-left"></i>
             </button>
             <div class="mp-dots">
-                ${metricTitles.map((_, i) => `<div class="mp-dot ${i === panelMetricIndex ? 'active' : ''}"></div>`).join('')}
+                ${PANEL_KEYS.map((_, i) => `<div class="mp-dot ${i === panelMetricIndex ? 'active' : ''}"></div>`).join('')}
             </div>
-            <button class="mp-btn" id="mp-next" ${panelMetricIndex === metricTitles.length - 1 ? 'disabled' : ''}>
+            <button class="mp-btn" id="mp-next" ${panelMetricIndex === PANEL_KEYS.length - 1 ? 'disabled' : ''}>
                 <i class="bi bi-chevron-right"></i>
             </button>
         </div>
@@ -987,7 +930,7 @@ function updatePanelUI() {
         }
     };
     document.getElementById('mp-next').onclick = () => {
-        if (panelMetricIndex < metricTitles.length - 1) {
+        if (panelMetricIndex < PANEL_KEYS.length - 1) {
             panelMetricIndex++;
             updatePanelUI();
         }

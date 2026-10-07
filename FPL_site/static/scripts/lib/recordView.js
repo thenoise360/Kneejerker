@@ -3,6 +3,7 @@
 // access here, so they can be tested in Node. club.js puts them on the page.
 import { escapeHtml } from './escapeHtml.js';
 import { renderMessage } from './recapView.js';
+import { numbersToggle } from './numbersToggle.js';
 
 // Shown if the record request itself fails (no connection, server down).
 export const RECORD_LOAD_FAILED = {
@@ -10,12 +11,17 @@ export const RECORD_LOAD_FAILED = {
     body: 'Nothing is wrong on your side. Try again in a moment.',
 };
 
-// The wording for each verdict. The words carry the meaning, never colour.
-const VERDICT_WORDS = {
-    better: 'Better than expected',
-    as_expected: 'As expected',
-    worse: 'Worse than expected',
+// The wording for each verdict, with a small icon. The words carry the meaning,
+// never colour: the badge colour (plum, brand red, brand green) only repeats it.
+const VERDICTS = {
+    better: { icon: '▲', words: 'Better than expected' },
+    as_expected: { icon: '●', words: 'As expected' },
+    worse: { icon: '▼', words: 'Worse than expected' },
 };
+
+// The newest games are shown straight away; any older ones sit behind a
+// "Show earlier games" toggle so the card stays short on a phone.
+const RECENT_GAMES = 5;
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
     'August', 'September', 'October', 'November', 'December'];
@@ -33,13 +39,21 @@ function oneDecimal(value) {
     return Number(value).toFixed(1);
 }
 
-// One line per finished game. The scores are numbers, so they stay in the expander.
+// One row per finished game: who and where, with the verdict badge. Our
+// prediction and the real score sit side by side underneath, opt in (kj-num).
 function gameRow(game) {
     const where = game.is_home ? 'home to' : 'away at';
-    const verdict = VERDICT_WORDS[game.verdict] || '';
-    return `<li>Gameweek ${escapeHtml(game.gameweek)}, ${where} ${escapeHtml(game.opponent)}: `
-        + `we expected ${escapeHtml(oneDecimal(game.predicted_for))}–${escapeHtml(oneDecimal(game.predicted_against))}, `
-        + `it finished ${escapeHtml(game.actual_for)}–${escapeHtml(game.actual_against)} (${verdict})</li>`;
+    const verdict = VERDICTS[game.verdict];
+    const badge = verdict
+        ? `<span class="record-verdict record-verdict--${escapeHtml(game.verdict)}"><span aria-hidden="true">${verdict.icon}</span> ${verdict.words}</span>`
+        : '';
+    return `<li class="record-game">
+            <div class="record-game-head"><span>Gameweek ${escapeHtml(game.gameweek)}, ${where} ${escapeHtml(game.opponent)}</span>${badge}</div>
+            <div class="record-scores kj-num">
+                <div><span class="record-score-label">We expected</span> <span class="record-score">${escapeHtml(oneDecimal(game.predicted_for))}–${escapeHtml(oneDecimal(game.predicted_against))}</span></div>
+                <div><span class="record-score-label">It finished</span> <span class="record-score">${escapeHtml(game.actual_for)}–${escapeHtml(game.actual_against)}</span></div>
+            </div>
+        </li>`;
 }
 
 export function renderRecord(payload) {
@@ -61,20 +75,28 @@ export function renderRecord(payload) {
     const early = payload.early_days_label
         ? `<p class="sub"><span aria-hidden="true">ⓘ</span> ${escapeHtml(payload.early_days_label)}</p>`
         : '';
-    const list = `<ul class="recap-standouts">${games.map(gameRow).join('')}</ul>`;
+    // The server sends games oldest first; the newest game is the most useful, so it goes on top.
+    const newestFirst = games.slice().reverse();
+    const recent = newestFirst.slice(0, RECENT_GAMES);
+    const earlier = newestFirst.slice(RECENT_GAMES);
+    const earlierBlock = earlier.length
+        ? `<details class="record-earlier">
+                <summary>Show earlier games</summary>
+                <ul class="record-games">${earlier.map(gameRow).join('')}</ul>
+            </details>`
+        : '';
     const started = payload.started_on
         ? `<p class="sub">We started keeping score on ${escapeHtml(longDate(payload.started_on))}.</p>`
         : '';
     return `
-        <div class="card" id="prediction-record">
+        <div class="card kj-numbers" id="prediction-record">
             <div class="eyebrow-sm">how our predictions are doing</div>
             <h3 class="recap-verdict">${escapeHtml(payload.headline)}</h3>
             <p>${escapeHtml(payload.reason)}</p>
             ${early}
-            <details class="recap-details">
-                <summary>See the numbers</summary>
-                ${list}
-            </details>
+            <ul class="record-games">${recent.map(gameRow).join('')}</ul>
+            ${earlierBlock}
+            ${numbersToggle()}
             ${started}
         </div>`;
 }

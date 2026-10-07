@@ -22,13 +22,15 @@ test('hidden when there is no payload or no sample count', () => {
     assert.equal(shouldShowLastSeason({ headline: 'x' }), false);
 });
 
-test('builds the headline with the numbers inside a details block', () => {
+test('builds the headline with the numbers on a quieter line underneath', () => {
     const html = buildLastSeasonHtml(played);
-    assert.ok(html.includes('<details class="recap-details">'));
-    assert.ok(html.includes('<summary>See the numbers</summary>'));
-    assert.equal(text(html), 'Last season: a regular points-scorer (Brighton) See the numbers about 6.1 points a game across 34 games');
-    // The headline sits before the details, so it reads without opening anything.
-    assert.ok(html.indexOf('Last season:') < html.indexOf('<details'));
+    assert.ok(!html.includes('<details'));
+    // Opt in: the Form card's own switch reveals the detail.
+    assert.ok(html.includes('<div class="mc-caption last-season-detail kj-num">about 6.1 points a game across 34 games</div>'));
+    assert.ok(!html.includes('numbers-toggle'));
+    assert.equal(text(html), 'Last season: a regular points-scorer (Brighton) about 6.1 points a game across 34 games');
+    // The headline comes first, so it reads before the numbers.
+    assert.ok(html.indexOf('Last season:') < html.indexOf('last-season-detail'));
 });
 
 test('a player who did not play has a headline and no details', () => {

@@ -36,11 +36,13 @@ def test_momentum_route_hides_errors(client, monkeypatch):
 
 
 def test_radar_leaves_out_the_slide_for_a_missing_momentum_payload():
-    # fetchJsonSafe turns a 404 into null, and buildMiniCards only adds the slide when it has a payload.
+    # fetchJsonSafe turns a 404 into null, and buildMiniCards only builds the slide when it has a
+    # payload; inCardOrder (lib/playerCards.js, tested in Node) then skips the empty slot.
     source = open(os.path.join(os.path.dirname(__file__), '..', 'FPL_site', 'static', 'scripts', 'radar.js'),
                   encoding='utf-8').read()
     assert 'if (!res.ok) return null;' in source
-    assert 'if (momentum) {' in source
+    assert "momentum: momentum ? renderMomentumCard(momentum, SLIDE) : ''," in source
+    assert 'return inCardOrder({' in source
     assert 'fetchJsonSafe(`/api/player/${playerId}/momentum`)' in source
 
 

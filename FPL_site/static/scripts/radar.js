@@ -6,17 +6,16 @@ import {
 } from './utils.js';
 import {
     buildSparkline,
-    describeFixtureRun,
-    buildOwnershipArea,
-    SEASON_STATS,
-    formatStatValue,
-    summaryRow
+    describeFixtureRun
 } from './visuals.js';
 import { trackPlayerSummary } from './analytics.js';
 import { renderMomentumCard } from './lib/momentumView.js';
-import { sumNumbers, formatPoints } from './lib/numbers.js';
 import { buildFixtureList } from './lib/fixtureList.js';
 import { buildLastSeasonHtml } from './lib/lastSeasonView.js';
+import { escapeHtml } from './lib/escapeHtml.js';
+import {
+    CARD_TITLES, inCardOrder, playerCard, emptyPlayerCard, describeForm, seasonNumbers, summaryRows
+} from './lib/playerCards.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeRadar();
@@ -349,6 +348,9 @@ function initializeRadar() {
         'Forward': 'forwards'
     };
 
+    // Every slide uses this class so the carousel can size it.
+    const SLIDE = 'mini-card mini-slide';
+
     function buildMiniCards(summary, fixtures, positionData, last5Data, indexScores, momentum, lastSeason) {
         const safeLast5 = Array.isArray(last5Data) ? last5Data : [];
         // Coerce to real numbers: older responses sent totals as text.
@@ -368,30 +370,23 @@ function initializeRadar() {
         const rawIndexEntry = (indexScores || []).find(r => r.id === summary.id && r.web_name !== 'Mean') || null;
         const indexEntry = (rawIndexEntry && rawIndexEntry.web_name === summary.name) ? rawIndexEntry : null;
 
-        const cards = [
-            buildFormCard(last5Values, avg5Values, lastSeason),
-            buildFixtureCard(fixtures),
-            buildSeasonNumbersCard(summary),
-            buildSetPieceCard(summary),
-            buildRatingBreakdownCard(indexEntry, indexScores),
-            buildMarketActivityCard(summary),
-            buildSummaryCard(summary, fixtures, last5Values, avg5Values, indexEntry)
-        ];
-
-        // Momentum goes second, right after the form card. We only add it when
-        // the flag was on (so we fetched something) and the fetch worked; a
-        // failed fetch gives null, and then the card is simply left out.
-        if (momentum) {
-            cards.splice(1, 0, renderMomentumCard(momentum));
-        }
-        return cards;
+        // Built by key, then put in the shared order (playerCards.js), so this
+        // sheet and the Discover panel always swipe through cards the same way.
+        // Momentum is only there when its fetch worked; a failed fetch gives null.
+        return inCardOrder({
+            form: buildFormCard(last5Values, avg5Values, lastSeason),
+            momentum: momentum ? renderMomentumCard(momentum, SLIDE) : '',
+            fixtures: buildFixtureCard(fixtures),
+            season: buildSeasonNumbersCard(summary),
+            ownership: buildOwnershipCard(summary),
+            setPieces: buildSetPieceCard(summary),
+            rating: buildRatingBreakdownCard(indexEntry, indexScores),
+            summary: buildSummaryCard(summary, fixtures, last5Values, avg5Values, indexEntry)
+        });
     }
 
-    function emptyStateCard(title, message) {
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">${title}</div>
-            <div class="empty-state">${message}</div>
-        </div>`;
+    function emptyStateCard(title, message, extra = '') {
+        return emptyPlayerCard(title, message, { wrapperClass: SLIDE, extra });
     }
 
     function buildFormCard(last5, avg5, lastSeason) {
@@ -399,102 +394,54 @@ function initializeRadar() {
         // so the line only ever appears while the chart has a small sample.
         const lastSeasonHtml = buildLastSeasonHtml(lastSeason);
         if (!last5.length) {
-            return emptyStateCard('Form — last 5 vs average', `No recent gameweek data for this player yet.${lastSeasonHtml}`);
+            return emptyStateCard(CARD_TITLES.form, 'No recent gameweek data for this player yet.', lastSeasonHtml);
         }
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">Form — last 5 vs average</div>
-            <div style="margin: 10px 0;">${buildSparkline(last5, avg5)}</div>
-            <div class="mc-caption">${describeForm(last5, avg5)}</div>
-            ${lastSeasonHtml}
-        </div>`;
-    }
-
-    function describeForm(last5, avg5) {
-        const total = sumNumbers(last5);
-        const avgTotal = sumNumbers(avg5);
-        if (total === 0 && avgTotal === 0) {
-            return "No points on the board across these 5 gameweeks yet.";
-        }
-        const mean = total / last5.length;
-        const variance = last5.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / last5.length;
-        const stdDev = Math.sqrt(variance);
-        if (mean > 0 && stdDev > mean * 0.6) {
-            return `Streaky — swinging between ${Math.min(...last5)} and ${Math.max(...last5)} points across these 5 gameweeks.`;
-        }
-        if (total > avgTotal) {
-            return `Consistently above the position average over these 5 gameweeks (${formatPoints(total)} vs ${formatPoints(avgTotal)} points).`;
-        }
-        if (total < avgTotal) {
-            return `Below the position average over these 5 gameweeks (${formatPoints(total)} vs ${formatPoints(avgTotal)} points).`;
-        }
-        return "Right in line with the position average over these 5 gameweeks.";
+        return playerCard({
+            title: CARD_TITLES.form,
+            visual: buildSparkline(last5, avg5),
+            caption: describeForm(last5, avg5),
+            extra: lastSeasonHtml,
+            wrapperClass: SLIDE
+        });
     }
 
     function buildFixtureCard(fixtures) {
         if (!fixtures || fixtures.length === 0) {
-            return emptyStateCard('Upcoming Fixtures', "No fixture data available for this player right now.");
+            return emptyStateCard(CARD_TITLES.fixtures, 'No fixture data available for this player right now.');
         }
-
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">Upcoming Fixtures</div>
-            ${buildFixtureList(fixtures)}
-            <div class="mc-caption">${describeFixtureRun(fixtures)}</div>
-        </div>`;
+        return playerCard({
+            title: CARD_TITLES.fixtures,
+            visual: buildFixtureList(fixtures),
+            caption: describeFixtureRun(fixtures),
+            wrapperClass: SLIDE
+        });
     }
-
 
     function buildSeasonNumbersCard(summary) {
-        if (!summary.metrics || summary.metrics.length === 0) {
-            return emptyStateCard('Season Numbers', "Season totals aren't available for this player right now.");
+        const season = seasonNumbers(summary);
+        if (!season) {
+            return emptyStateCard(CARD_TITLES.season, "Season totals aren't available for this player right now.");
         }
-        const metricsByTitle = {};
-        summary.metrics.forEach(m => { metricsByTitle[m.title] = m; });
-
-        const cells = SEASON_STATS
-            .filter(s => !s.positionsOnly || s.positionsOnly.includes(summary.position_name))
-            .map(s => {
-                const m = metricsByTitle[s.metricTitle];
-                if (!m) return '';
-                return `<div>
-                    <div class="val">${formatStatValue(m.value)}</div>
-                    <div class="lbl">${s.label}</div>
-                    <div class="lbl-avg">Position average: ${formatStatValue(m.averageValue)}</div>
-                </div>`;
-            }).join('');
-
-        // Pre-season, these figures are still last season's final tally - the
-        // FPL API itself doesn't zero them out until gameweek 1 locks, so
-        // label that plainly rather than presenting them as this season's.
-        const title = summary.is_pre_season ? 'Season Numbers (Last Season)' : 'Season Numbers';
-        const caption = summary.is_pre_season
-            ? `Still last season's final numbers - these will reset once gameweek 1 locks. Position average alongside for now.`
-            : `Season totals so far, with the average for other ${(summary.position_name || 'players').toLowerCase()}s alongside.`;
-
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">${title}</div>
-            <div class="season-grid">${cells}</div>
-            <div class="mc-caption">${caption}</div>
-        </div>`;
+        return playerCard({ ...season, wrapperClass: SLIDE });
     }
 
-    // 02.7: one line per duty the player actually holds - no comma-joined
-    // sentence, no blank/negative lines for duties they don't have.
+    // One line per duty the player actually holds: no comma-joined sentence,
+    // no blank or negative lines for duties they don't have.
     function buildSetPieceCard(summary) {
         const duties = summary.setPieceDuties || [];
         if (!duties.length) {
-            return emptyStateCard('Set-Piece Duties', "No set-piece duty for this player right now.");
+            return emptyStateCard(CARD_TITLES.setPieces, 'No set-piece duty for this player right now.');
         }
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">Set-Piece Duties</div>
-            <div class="set-piece-lines">
-                ${duties.map(d => `<div class="set-piece-line">${d.text}</div>`).join('')}
-            </div>
-        </div>`;
+        return playerCard({
+            title: CARD_TITLES.setPieces,
+            visual: `<div class="set-piece-lines">${duties.map(d => `<div class="set-piece-line">${escapeHtml(d.text)}</div>`).join('')}</div>`,
+            wrapperClass: SLIDE
+        });
     }
 
     function buildRatingBreakdownCard(entry, indexScores) {
         if (!entry) {
-            return emptyStateCard('Rating Breakdown', "A rating breakdown isn't available for this player right now.");
+            return emptyStateCard(CARD_TITLES.rating, "A rating breakdown isn't available for this player right now.");
         }
 
         // MySQL returns some of these as DECIMAL, which the backend's JSON
@@ -512,8 +459,9 @@ function initializeRadar() {
         const valuePct = Math.max(0, Math.min(100, (pointsPerMill / maxValue) * 100));
         const scarcityPct = Math.max(0, Math.min(100, (notSelectedByPerc / maxScarcity) * 100));
 
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">Rating Breakdown</div>
+        return playerCard({
+            title: CARD_TITLES.rating,
+            visual: `
             <div class="rating-row">
                 <div class="rating-row-head"><span>Overall value score</span><span>${overallPct.toFixed(0)}/100</span></div>
                 <div class="bar-track"><div class="bar-fill" style="width:${overallPct}%;"></div></div>
@@ -525,83 +473,36 @@ function initializeRadar() {
             <div class="rating-row">
                 <div class="rating-row-head"><span>How rarely other squads own them</span><span>${notSelectedByPerc.toFixed(1)}% unowned</span></div>
                 <div class="bar-track"><div class="bar-fill pink" style="width:${scarcityPct}%;"></div></div>
-            </div>
-            <div class="mc-caption">This score comes directly from these two numbers - points scored for every pound of value, multiplied by how rare a pick they are - with nothing hidden.</div>
-        </div>`;
+            </div>`,
+            caption: 'Points for every pound of value, multiplied by how rare a pick they are. Nothing hidden.',
+            wrapperClass: SLIDE
+        });
     }
 
-    function buildMarketActivityCard(summary) {
-        const marketLabel = summary.is_pre_season ? "Total Season" : "This Week";
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">Market Activity (${marketLabel})</div>
-            <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:#777;">Ownership</span>
-                    <span style="font-weight:700;">${summary.selected_by_percent}%</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:#777;">Transfers In</span>
-                    <span style="font-weight:700; color:var(--teal);">+${formatTransferCount(summary.transfers_in_event)}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:#777;">Transfers Out</span>
-                    <span style="font-weight:700; color:var(--pink);">${summary.transfers_out_event > 0 ? '-' : ''}${formatTransferCount(summary.transfers_out_event)}</span>
-                </div>
-            </div>
-            <div class="mc-caption">${summary.is_pre_season ? "Pre-season data reflects total season movement." : "Reflects movement in the current gameweek."}</div>
-        </div>`;
+    // Ownership and this week's transfers, as label-and-value rows.
+    function buildOwnershipCard(summary) {
+        const when = summary.is_pre_season ? 'whole season' : 'this week';
+        const out = summary.transfers_out_event;
+        return playerCard({
+            title: `${CARD_TITLES.ownership} (${when})`,
+            visual: `<div class="stat-rows">
+                <div class="stat-row"><span>Owned by</span><span>${escapeHtml(summary.selected_by_percent)}%</span></div>
+                <div class="stat-row"><span>Transfers in</span><span class="stat-up">+${formatTransferCount(summary.transfers_in_event)}</span></div>
+                <div class="stat-row"><span>Transfers out</span><span class="stat-down">${out > 0 ? '-' : ''}${formatTransferCount(out)}</span></div>
+            </div>`,
+            caption: summary.is_pre_season ? 'Pre-season, this is the whole of last season.' : 'Movement in the current gameweek.',
+            wrapperClass: SLIDE
+        });
     }
 
-    // Summary (replaces the old "Verdict" card): one consolidated view of
-    // every earlier card's headline figure, each against its own real
-    // comparison point - no invented opinion text, just the same numbers
-    // shown again with a bar so the pattern reads at a glance.
+    // Summary: every earlier card's headline figure again, each against its
+    // own real comparison point, with a bar so the pattern reads at a glance.
     function buildSummaryCard(summary, fixtures, last5, avg5, indexEntry) {
-        const rows = [];
-
-        if (last5.length) {
-            const total = sumNumbers(last5);
-            const avgTotal = sumNumbers(avg5);
-            const max = Math.max(total, avgTotal, 1);
-            rows.push(summaryRow('Form, last 5 gameweeks', `${formatPoints(total)} points`, `Position average: ${formatPoints(avgTotal)} points`, (total / max) * 100, (avgTotal / max) * 100));
+        const rows = summaryRows({ summary, fixtures, form: last5, avgForm: avg5, indexEntry });
+        if (!rows) {
+            return emptyStateCard(CARD_TITLES.summary, 'Not enough data yet to summarise this player.');
         }
-
-        const realFixtures = (fixtures || []).filter(f => f.homeOrAway !== 'Blank');
-        if (realFixtures.length) {
-            const avgDiff = realFixtures.reduce((a, f) => a + f.difficulty, 0) / realFixtures.length;
-            const withLeagueAvg = realFixtures.filter(f => f.leagueAverageDifficulty !== null && f.leagueAverageDifficulty !== undefined);
-            const leagueAvgDiff = withLeagueAvg.length
-                ? withLeagueAvg.reduce((a, f) => a + f.leagueAverageDifficulty, 0) / withLeagueAvg.length
-                : null;
-            // Difficulty runs 1 (kindest) to 5 (toughest), so invert it for the
-            // bar: a longer bar should always read as the easier run.
-            const easePct = ((5 - avgDiff) / 4) * 100;
-            const leagueEasePct = leagueAvgDiff !== null ? ((5 - leagueAvgDiff) / 4) * 100 : 50;
-            const compareText = leagueAvgDiff !== null ? `League average: ${leagueAvgDiff.toFixed(1)}/5` : 'League average not available';
-            rows.push(summaryRow('Next 5 fixtures difficulty', `${avgDiff.toFixed(1)}/5`, compareText, easePct, leagueEasePct));
-        }
-
-        const pointsMetric = (summary.metrics || []).find(m => m.title === 'Points');
-        if (pointsMetric) {
-            const max = Math.max(pointsMetric.value, pointsMetric.averageValue, 1);
-            const label = summary.is_pre_season ? 'Season points (last season)' : 'Season points';
-            rows.push(summaryRow(label, formatStatValue(pointsMetric.value), `Position average: ${formatStatValue(pointsMetric.averageValue)}`, (pointsMetric.value / max) * 100, (pointsMetric.averageValue / max) * 100));
-        }
-
-        if (indexEntry) {
-            const playerScore = Number(indexEntry.player_score);
-            rows.push(summaryRow('Overall value score', `${playerScore.toFixed(0)}/100`, 'Scale: 0-100 across all players', playerScore, 50));
-        }
-
-        if (!rows.length) {
-            return emptyStateCard('Summary', "Not enough data yet to summarise this player.");
-        }
-
-        return `<div class="mini-card mini-slide">
-            <div class="mc-title">Summary</div>
-            ${rows.join('')}
-            <div class="mc-caption">Each row uses the same numbers as the earlier cards - solid bar is this player, the marker is the average it's being judged against.</div>
-        </div>`;
+        return playerCard({ title: CARD_TITLES.summary, ...rows, wrapperClass: SLIDE });
     }
 
     async function fetchJsonSafe(url) {

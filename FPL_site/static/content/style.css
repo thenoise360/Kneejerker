@@ -1375,9 +1375,22 @@ body {
 
 /* Last-season line on the player Form card (scoped to the two new classes). */
 .last-season-line { margin-top: 8px; color: var(--charcoal); }
-.last-season-line + .recap-details { margin-top: 6px; padding-top: 6px; }
+/* The numbers behind that line, quieter and directly underneath it. */
+.last-season-detail { margin-top: 2px; color: #666; }
 
 /* "Last time against them" caption under a fixture row (flex-basis makes it take its own line). */
 .fixture-list-caption { flex-basis: 100%; font-size: 11.5px; color: #666; }
-.fixture-list-numbers { list-style: none; margin: 0; padding: 0; font-size: 11.5px; color: var(--charcoal); }
-.fixture-list-numbers li { padding: 3px 0; }
+/* The numbers from that meeting, on their own line under the caption, in a quieter weight. */
+.fixture-list-stats { display: block; font-weight: 600; color: var(--charcoal); margin-top: 1px; }
+
+/* Opt-in numbers (lib/numbersToggle.js). A card with .kj-numbers keeps every .kj-num
+   hidden until its "Show the numbers" switch is ticked; the figures then appear in place.
+   Without :has() support this rule never matches, so the numbers simply show. */
+.kj-numbers:not(:has(.numbers-toggle-input:checked)) .kj-num { display: none !important; }
+.numbers-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--plum); cursor: pointer; user-select: none; }
+/* The checkbox drawn as a small switch; the label text carries the meaning. */
+.numbers-toggle-input { appearance: none; -webkit-appearance: none; width: 30px; height: 18px; border-radius: 100px; background: var(--grey-mid); position: relative; margin: 0; cursor: pointer; transition: background 150ms ease-in-out; flex: none; }
+.numbers-toggle-input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform 150ms ease-in-out; }
+.numbers-toggle-input:checked { background: var(--plum); }
+.numbers-toggle-input:checked::after { transform: translateX(12px); }
+.numbers-toggle-input:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }

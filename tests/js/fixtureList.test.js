@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildFixtureList, difficultyWord } from '../../FPL_site/static/scripts/lib/fixtureList.js';
+import { buildFixtureList, difficultyWord, lastTimeStats } from '../../FPL_site/static/scripts/lib/fixtureList.js';
 
 const away = { gameweek: 12, teamName: 'CRY', teamFullName: 'Crystal Palace', homeOrAway: 'Away', difficulty: 4 };
 const home = { gameweek: 13, teamName: 'ARS', teamFullName: 'Arsenal', homeOrAway: 'Home', difficulty: 2 };
@@ -94,24 +94,31 @@ test('blank weeks get no caption', () => {
     assert.ok(!buildFixtureList([{ ...blank, lastTime: null }]).includes('fixture-list-caption'));
 });
 
-test('one See the numbers block lists points, minutes and result for each row', () => {
+test('each played row carries its own points, minutes and result under the caption', () => {
     const html = buildFixtureList([
         { ...away, lastTime: played(9) },
         { ...home, lastTime: played(1, { minutes: 1, result: 'lost 0–2', is_home: false }) },
         blank
     ]);
-    assert.equal((html.match(/<details class="recap-details">/g) || []).length, 1);
-    assert.ok(html.includes('<summary>See the numbers</summary>'));
-    const t = text(html);
-    assert.ok(t.includes('Gameweek 12, Crystal Palace: 9 points, 90 minutes, won 3–1 at home'));
-    assert.ok(t.includes('Gameweek 13, Arsenal: 1 point, 1 minute, lost 0–2 away'));
-    // The details come after the list, not inside it.
-    assert.ok(html.indexOf('</ul>') < html.indexOf('<details'));
+    const rows = html.split('<li').slice(1).map(text);
+    assert.ok(rows[0].includes('Big return last time 9 points · 90 minutes · won 3–1 at home'));
+    assert.ok(rows[1].includes('1 point · 1 minute · lost 0–2 away'));
+    assert.ok(!rows[2].includes('point'));
 });
 
-test('no details block when no row has anything to show', () => {
-    assert.ok(!buildFixtureList([away, home]).includes('<details'));
-    assert.ok(!buildFixtureList([{ ...away, lastTime: { kind: 'new_player' } }]).includes('<details'));
+test('numbers are opt in and the list is always one element', () => {
+    const html = buildFixtureList([{ ...away, lastTime: played(9) }, { ...home, lastTime: { kind: 'no_meeting' } }]);
+    assert.ok(!html.includes('<details'));
+    // A single element, so a flex container never splits it into columns. The card holding it gives the switch.
+    assert.ok(html.startsWith('<ul') && html.endsWith('</ul>'));
+    assert.ok(html.includes('<span class="fixture-list-stats kj-num">9 points'));
+    assert.ok(!html.includes('numbers-toggle'));
+});
+
+test('rows with no meeting numbers get no stats line', () => {
+    assert.equal(lastTimeStats({ kind: 'did_not_play' }), '');
+    assert.equal(lastTimeStats({ kind: 'no_meeting' }), '');
+    assert.equal(lastTimeStats(null), '');
 });
 
 test('last-time copy has no acronyms or team codes', () => {

@@ -2,7 +2,7 @@
 // A one-line reminder of how last season went, shown on the player's Form card
 // while this season is too young for the form chart to say much.
 // History is background ("worth knowing"), never a reason to pick, so the
-// wording stays gentle and the numbers sit behind "See the numbers".
+// wording stays gentle. The numbers are opt in, on a quieter line right underneath.
 import { escapeHtml } from './escapeHtml.js';
 
 // Once a player has made 6 appearances this season the chart has a real
@@ -23,11 +23,9 @@ export function shouldShowLastSeason(payload) {
 export function buildLastSeasonHtml(payload) {
     if (!shouldShowLastSeason(payload) || !payload.headline) return '';
     const headline = `<div class="mc-caption last-season-line">${escapeHtml(payload.headline)}</div>`;
-    // Players who did not play last season have no numbers to open.
+    // Players who did not play last season have no numbers to show.
     if (!payload.detail) return headline;
+    // The detail is opt in (kj-num): the Form card's own "Show the numbers" switch reveals it.
     return `${headline}
-        <details class="recap-details">
-            <summary>See the numbers</summary>
-            <div class="mc-caption">${escapeHtml(payload.detail)}</div>
-        </details>`;
+        <div class="mc-caption last-season-detail kj-num">${escapeHtml(payload.detail)}</div>`;
 }

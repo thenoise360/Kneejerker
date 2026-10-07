@@ -266,3 +266,13 @@ def test_defence_words_and_no_digits():
 def test_gauge_is_none_without_a_league_average_or_goals_conceded():
     assert gauge_summary(make(league_scored=0)) is None
     assert gauge_summary(make(conceded=0)) is None
+
+
+def test_gauge_tone_and_label_follow_the_headline_tiers():
+    base = dict(scored=1.0, conceded=1.0, conceded_adjusted=1.0, league_scored=1.0)
+    same = gauge_summary(make(scored_adjusted=0.96, **base))['attack']
+    assert (same['tone'], same['versus']) == ('same', 'The same as usual')
+    slight = gauge_summary(make(scored_adjusted=0.94, **base))['attack']
+    assert (slight['tone'], slight['versus']) == ('worse', 'A little weaker than usual')
+    leaky = gauge_summary(make(scored=1.0, scored_adjusted=1.0, conceded=1.0, conceded_adjusted=1.2, league_scored=1.0))['defence']
+    assert (leaky['tone'], leaky['versus']) == ('worse', 'Leakier than usual')
