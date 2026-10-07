@@ -187,7 +187,8 @@ def get_this_week_decision(gameweek, last_gameweek, team_id=None):
     squad = []
     if isinstance(team_id, int) and last_gameweek:
         status, picks = fetch_entry_picks(team_id, last_gameweek)
-        if status == 'ok':
+        # A Free Hit squad lasts one week only, so it says nothing about next week's team.
+        if status == 'ok' and picks.get('active_chip') != 'freehit':
             squad = squad_from_picks(picks)
     if squad:
         decision = biggest_decision(squad, availability, predictions, fixtures)

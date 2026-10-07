@@ -219,3 +219,10 @@ def test_squad_with_no_captain_is_not_called_right():
     d = biggest_decision(squad, avail, {1: 5.0}, fixtures)
     assert d['title'] == 'Captain: worth a look at A'
     assert 'looks right' not in d['title'] and 'ahead of' not in d['reason']
+
+
+def test_free_hit_picks_fall_back_to_everyone(monkeypatch):
+    picks = {'active_chip': 'freehit', 'picks': [{'element': 1, 'is_captain': True, 'multiplier': 2}]}
+    patch(monkeypatch, ('ok', picks))
+    result = get_this_week_decision(6, 5, team_id=123)
+    assert result['based_on'] == 'everyone' and result['squad_gameweek'] is None
