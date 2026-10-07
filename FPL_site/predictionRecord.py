@@ -80,8 +80,9 @@ def shape_games(rows, teams):
             'gameweek': r['gameweek'],
             'opponent': opponent['name'],
             'is_home': is_home,
-            'predicted_for': predicted_for,
-            'predicted_against': predicted_against,
+            # Shown on screen, so one decimal; the verdict below used the raw values.
+            'predicted_for': round(predicted_for, 1),
+            'predicted_against': round(predicted_against, 1),
             'actual_for': actual_for,
             'actual_against': actual_against,
             'verdict': game_verdict(predicted_for, predicted_against, actual_for, actual_against),

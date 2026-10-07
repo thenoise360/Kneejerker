@@ -8,6 +8,7 @@ from mysql.connector.errors import ProgrammingError
 
 import FPL_site.predictionRecord as pr
 import FPL_site.matchPredictionEngine as engine
+from FPL_site.recordCopy import game_verdict
 from FPL_site.predictionRecord import (
     fetch_record_rows, fetch_logging_started, shape_games, load_prediction_record,
 )
@@ -169,3 +170,11 @@ def test_record_not_ready_when_no_connection(monkeypatch):
     assert payload['status'] == 'not_ready'
     assert payload['message']['title'] == 'Our prediction record is on its way'
     assert 'games' not in payload
+
+
+def test_predictions_are_rounded_to_one_decimal_but_verdict_uses_raw():
+    # 1.43727 vs 1.0 expected, scoring 2-1: the raw gap is small, so judge on the raw values.
+    game = shape_games([row(pf=1.43727, pa=0.98412, h=2, a=1)], TEAMS)[0]
+    assert game['predicted_for'] == 1.4 and game['predicted_against'] == 1.0
+    raw = game_verdict(1.43727, 0.98412, 2, 1)
+    assert game['verdict'] == raw
