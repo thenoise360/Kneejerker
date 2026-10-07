@@ -23,6 +23,8 @@ function signalRow(signal) {
 // up."), but the label is already the heading. Drop that prefix and start
 // the sentence with a capital letter, so the card does not say it twice.
 function reasonWithoutLabel(label, reason) {
+    // A missing reason (null or undefined) means no sentence, not the word "Null".
+    if (reason === null || reason === undefined) return '';
     const text = String(reason);
     const prefix = `${label}: `;
     const rest = text.startsWith(prefix) ? text.slice(prefix.length) : text;
@@ -49,4 +51,25 @@ export function renderMomentumCard(payload) {
 export function renderStripItem(item) {
     return `<li><strong>${escapeHtml(item.name)}</strong> `
         + `<span class="sub">${escapeHtml(item.team)}: ${escapeHtml(item.reason)}</span></li>`;
+}
+
+// Turns the strip route's answer into the groups Discover draws. Each player
+// gets exactly one reason. A group with nobody in it is left out, so an
+// empty answer gives an empty list, and the page then hides the whole strip.
+export function stripToCategories(strip) {
+    const groups = [
+        { label: 'Rising', title: 'Heating up', subtitle: 'Players whose week looks better than last', list: strip?.heating_up },
+        { label: 'Cooling', title: 'Cooling off', subtitle: 'Players whose week looks harder than last', list: strip?.cooling_off },
+    ];
+    return groups
+        .filter(group => Array.isArray(group.list) && group.list.length > 0)
+        .map(group => ({
+            title: group.title,
+            subtitle: group.subtitle,
+            // The card wants these field names. The position is the short code the server sent.
+            players: group.list.map(item => ({
+                id: item.id, full_name: item.name, team_name: item.team, position: item.position || '', // The group title already says Heating up or Cooling off, so drop the label from the reason.
+                why: reasonWithoutLabel(group.label, item.reason),
+            })),
+        }));
 }

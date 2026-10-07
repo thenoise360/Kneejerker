@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderMomentumCard } from '../../FPL_site/static/scripts/lib/momentumView.js';
+import { renderMomentumCard, stripToCategories } from '../../FPL_site/static/scripts/lib/momentumView.js';
 
 const ready = {
     status: 'ready',
@@ -73,4 +73,27 @@ test('not_ready renders the calm message inside a slide', () => {
     assert.match(html, /mini-slide/);
     assert.match(html, /<h3 class="recap-verdict">Not yet<\/h3>/);
     assert.doesNotMatch(html, /<details/);
+});
+
+test('a null or missing reason shows nothing instead of the word Null', () => {
+    assert.doesNotMatch(renderMomentumCard({ ...ready, reason: null }), /Null/);
+    assert.doesNotMatch(renderMomentumCard({ ...ready, reason: undefined }), /Undefined/);
+});
+
+test('the strip becomes two groups with the right titles and one reason each', () => {
+    const groups = stripToCategories({
+        heating_up: [{ id: 1, name: 'B', team: 'Chelsea', position: 'MID', reason: 'Rising: kinder fixtures coming up.' }],
+        cooling_off: [{ id: 2, name: 'D', team: 'Arsenal', reason: 'Cooling: tougher fixtures coming up.' }],
+    });
+    assert.deepEqual(groups.map(g => g.title), ['Heating up', 'Cooling off']);
+    assert.deepEqual(groups[0].players, [{
+        id: 1, full_name: 'B', team_name: 'Chelsea', position: 'MID', why: 'Kinder fixtures coming up.' }]);
+});
+
+test('an empty list leaves its group out, and nothing at all gives no groups', () => {
+    const one = stripToCategories({ heating_up: [], cooling_off: [{ id: 2, name: 'D', team: 'A', reason: 'r' }] });
+    assert.deepEqual(one.map(g => g.title), ['Cooling off']);
+    assert.deepEqual(stripToCategories({ heating_up: [], cooling_off: [] }), []);
+    assert.deepEqual(stripToCategories({ status: 'not_ready' }), []);
+    assert.deepEqual(stripToCategories(null), []);
 });

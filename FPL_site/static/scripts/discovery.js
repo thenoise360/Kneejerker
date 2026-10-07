@@ -13,6 +13,8 @@ import {
     formatStatValue,
     summaryRow
 } from './visuals.js';
+import { stripToCategories } from './lib/momentumView.js';
+import { escapeHtml } from './lib/escapeHtml.js';
 
 let allPlayers = [];
 let selectedPlayers = [];
@@ -101,8 +103,8 @@ function renderTray() {
         chip.dataset.playerId = player.id;
         const avatarStyle = isComparing ? ` style="background:${COMPARISON_COLORS[i]};"` : '';
         chip.innerHTML = `
-            <div class="chip-avatar"${avatarStyle}>${getInitials(player.full_name)}</div>
-            <div class="chip-name">${player.full_name}</div>
+            <div class="chip-avatar"${avatarStyle}>${escapeHtml(getInitials(player.full_name))}</div>
+            <div class="chip-name">${escapeHtml(player.full_name)}</div>
             <div class="chip-remove" data-action="remove">
                 <i class="bi bi-x"></i>
             </div>
@@ -254,8 +256,8 @@ function renderSearchResults(results, query) {
         row.className = 'search-result-row';
         row.innerHTML = `
             <div class="result-info">
-                <div class="result-name">${player.full_name}</div>
-                <div class="result-meta">${player.team_name} • ${player.position}</div>
+                <div class="result-name">${escapeHtml(player.full_name)}</div>
+                <div class="result-meta">${escapeHtml(player.team_name)} • ${escapeHtml(player.position)}</div>
             </div>
             <div class="result-action">
                 <i class="bi bi-plus-circle"></i>
@@ -285,8 +287,8 @@ function renderCategory(config, slotId) {
     const header = document.createElement('div');
     header.className = 'category-header';
     header.innerHTML = `
-        <h3 class="category-title">${config.title}</h3>
-        <p class="category-subtitle">${config.subtitle}</p>
+        <h3 class="category-title">${escapeHtml(config.title)}</h3>
+        <p class="category-subtitle">${escapeHtml(config.subtitle)}</p>
     `;
     categorySection.appendChild(header);
 
@@ -313,7 +315,7 @@ function renderCategory(config, slotId) {
 /**
  * Grey pulsing placeholder for one category section, shown immediately on
  * page load (before any category data has arrived) so the page's eventual
- * shape is visible right away instead of staying blank while the 5 category
+ * shape is visible right away instead of staying blank while the category
  * fetches are in flight.
  * @param {string} slotId
  */
@@ -355,10 +357,10 @@ function createPlayerCard(player) {
     
     card.innerHTML = `
         <div class="p-card-top">
-            <div class="p-card-avatar">${getInitials(player.full_name)}</div>
+            <div class="p-card-avatar">${escapeHtml(getInitials(player.full_name))}</div>
             <div class="p-card-info">
-                <div class="p-card-name">${player.full_name}</div>
-                <div class="p-card-meta">${player.team_name} • ${player.position}</div>
+                <div class="p-card-name">${escapeHtml(player.full_name)}</div>
+                <div class="p-card-meta">${escapeHtml(player.team_name)}${player.position ? ` • ${escapeHtml(player.position)}` : ''}</div>
             </div>
             <div class="p-card-check" style="${isSelected ? '' : 'display:none'}">
                 <i class="bi bi-check-circle-fill"></i>
@@ -368,7 +370,7 @@ function createPlayerCard(player) {
             <div class="sparkline-placeholder"></div>
         </div>
         <div class="p-card-why">
-            ${player.why || 'Quietly delivering consistent returns.'}
+            ${escapeHtml(player.why || 'Quietly delivering consistent returns.')}
         </div>
     `;
 
@@ -1029,12 +1031,13 @@ const CATEGORY_SLOTS = {
     worthWatching: 'category-worth-watching',
     mostConsistent: 'category-most-consistent',
     momentum: 'category-momentum',
-    newManager: 'category-new-manager'
+    newManager: 'category-new-manager',
+    heatingUp: 'category-heating-up'
 };
 
 /**
  * Loads and renders discovery categories from real backend sources. Renders
- * a skeleton placeholder for all 5 immediately, then fires all 5 fetches in
+ * a skeleton placeholder for every category immediately, then fires all the fetches in
  * parallel rather than one after another - each independently swaps its own
  * skeleton for real content (or removes it, for New manager in charge, if
  * it comes back empty) as soon as its own fetch resolves.
@@ -1050,7 +1053,8 @@ async function loadDiscoveryCategories() {
         loadWorthWatchingCategory(),
         loadMostConsistentCategory(),
         loadMomentumCategory(),
-        loadNewManagerCategory()
+        loadNewManagerCategory(),
+        loadHeatingUpCategory()
     ]);
 }
 
@@ -1185,6 +1189,42 @@ async function loadNewManagerCategory() {
         }
     } catch (error) {
         console.error('Discovery: Error loading "New manager in charge":', error);
+        document.getElementById(slotId)?.remove();
+    }
+}
+
+// 6. Heating up / Cooling off. Two groups drawn from one fetch. If the
+// server has nothing to say (both lists empty, not ready, or an error), the
+// skeleton is removed and the strip is hidden entirely.
+async function loadHeatingUpCategory() {
+    const slotId = CATEGORY_SLOTS.heatingUp;
+    try {
+        const response = await fetch('/api/discover/momentum-strip');
+        if (!response.ok) {
+            document.getElementById(slotId)?.remove();
+            return;
+        }
+        const groups = stripToCategories(await response.json());
+        if (groups.length === 0) {
+            document.getElementById(slotId)?.remove();
+            return;
+        }
+        // The first group takes over the skeleton. Each later group gets a
+        // fresh placeholder right after the one before it, so the order holds.
+        let previousId = slotId;
+        groups.forEach((group, index) => {
+            let targetId = slotId;
+            if (index > 0) {
+                targetId = `${slotId}-${index}`;
+                const placeholder = document.createElement('div');
+                placeholder.id = targetId;
+                document.getElementById(previousId)?.after(placeholder);
+            }
+            renderCategory(group, targetId);
+            previousId = targetId;
+        });
+    } catch (error) {
+        console.error('Discovery: Error loading "Heating up / Cooling off":', error);
         document.getElementById(slotId)?.remove();
     }
 }
