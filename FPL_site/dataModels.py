@@ -1,3 +1,4 @@
+import os
 import mysql.connector
 from mysql.connector import Error
 from FPL_site.config import current_config
@@ -51,7 +52,7 @@ password = current_config.PASSWORD
 db = current_config.DATABASE
 
 season = "2025_2026"
-season_start = 2026
+FALLBACK_SEASON_START = 2026
 
 NULL = None
 
@@ -67,6 +68,36 @@ def connect_db():
     except Error as e:
         logger.error(f"Error while connecting to MySQL: {e}")
         return None
+
+# Resolve the season once, at import. A hard-coded year went stale at every summer rollover
+# (the new season's pre-season data was written under the old year until someone edited the
+# constant). The newest year_start in bootstrapstatic_teams is what the update job has most
+# recently written. Falls back to the constant when the database is unavailable and under
+# KJ_SKIP_DB_INIT, so tests and offline tooling never need a connection.
+def _resolve_season_start(default):
+    if os.environ.get('KJ_SKIP_DB_INIT') == '1':
+        return default
+    conn = None
+    try:
+        conn = connect_db()
+        if conn is None:
+            return default
+        cursor = conn.cursor()
+        cursor.execute(f'SELECT MAX(year_start) FROM {db}.bootstrapstatic_teams')
+        row = cursor.fetchone()
+        return int(row[0]) if row and row[0] else default
+    except Exception as e:
+        logger.warning(f"Could not resolve season_start from the database, using {default}: {e}")
+        return default
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+season_start = _resolve_season_start(FALLBACK_SEASON_START)
 
 # Get us the current gameweek number
 def generateCurrentGameweek():

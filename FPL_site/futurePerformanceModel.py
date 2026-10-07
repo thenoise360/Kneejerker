@@ -66,7 +66,8 @@ PASSWORD = current_config.PASSWORD
 DB = current_config.DATABASE
 
 season = "2025_2026"
-season_start = 2026
+# Same season as the web app: resolved from the database in dataModels (see _resolve_season_start).
+from FPL_site.dataModels import season_start
 
 PREDICTIONS_TABLE = 'player_predictions'
 
