@@ -224,6 +224,8 @@ def load_team_strength(team_id):
             'scored_adjusted': round(strength['scored_adjusted'], 1),
             'conceded': round(strength['conceded'], 1),
             'conceded_adjusted': round(strength['conceded_adjusted'], 1),
+            # The league average goals scored, which the gauges compare each team against.
+            'league_scored': round(strength['league_scored'], 2),
             'missing': strength['missing'],
         }
     finally:

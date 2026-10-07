@@ -222,6 +222,7 @@ def test_load_ready(monkeypatch):
     assert payload['status'] == 'ready'
     assert payload['team_name'] == 'Arsenal'
     assert payload['scored'] == 1.5 and payload['scored_adjusted'] == 1.2
+    assert payload['league_scored'] == 1.4
     assert payload['missing'][0]['name'] == 'Saka'
     assert payload['headline'] and payload['reason']
     assert conn.closed

@@ -887,7 +887,7 @@ function updatePanelUI() {
                 <div class="mp-fixture-list">
                     ${players.map((p, i) => `
                         <div class="mp-fixture-player">
-                            <div class="mp-player-name"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${p.name}</div>
+                            <div class="mp-player-name"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${escapeHtml(p.name)}</div>
                             ${buildFixtureList(p.fixtures, { compact: true })}
                             <p class="mp-note">${describeFixtureRun(p.fixtures)}</p>
                         </div>
@@ -904,7 +904,7 @@ function updatePanelUI() {
             visualHtml = `<div class="mp-visual">${chart}</div>${buildChartLegend([...playerLegendEntries, avgLegendEntry])}`;
             noteHtml = `
                 <div class="mp-comparison-note-row">
-                    ${players.map((p, i) => `<p class="mp-note"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${p.name}: ${p.summary.selected_by_percent}% ownership.</p>`).join('')}
+                    ${players.map((p, i) => `<p class="mp-note"><span class="chart-legend-dot" style="background:${COMPARISON_COLORS[i]};"></span>${escapeHtml(p.name)}: ${p.summary.selected_by_percent}% ownership.</p>`).join('')}
                 </div>
             `;
         } else if (panelMetricIndex === 3) { // Season Numbers
@@ -925,7 +925,7 @@ function updatePanelUI() {
             </div>
         `;
     } else {
-        headerHtml = `<h4 class="mp-player-name">${panelData.name}</h4>`;
+        headerHtml = `<h4 class="mp-player-name">${escapeHtml(panelData.name)}</h4>`;
 
         let visualHtml = '';
         let noteText = '';
