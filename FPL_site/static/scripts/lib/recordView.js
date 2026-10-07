@@ -28,12 +28,17 @@ function longDate(iso) {
     return `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}`;
 }
 
+// Predictions always show one decimal (1.0, not 1), so they never look like a final score.
+function oneDecimal(value) {
+    return Number(value).toFixed(1);
+}
+
 // One line per finished game. The scores are numbers, so they stay in the expander.
 function gameRow(game) {
     const where = game.is_home ? 'home to' : 'away at';
     const verdict = VERDICT_WORDS[game.verdict] || '';
     return `<li>Gameweek ${escapeHtml(game.gameweek)}, ${where} ${escapeHtml(game.opponent)}: `
-        + `we expected ${escapeHtml(game.predicted_for)}–${escapeHtml(game.predicted_against)}, `
+        + `we expected ${escapeHtml(oneDecimal(game.predicted_for))}–${escapeHtml(oneDecimal(game.predicted_against))}, `
         + `it finished ${escapeHtml(game.actual_for)}–${escapeHtml(game.actual_against)} (${verdict})</li>`;
 }
 

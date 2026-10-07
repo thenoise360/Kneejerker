@@ -39,8 +39,8 @@ test('per-game wording for home, away and each verdict', () => {
         game({ gameweek: 5, opponent: 'Fulham', actual_for: 0, verdict: 'worse' }),
     ] });
     const inside = html.split('<details')[1];
-    assert.match(inside, /<li>Gameweek 3, home to Chelsea: we expected 2–1, it finished 3–1 \(Better than expected\)<\/li>/);
-    assert.match(inside, /<li>Gameweek 4, away at Spurs: we expected 2–1, it finished 1–1 \(As expected\)<\/li>/);
+    assert.match(inside, /<li>Gameweek 3, home to Chelsea: we expected 2\.0–1\.0, it finished 3–1 \(Better than expected\)<\/li>/);
+    assert.match(inside, /<li>Gameweek 4, away at Spurs: we expected 2\.0–1\.0, it finished 1–1 \(As expected\)<\/li>/);
     assert.match(inside, /Gameweek 5, home to Fulham: .*\(Worse than expected\)/);
 });
 
@@ -75,4 +75,9 @@ test('day one: only eyebrow, verdict and reason (no label, no details, no footer
 test('with games, the started-on date appears only once', () => {
     const html = renderRecord(ready);
     assert.equal(html.match(/8 October 2026/g).length, 1);
+});
+
+test('predictions always show one decimal; actual scores stay whole', () => {
+    const html = renderRecord({ ...ready, games: [game({ predicted_for: 1, predicted_against: 0, actual_for: 2, actual_against: 0 })] });
+    assert.match(html, /we expected 1\.0–0\.0, it finished 2–0 /);
 });
