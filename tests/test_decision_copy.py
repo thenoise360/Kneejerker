@@ -70,3 +70,11 @@ def test_no_title_or_reason_contains_a_digit_in_any_builder():
         for key in ('title', 'reason', 'body'):
             if key in d:
                 assert not re.search(r'\d', d[key]), d[key]
+
+
+def test_captain_decision_without_a_known_current_captain_never_says_looks_right():
+    d = captain_decision('Salah', 8.0, None, FIXTURE)
+    assert d['title'] == 'Captain: worth a look at Salah'
+    assert d['reason'] == ("We're seeing Salah as your strongest option, with a kind fixture "
+                           "at home to Everton. It's your call.")
+    assert 'looks right' not in d['title'] and 'ahead of' not in d['reason']

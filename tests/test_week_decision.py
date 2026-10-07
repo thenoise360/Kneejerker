@@ -201,3 +201,21 @@ def test_attacker_outranks_defender_on_same_team():
     rows = [row(1, 10, 9, 3), row(2, 10, 0.5, 1)]
     p = involvement_predictions(rows, [goals(10, 1.8)])
     assert p[1] > p[2]
+
+
+def test_captain_missing_from_availability_is_not_called_right():
+    squad = [{'id': 99, 'is_captain': True, 'multiplier': 2}, {'id': 1, 'is_captain': False, 'multiplier': 1}]
+    avail = availability((1, 'A', 10, None))
+    fixtures = {10: {'opponent': 'X', 'is_home': True, 'difficulty': 3}}
+    d = biggest_decision(squad, avail, {1: 5.0}, fixtures)
+    assert d['title'] == 'Captain: worth a look at A'
+    assert 'looks right' not in d['title'] and 'ahead of' not in d['reason']
+
+
+def test_squad_with_no_captain_is_not_called_right():
+    squad = [{'id': 1, 'is_captain': False, 'multiplier': 1}]
+    avail = availability((1, 'A', 10, None))
+    fixtures = {10: {'opponent': 'X', 'is_home': True, 'difficulty': 3}}
+    d = biggest_decision(squad, avail, {1: 5.0}, fixtures)
+    assert d['title'] == 'Captain: worth a look at A'
+    assert 'looks right' not in d['title'] and 'ahead of' not in d['reason']

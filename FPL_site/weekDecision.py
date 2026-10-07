@@ -143,7 +143,8 @@ def biggest_decision(squad, availability, predictions, fixtures):
     if best is None:
         return None
     captain = next((p['id'] for p in squad if p['is_captain']), None)
-    current_name = availability.get(captain, {}).get('name', availability[best]['name'])
+    # An unknown or missing captain gives None, so the copy never claims they look right.
+    current_name = availability[captain]['name'] if captain in availability else None
     return captain_decision(availability[best]['name'], predictions[best], current_name,
                             fixtures.get(availability[best]['team']))
 

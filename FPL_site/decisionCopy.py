@@ -32,6 +32,12 @@ def availability_decision(name, chance, news):
 def captain_decision(best_name, best_prediction, current_name, fixture):
     details = [f'We expect {best_name} to be involved in about {best_prediction:.1f} goals this week']
     where = fixture_phrase(fixture)
+    if current_name is None:
+        # We don't know who the captain is, so we can't say they're right or compare.
+        return {'kind': 'captain', 'title': f'Captain: worth a look at {best_name}',
+                'reason': f"We're seeing {best_name} as your strongest option{where}. "
+                          f"It's your call.",
+                'details': details}
     if best_name == current_name:
         return {'kind': 'captain', 'title': f'Captain: {best_name} looks right',
                 'reason': f"We're seeing {best_name} as your strongest option{where}. Sticking "
