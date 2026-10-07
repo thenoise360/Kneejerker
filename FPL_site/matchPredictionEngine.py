@@ -51,6 +51,22 @@ MAX_DISPERSION = 1.0 + STABLE_GAMES_THIS_SEASON * 0.3
 PRESEASON_DISPERSION_CAP = 1.0 + (MAX_DISPERSION - 1.0) * 0.5
 CONFIDENCE = 0.50                 # width of the reported low/high range (0.50 = 25th-75th percentile)
 HOME_ADV_INIT = 0.25
+# Low-data shrinkage (Release P3, Task 7). Newly promoted sides have ~5 pooled games, which
+# gave extreme maximum-likelihood ratings (Coventry attack -1.75, ~0.26 goals a game).
+# An L2 penalty SHRINKAGE * sum((rating - prior)^2) pulls every team towards its prior:
+# (0, 0) for teams with >= ESTABLISHED_GAMES pooled fixtures, PROMOTED_PRIOR otherwise.
+# SHRINKAGE = 8 chosen by backtest_model-style holdouts (6, 15, 25; targets 2022, 2023, 2025):
+# overall mean absolute error fell (0.996 -> 0.978 for 2022/23, 0.878 -> 0.869 for 2025) and
+# error on fixtures involving promoted teams fell 1.010 -> 0.954; it is the smallest value
+# that also keeps today's weakest attack at ~0.73 goals a game against an average side.
+SHRINKAGE = 8.0
+ESTABLISHED_GAMES = 38
+# PROMOTED_PRIOR = (attack, defence), derived from data: the mean unshrunk fitted rating of
+# teams in their first pooled season (fit through that season's gameweek 38, centred on the
+# established teams' average): Bournemouth, Fulham, Nott'm Forest (2022); Luton, Sheffield Utd
+# (2023). Attack -0.137, defence +0.281 -> rounded. Only 5 team-seasons: treat as approximate.
+# (2024/2025 team-seasons were excluded: the 2024 teams table is corrupt, see task report.)
+PROMOTED_PRIOR = (-0.14, 0.28)
 
 NEXT_N_GAMEWEEKS = 5
 
@@ -149,12 +165,18 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
 #################################################
 
 def _unpack_theta(theta, n):
-    """theta = [attack_1..attack_{n-1} (attack_0 fixed at 0), defence_0..defence_{n-1}, home_adv, rho]."""
-    attack = np.zeros(n)
-    attack[1:] = theta[0:n - 1]
-    defence = theta[n - 1:2 * n - 1]
-    home_adv = theta[2 * n - 1]
-    rho = theta[2 * n]
+    """
+    theta = [attack_0..attack_{n-1}, defence_0..defence_{n-1}, home_adv, rho].
+
+    All attacks are free. The old "attack_0 fixed at 0" constraint is gone: the
+    shrinkage penalty already removes the attack+c / defence-c invariance (it
+    anchors the league level to the priors), and pinning an arbitrary team at 0
+    would fight a non-zero prior for that team.
+    """
+    attack = theta[0:n]
+    defence = theta[n:2 * n]
+    home_adv = theta[2 * n]
+    rho = theta[2 * n + 1]
     return attack, defence, home_adv, rho
 
 
@@ -168,17 +190,47 @@ def _dc_tau(x, y, lam, mu, rho):
     return tau
 
 
-def _dixon_coles_nll(theta, n, idx_h, idx_a, goals_h, goals_a, weights):
+def _dixon_coles_nll(theta, n, idx_h, idx_a, goals_h, goals_a, weights,
+                     shrinkage=0.0, prior_att=None, prior_def=None):
     attack, defence, home_adv, rho = _unpack_theta(theta, n)
     lam = np.clip(np.exp(attack[idx_h] + defence[idx_a] + home_adv), 1e-6, 15.0)
     mu = np.clip(np.exp(attack[idx_a] + defence[idx_h]), 1e-6, 15.0)
     tau = np.clip(_dc_tau(goals_h, goals_a, lam, mu, rho), 1e-10, None)
     log_lik = weights * (np.log(tau) + poisson.logpmf(goals_h, lam) + poisson.logpmf(goals_a, mu))
-    return -np.sum(log_lik)
+    nll = -np.sum(log_lik)
+    if shrinkage:
+        nll += shrinkage * (np.sum((attack - prior_att) ** 2) + np.sum((defence - prior_def) ** 2))
+    return nll
 
 
-def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE):
-    """Returns ({code: {'attack', 'defence'}}, home_adv, rho)."""
+def team_priors(rows, codes, established_games=ESTABLISHED_GAMES, promoted_prior=None):
+    """
+    (prior_att, prior_def) arrays: league average (0, 0) for teams with at least
+    `ESTABLISHED_GAMES` pooled fixtures, `promoted_prior` for the rest.
+    """
+    if promoted_prior is None:
+        promoted_prior = PROMOTED_PRIOR
+    games = {c: 0 for c in codes}
+    for r in rows:
+        games[r['code_h']] += 1
+        games[r['code_a']] += 1
+    established = np.array([games[c] >= established_games for c in codes])
+    prior_att = np.where(established, 0.0, promoted_prior[0])
+    prior_def = np.where(established, 0.0, promoted_prior[1])
+    return prior_att, prior_def
+
+
+def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE,
+                    shrinkage=None, promoted_prior=None, established_games=ESTABLISHED_GAMES):
+    """
+    Returns ({code: {'attack', 'defence'}}, home_adv, rho).
+
+    An L2 penalty `shrinkage * sum((rating - prior)^2)` pulls low-data teams
+    (newly promoted sides with a handful of pooled games) towards a typical
+    promoted side instead of an extreme maximum-likelihood rating.
+    """
+    if shrinkage is None:
+        shrinkage = SHRINKAGE
     n = len(codes)
     if n < 2 or not rows:
         logger.warning("fit_dixon_coles: not enough data to fit (n=%s teams, %s fixtures) - "
@@ -193,13 +245,15 @@ def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE):
     gw = np.array([r['unified_gw'] for r in rows], dtype=float)
     weights = np.exp(-decay_rate * np.clip(reference_gw - gw, 0, None))
 
-    theta0 = np.zeros(2 * n + 1)
-    theta0[2 * n - 1] = HOME_ADV_INIT
-    bounds = [(-3.0, 3.0)] * (n - 1) + [(-3.0, 3.0)] * n + [(-1.0, 1.0), (-0.3, 0.3)]
+    prior_att, prior_def = team_priors(rows, codes, established_games, promoted_prior)
+
+    theta0 = np.zeros(2 * n + 2)
+    theta0[2 * n] = HOME_ADV_INIT
+    bounds = [(-3.0, 3.0)] * (2 * n) + [(-1.0, 1.0), (-0.3, 0.3)]
 
     result = minimize(
         _dixon_coles_nll, theta0,
-        args=(n, idx_h, idx_a, goals_h, goals_a, weights),
+        args=(n, idx_h, idx_a, goals_h, goals_a, weights, shrinkage, prior_att, prior_def),
         method='L-BFGS-B', bounds=bounds,
     )
     if not result.success:
