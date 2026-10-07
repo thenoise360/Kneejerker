@@ -21,6 +21,7 @@ DATA_ROUTE_STUBS = {
     '/api/week/this-week-decision?gameweek=6&last_gameweek=5': ('get_this_week_decision', {
         'gameweek': 6, 'based_on': 'everyone', 'squad_gameweek': None, 'decision': None,
         'message': {'title': 't', 'body': 'b'}}),
+    '/api/club/1/strength': ('load_team_strength', {'status': 'not_ready', 'message': {'title': 't', 'body': 'b'}}),
 }
 
 
@@ -58,3 +59,10 @@ def test_week_page_is_v2_without_any_flag(client, calls):
         assert marker in html, marker
     assert 'Friend activity feed' not in html and 'Team of the Week' not in html
     assert calls == ['get_week_view_state']
+
+
+@pytest.mark.parametrize('flag', [True, False])
+def test_club_strength_slot_follows_flag(client, monkeypatch, flag):
+    monkeypatch.setattr(views.current_config, 'FEATURE_TEAM_DETAIL', flag, raising=False)
+    html = client.get('/club/1').get_data(as_text=True)
+    assert ('id="team-strength-slot"' in html) is flag
