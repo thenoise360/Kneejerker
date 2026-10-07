@@ -551,6 +551,10 @@
     margin-bottom: 8px;
 }
 
+.mp-fixture-player .fixture-list {
+    text-align: left;
+}
+
 .mp-fixture-player .fixture-chip-row {
     justify-content: flex-start;
 }
@@ -716,8 +720,15 @@
    not a chart, so they need to fill .mp-visual's width rather than shrink to
    content size and end up centred as a narrow column. */
 .mp-visual .season-grid,
-.mp-visual .mp-summary-rows {
+.mp-visual .mp-summary-rows,
+.mp-visual .fixture-list {
     width: 100%;
+}
+
+/* The single-player fixture list reads left to right like the Radar card,
+   not centred like a chart. */
+.mp-visual .fixture-list {
+    text-align: left;
 }
 
 .mp-summary-rows {

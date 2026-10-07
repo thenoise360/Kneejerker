@@ -26,22 +26,37 @@ function standoutRow(player) {
         </li>`;
 }
 
+// A row of big-number tiles: [{ value, label }]. The verdict and reason come
+// first and stay free of digits; the tiles then show the figures behind them,
+// as part of the card rather than tucked away in an expander.
+export function statTiles(tiles) {
+    const cells = tiles
+        .filter(t => t.value !== null && t.value !== undefined && t.value !== '')
+        .map(t => `<div class="stat-tile${t.highlight ? ' stat-tile--highlight' : ''}">`
+            + `<span class="stat-tile-value">${escapeHtml(t.value)}</span>`
+            + `<span class="stat-tile-label">${escapeHtml(t.label)}</span></div>`)
+        .join('');
+    return cells ? `<div class="stat-tiles">${cells}</div>` : '';
+}
+
 export function renderGuestRecap(guest, gameweek) {
     // Template literal: the backticks let us write HTML across several lines
     // and drop values in with ${...}. Every value goes through escapeHtml.
-    const highest = guest.highest_score
-        ? ` · Highest score: ${escapeHtml(guest.highest_score)} points`
+    const tiles = statTiles([
+        { value: guest.average_score, label: 'Average points' },
+        { value: guest.highest_score, label: 'Highest points' },
+    ]);
+    const standouts = guest.standouts && guest.standouts.length
+        ? `<div class="recap-section-title">Standout players</div>
+            <ul class="recap-standouts">${guest.standouts.map(standoutRow).join('')}</ul>`
         : '';
     return `
         <div class="card" id="guest-recap">
             <div class="eyebrow-sm">gameweek ${escapeHtml(gameweek)}, for everyone</div>
             <h3 class="recap-verdict">${escapeHtml(guest.headline)}</h3>
             <p>${escapeHtml(guest.reason)}</p>
-            <details class="recap-details">
-                <summary>See the numbers</summary>
-                <p class="sub">Average score: ${escapeHtml(guest.average_score)} points${highest}</p>
-                <ul class="recap-standouts">${guest.standouts.map(standoutRow).join('')}</ul>
-            </details>
+            ${tiles}
+            ${standouts}
         </div>`;
 }
 
@@ -85,24 +100,25 @@ export function renderPersonalRecap(personal, gameweek) {
         return renderMessage(personal.message) + renderTeamPrompt();
     }
     const call = personal.right_call;
-    // Only draw the "one thing done right" line if the server sent one.
-    const callLine = call
-        ? `<p><strong>${escapeHtml(call.title)}:</strong> ${escapeHtml(call.reason)}</p>`
-        : '';
-    // The player's points are a number, so they live inside the expander.
+    // The right call and its points read as one line: "Captain call: Haaland delivered."
+    // followed by a small tag with the points, when the server sent them.
     const callPoints = call && call.points != null && call.name
-        ? `<p class="sub">${escapeHtml(call.name)} scored ${escapeHtml(call.points)} points.</p>`
+        ? ` <span class="recap-call-points">${escapeHtml(call.name)}: ${escapeHtml(call.points)} points</span>`
         : '';
+    const callLine = call
+        ? `<p class="recap-call"><strong>${escapeHtml(call.title)}:</strong> ${escapeHtml(call.reason)}${callPoints}</p>`
+        : '';
+    // Your score is highlighted; the average sits beside it for comparison.
+    const tiles = statTiles([
+        { value: personal.score, label: 'Your points', highlight: true },
+        { value: personal.average_score, label: 'Average points' },
+    ]);
     return `
         <div class="card" id="personal-recap">
             <div class="eyebrow-sm">your gameweek ${escapeHtml(gameweek)}</div>
             <h3 class="recap-verdict">${escapeHtml(personal.verdict)}</h3>
             ${callLine}
-            <details class="recap-details">
-                <summary>See the numbers</summary>
-                <p class="sub">You scored ${escapeHtml(personal.score)} points. The average was ${escapeHtml(personal.average_score)} points.</p>
-                ${callPoints}
-            </details>
+            ${tiles}
             <button type="button" class="btn-pill secondary" id="recap-change-team">Not your team? Change it</button>
         </div>`;
 }

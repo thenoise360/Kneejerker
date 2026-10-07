@@ -19,27 +19,50 @@ const ready = {
     missing: [{ name: 'Saka', position: 'midfielder', role: 'attack', share: 0.3, chance: 25 }],
 };
 
-test('verdict and reason first, with no digits before the details', () => {
+test('verdict and reason first, with no digits before the gauges', () => {
     const html = renderStrength(ready);
-    const [before, inside] = html.split('<details');
+    const before = html.split('<div class="strength-gauges">')[0];
     assert.match(before, /<h3 class="outlook-phrase strength-verdict">Arsenal&#39;s attack is weaker this week<\/h3>/);
     assert.match(before, /<p class="sub">Saka is likely to miss out\.<\/p>/);
     // Look at the visible text only: drop tags (h3 has a digit) and escape codes such as &#39;.
     assert.doesNotMatch(before.replace(/<[^>]*>/g, '').replace(/&#\d+;/g, ''), /\d/);
-    assert.match(inside, /<summary>See the numbers<\/summary>/);
+    // The numbers are part of the card now, not behind "See the numbers".
+    assert.doesNotMatch(html, /<details|See the numbers/);
 });
 
-test('numbers live inside the details', () => {
-    const inside = renderStrength(ready).split('<details')[1];
-    assert.match(inside, /Goals a game against an average side: 1\.5 \(1\.2 with this week's absences\)/);
-    assert.match(inside, /Goals conceded a game against an average side: 1\.0 \(1\.1 with this week's absences\)/);
-    assert.match(inside, /<li>Saka: 25% chance of playing<\/li>/);
+test('each gauge carries its own figures: this week first, then usual', () => {
+    const [attack, defence] = renderStrength(ready).split('<div class="strength-gauge">').slice(1);
+    assert.match(attack, /<dt>This week<\/dt><dd>1\.2<\/dd><\/div>\s*<div><dt>Usual<\/dt><dd>1\.5<\/dd>/);
+    assert.match(attack, /goals a game against an average side/);
+    assert.match(defence, /<dt>This week<\/dt><dd>1\.1<\/dd><\/div>\s*<div><dt>Usual<\/dt><dd>1\.0<\/dd>/);
+    assert.match(defence, /goals conceded a game against an average side/);
+});
+
+test('missing players are chips with their chance of playing', () => {
+    const html = renderStrength(ready);
+    assert.match(html, /Missing or doubtful this week/);
+    assert.match(html, /<li class="strength-missing-chip">Saka <span class="strength-missing-chance">25% chance<\/span><\/li>/);
+    assert.doesNotMatch(renderStrength({ ...ready, missing: [] }), /strength-missing/);
 });
 
 test('escapes every value', () => {
     const html = renderStrength({ ...ready, headline: '<b>x</b>', missing: [{ name: '<i>Bad</i>', chance: 0 }] });
     assert.doesNotMatch(html, /<b>x|<i>Bad/);
-    assert.match(html, /&lt;i&gt;Bad&lt;\/i&gt;: 0% chance of playing/);
+    assert.match(html, /&lt;i&gt;Bad&lt;\/i&gt; <span class="strength-missing-chance">0% chance/);
+});
+
+test('the dial colour and its words follow the server tone', () => {
+    const toned = { ...ready, gauge: {
+        attack: { ...ready.gauge.attack, tone: 'worse', versus: 'Weaker than usual' },
+        defence: { ...ready.gauge.defence, tone: 'same', versus: 'The same as usual' } } };
+    const [attack, defence] = renderStrength(toned).split('<div class="strength-gauge">').slice(1);
+    assert.match(attack, /stroke="#D4145A"/);
+    assert.match(attack, /<div class="strength-versus strength-versus--worse">Weaker than usual<\/div>/);
+    assert.match(defence, /stroke="var\(--plum\)"/);
+    assert.match(defence, /strength-versus--same">The same as usual/);
+    // An unknown tone falls back to plum rather than an unstyled colour.
+    const odd = renderStrength({ ...ready, gauge: { ...ready.gauge, attack: { ...ready.gauge.attack, tone: 'purple' } } });
+    assert.doesNotMatch(odd, /strength-versus--purple|stroke="undefined"/);
 });
 
 test('not_ready renders the calm message', () => {
@@ -52,13 +75,13 @@ test('skeleton is busy', () => {
     assert.match(renderStrengthSkeleton(), /aria-busy="true"/);
 });
 
-test('two gauges render for a ready payload, each with a legend', () => {
+test('two gauges render for a ready payload, with one shared legend', () => {
     const html = renderStrength(ready);
     assert.equal((html.match(/<svg /g) || []).length, 2);
     assert.match(html, /aria-label="Attack: /);
     assert.match(html, /aria-label="Defence: /);
-    assert.equal((html.match(/strength-swatch-tick/g) || []).length, 2);
-    assert.equal((html.match(/strength-swatch-dot/g) || []).length, 2);
+    assert.equal((html.match(/strength-swatch-tick/g) || []).length, 1);
+    assert.equal((html.match(/strength-swatch-dot/g) || []).length, 1);
     assert.ok(html.includes('>Usual<') && html.includes('>This week<'));
 });
 
@@ -88,9 +111,10 @@ test('a missing gauge, or missing ratios, leaves the gauges out but keeps the re
     ];
     for (const over of broken) {
         const html = renderStrength({ ...ready, ...over });
-        assert.doesNotMatch(html, /<svg|NaN/);
+        assert.doesNotMatch(html, /<svg|NaN|strength-legend/);
         assert.match(html, /strength-verdict/);
-        assert.match(html, /See the numbers/);
+        // The figures still show without their dials.
+        assert.match(html, /<dd>1\.2<\/dd>/);
     }
 });
 

@@ -51,20 +51,14 @@ export function lastTimeCaption(lastTime) {
     return ''; // new players have no history to talk about
 }
 
-// One sentence for the "See the numbers" list, or '' when there are no numbers.
-function lastTimeNumbers(f) {
-    const lt = f.lastTime;
-    const team = f.teamFullName || f.teamName;
-    const lead = `Gameweek ${f.gameweek}, ${team}: `;
-    if (!lt) return '';
-    if (lt.kind === 'played') {
-        const points = `${lt.points} ${Number(lt.points) === 1 ? 'point' : 'points'}`;
-        const minutes = `${lt.minutes} ${Number(lt.minutes) === 1 ? 'minute' : 'minutes'}`;
-        return `${lead}${points}, ${minutes}, ${lt.result} ${lt.is_home ? 'at home' : 'away'}`;
-    }
-    if (lt.kind === 'did_not_play') return `${lead}did not play`;
-    if (lt.kind === 'no_meeting') return `${lead}the clubs did not meet`;
-    return '';
+// The numbers behind a "played" caption, as a short line: "9 points · 90 minutes · won 3–1 at home".
+// They sit right under the caption of the row they belong to, so the reader
+// never has to match a separate list back to the fixtures. '' for anything else.
+export function lastTimeStats(lastTime) {
+    if (!lastTime || lastTime.kind !== 'played') return '';
+    const points = `${lastTime.points} ${Number(lastTime.points) === 1 ? 'point' : 'points'}`;
+    const minutes = `${lastTime.minutes} ${Number(lastTime.minutes) === 1 ? 'minute' : 'minutes'}`;
+    return `${points} · ${minutes} · ${lastTime.result} ${lastTime.is_home ? 'at home' : 'away'}`;
 }
 
 // options.compact makes the rows slightly smaller (used when stacking one
@@ -80,21 +74,10 @@ export function buildFixtureList(fixtures, options = {}) {
         const team = escapeHtml(f.teamFullName || f.teamName);
         const venue = f.homeOrAway === 'Home' ? 'home' : 'away';
         const caption = lastTimeCaption(f.lastTime);
-        const captionHtml = caption ? ` <span class="fixture-list-caption">${escapeHtml(caption)}</span>` : '';
+        const stats = lastTimeStats(f.lastTime);
+        const statsHtml = stats ? `<span class="fixture-list-stats">${escapeHtml(stats)}</span>` : '';
+        const captionHtml = caption ? ` <span class="fixture-list-caption">${escapeHtml(caption)}${statsHtml}</span>` : '';
         return `<li class="fixture-list-row"><span>${week}</span> · <span>${team}, ${venue}</span> · ${pill(f.difficulty)}${captionHtml}</li>`;
     }).join('');
-    const list = `<ul class="fixture-list${options.compact ? ' fixture-list-compact' : ''}">${rows}</ul>`;
-
-    // One "See the numbers" block under the whole list, only if some row has numbers.
-    const numbers = fixtures
-        .filter(f => f.homeOrAway !== 'Blank')
-        .map(lastTimeNumbers)
-        .filter(Boolean)
-        .map(line => `<li>${escapeHtml(line)}</li>`)
-        .join('');
-    const details = numbers ? `<details class="recap-details">
-            <summary>See the numbers</summary>
-            <ul class="fixture-list-numbers">${numbers}</ul>
-        </details>` : '';
-    return list + details;
+    return `<ul class="fixture-list${options.compact ? ' fixture-list-compact' : ''}">${rows}</ul>`;
 }

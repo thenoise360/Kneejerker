@@ -650,16 +650,24 @@
     border-top: 1px solid var(--black-10);
 }
 
-/* Week v2: numbers-on-demand layer and recap rows */
-.recap-details { margin-top: 12px; border-top: 1px solid var(--grey); padding-top: 10px; }
-.recap-details summary { cursor: pointer; font-weight: 700; color: var(--plum); font-size: 14px; }
-.recap-details summary:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; border-radius: 4px; }
-.recap-details[open] summary { margin-bottom: 8px; }
+/* Week v2: recap rows */
 .recap-standouts { list-style: none; padding: 0; margin: 0; }
 .recap-standout { padding: 8px 0; border-bottom: 1px solid var(--grey); }
 .recap-standout:last-child { border-bottom: none; }
 .recap-standout-head { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .recap-points { font-weight: 700; white-space: nowrap; }
+
+/* Figures that belong to a recap or decision card, shown as part of it rather than in an expander. */
+.stat-tiles { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; margin: 12px 0; }
+.stat-tile { background: var(--offwhite); border: 1px solid var(--grey); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; }
+.stat-tile-value { font-size: 24px; font-weight: 800; color: var(--charcoal); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-tile-label { font-size: 11.5px; font-weight: 600; color: #666; }
+.stat-tile--highlight { background: var(--plum); border-color: var(--plum); }
+.stat-tile--highlight .stat-tile-value, .stat-tile--highlight .stat-tile-label { color: #fff; }
+.recap-section-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #555; margin: 4px 0 2px; }
+.recap-call-points { display: inline-block; font-size: 11.5px; font-weight: 700; background: var(--grey); color: var(--charcoal); border-radius: 100px; padding: 1px 8px; margin-left: 2px; white-space: nowrap; }
+.decision-facts { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-direction: column; gap: 6px; }
+.decision-facts li { font-size: 13px; color: var(--charcoal); background: var(--offwhite); border-left: 3px solid var(--plum); border-radius: 0 8px 8px 0; padding: 6px 10px; }
 
 /* Verdict headings: the global .card h3 teal is too faint on white (about 2.2:1), so use charcoal. */
 .card h3.recap-verdict { font-size: 17px; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 6px; }
@@ -671,6 +679,69 @@
 .recap-team-row input:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
 .recap-team-row .btn-pill { width: auto; padding: 10px 18px; }
 .welcome-back { border-left: 4px solid var(--teal); transition: opacity 200ms ease-in-out; }
+
+/* Team strength card: verdict and gauges. Type sizes follow .outlook-phrase and .sub. */
+.card h3.strength-verdict { font-size: 17px; text-transform: none; letter-spacing: normal; color: var(--charcoal); margin-bottom: 4px; }
+/* Darker teal for the usual tick and its key: 3:1 or better against white, unlike --teal. */
+#team-strength { --teal-ink: #0B7A6E; }
+/* Two dials side by side at phone width; only a very narrow screen stacks them. */
+.strength-gauges { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; margin-top: 10px; }
+@media (max-width: 340px) { .strength-gauges { grid-template-columns: 1fr; row-gap: 12px; } }
+/* Each gauge spans four rows of the parent grid (subgrid), so the label, figures and unit
+   line up across both columns even when one label wraps onto two lines. */
+.strength-gauge { min-width: 0; text-align: center; display: grid; grid-row: span 4; grid-template-rows: subgrid; justify-items: center; align-items: start; row-gap: 0; }
+.strength-gauge .gauge { display: block; margin: 0 auto; }
+.strength-legend { display: flex; justify-content: center; gap: 12px; font-size: 11.5px; color: #666; line-height: 1.4; margin-top: 10px; }
+.strength-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.strength-swatch-tick { display: inline-block; width: 3px; height: 12px; border-radius: 2px; background: var(--teal-ink); }
+/* Neutral dot: the needle itself changes colour with the comparison, so the key shows its shape only. */
+.strength-swatch-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--charcoal); }
+/* The comparison in words, coloured like the dial: plum as expected, brand red worse, brand green better.
+   Text colours keep at least 4.5:1 on each fill (same pairs as the fixture pills). */
+.strength-versus { font-size: 11.5px; font-weight: 700; padding: 2px 10px; border-radius: 12px; margin-top: 4px; line-height: 1.4; align-self: center; }
+.strength-versus--same { background: var(--plum); color: #fff; }
+.strength-versus--worse { background: #D4145A; color: #fff; }
+.strength-versus--better { background: #01FC7A; color: var(--charcoal); }
+/* The two figures under each dial: this week first, usual second. */
+.strength-figures { display: flex; justify-content: center; gap: 16px; margin: 8px 0 0; }
+.strength-figures div { display: flex; flex-direction: column; align-items: center; }
+.strength-figures dt { font-size: 11px; font-weight: 600; color: #666; order: 2; }
+.strength-figures dd { font-size: 20px; font-weight: 800; color: var(--charcoal); margin: 0; line-height: 1.2; order: 1; }
+.strength-figures div + div dd { color: #666; font-weight: 700; }
+.strength-figures-title { font-size: 14px; font-weight: 700; color: var(--charcoal); }
+.strength-figures-unit { font-size: 11px; color: #666; line-height: 1.35; margin-top: 2px; max-width: 150px; }
+/* Who is missing, as a wrapping row of name chips under the dials. */
+.strength-missing { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--grey); }
+.strength-missing-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #555; margin-bottom: 8px; }
+.strength-missing-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.strength-missing-chip { font-size: 13px; font-weight: 600; color: var(--charcoal); background: var(--offwhite); border: 1px solid var(--grey); border-radius: 100px; padding: 4px 4px 4px 10px; display: inline-flex; align-items: center; gap: 6px; }
+.strength-missing-chance { font-size: 11px; font-weight: 700; background: var(--grey); color: var(--charcoal); border-radius: 100px; padding: 2px 8px; }
+
+/* Prediction record: one row per game, our prediction and the final score side by side.
+   Verdict badges use the same three colours as the strength dials, always with an icon and words. */
+.record-games { list-style: none; padding: 0; margin: 12px 0 0; }
+.record-game { padding: 10px 0; border-top: 1px solid var(--grey); }
+.record-game-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; font-weight: 600; color: var(--charcoal); }
+.record-verdict { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 100px; white-space: nowrap; }
+.record-verdict--as_expected { background: var(--plum); color: #fff; }
+.record-verdict--worse { background: #D4145A; color: #fff; }
+.record-verdict--better { background: #01FC7A; color: var(--charcoal); }
+.record-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.record-scores > div { background: var(--offwhite); border-radius: 8px; padding: 6px 10px; display: flex; flex-direction: column; }
+.record-score-label { font-size: 11px; font-weight: 600; color: #666; }
+.record-score { font-size: 18px; font-weight: 800; color: var(--charcoal); line-height: 1.25; font-variant-numeric: tabular-nums; }
+.record-earlier { margin-top: 4px; }
+.record-earlier summary { cursor: pointer; font-weight: 700; color: var(--plum); font-size: 13px; padding: 8px 0; }
+.record-earlier summary:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; border-radius: 4px; }
+
+/* Momentum slide: gauge and signal rows. Sizes follow the other player-sheet slides (.sub 13px, .mc-caption 11.5px). */
+/* Capped so the SVG words render near 13px (14 units x 150/160), matching .sub and .mc-caption, instead of stretching to the slide width. */
+.momentum-gauge { max-width: 150px; margin: 0 auto 4px; text-align: center; }
+.momentum-gauge .gauge { display: block; margin: 0 auto; }
+.momentum-signals { font-size: 13px; margin-top: 6px; }
+.momentum-signal { padding: 6px 0; border-bottom: 1px solid var(--grey); }
+.momentum-signal:last-child { border-bottom: none; }
+.momentum-signal .mc-caption { margin-top: 2px; }
 
 /* This Week hub (release 1). State badges always carry an icon and words, never colour alone. */
 .hub-notice { font-size: 13px; color: var(--charcoal); background: var(--offwhite); border: 1px solid var(--grey); border-radius: 12px; padding: 10px 12px; margin: 8px 0 12px; }

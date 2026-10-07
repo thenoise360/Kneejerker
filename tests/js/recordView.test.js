@@ -17,13 +17,14 @@ const ready = {
 // Visible text only: drop tags and escape codes.
 const text = (html) => html.replace(/<[^>]*>/g, '').replace(/&#\d+;/g, '');
 
-test('verdict and reason first, no digits before the details', () => {
+test('verdict and reason first, no digits before the games', () => {
     const html = renderRecord({ ...ready, early_days: false, early_days_label: null });
-    const before = html.split('<details')[0];
+    const before = html.split('<ul class="record-games"')[0];
     assert.match(before, /<h3 class="recap-verdict">Our read on Arsenal has held up well<\/h3>/);
     assert.match(before, /<p>Most results landed close to what we expected\.<\/p>/);
     assert.doesNotMatch(text(before), /\d/);
-    assert.match(html, /<summary>See the numbers<\/summary>/);
+    // The games are part of the card, not hidden behind "See the numbers".
+    assert.doesNotMatch(html, /See the numbers/);
 });
 
 test('early days label has an aria-hidden icon and text', () => {
@@ -32,16 +33,30 @@ test('early days label has an aria-hidden icon and text', () => {
     assert.doesNotMatch(renderRecord({ ...ready, early_days_label: null }), /Early days/);
 });
 
-test('per-game wording for home, away and each verdict', () => {
+test('per-game rows for home, away and each verdict, newest first', () => {
     const html = renderRecord({ ...ready, games: [
         game(),
         game({ gameweek: 4, opponent: 'Spurs', is_home: false, actual_for: 1, actual_against: 1, verdict: 'as_expected' }),
         game({ gameweek: 5, opponent: 'Fulham', actual_for: 0, verdict: 'worse' }),
     ] });
-    const inside = html.split('<details')[1];
-    assert.match(inside, /<li>Gameweek 3, home to Chelsea: we expected 2\.0–1\.0, it finished 3–1 \(Better than expected\)<\/li>/);
-    assert.match(inside, /<li>Gameweek 4, away at Spurs: we expected 2\.0–1\.0, it finished 1–1 \(As expected\)<\/li>/);
-    assert.match(inside, /Gameweek 5, home to Fulham: .*\(Worse than expected\)/);
+    const rows = html.split('<li class="record-game">').slice(1).map(text);
+    assert.equal(rows.length, 3);
+    assert.match(rows[0], /Gameweek 5, home to Fulham\s*▼ Worse than expected/);
+    assert.match(rows[1], /Gameweek 4, away at Spurs\s*● As expected\s*We expected 2\.0–1\.0\s*It finished 1–1/);
+    assert.match(rows[2], /Gameweek 3, home to Chelsea\s*▲ Better than expected\s*We expected 2\.0–1\.0\s*It finished 3–1/);
+    // The icon is decoration; the words carry the verdict.
+    assert.match(html, /<span aria-hidden="true">▲<\/span> Better than expected/);
+});
+
+test('only the five newest games show; older ones sit behind a toggle', () => {
+    const games = Array.from({ length: 7 }, (_, i) => game({ gameweek: i + 1 }));
+    const html = renderRecord({ ...ready, games });
+    const [shown, earlier] = html.split('<details class="record-earlier">');
+    assert.equal((shown.match(/<li class="record-game">/g) || []).length, 5);
+    assert.match(shown, /Gameweek 7,/);
+    assert.match(earlier, /<summary>Show earlier games<\/summary>/);
+    assert.equal((earlier.match(/<li class="record-game">/g) || []).length, 2);
+    assert.doesNotMatch(renderRecord(ready), /record-earlier/);
 });
 
 test('started-on footer is formatted and omitted when missing', () => {
@@ -79,5 +94,5 @@ test('with games, the started-on date appears only once', () => {
 
 test('predictions always show one decimal; actual scores stay whole', () => {
     const html = renderRecord({ ...ready, games: [game({ predicted_for: 1, predicted_against: 0, actual_for: 2, actual_against: 0 })] });
-    assert.match(html, /we expected 1\.0–0\.0, it finished 2–0 /);
+    assert.match(text(html), /We expected 1\.0–0\.0\s+It finished 2–0/);
 });

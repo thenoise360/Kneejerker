@@ -17,6 +17,7 @@ export function renderDecision(payload) {
     const basedOn = payload.based_on === 'your_team' && payload.squad_gameweek
         ? `<p class="sub">Based on your team from gameweek ${escapeHtml(payload.squad_gameweek)}.</p>`
         : '';
+    // The figures behind the call, as a short list of facts under the reason.
     const details = (d.details || []).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
     // recap-verdict: the global ".card h3" style is small, uppercase and too
     // pale to read well, so the verdict reuses the readable heading class.
@@ -25,11 +26,8 @@ export function renderDecision(payload) {
             <div class="eyebrow-sm"><span aria-hidden="true">${kind.icon}</span> ${kind.label}</div>
             <h3 class="recap-verdict">${escapeHtml(d.title)}</h3>
             <p>${escapeHtml(d.reason)}</p>
+            ${details ? `<ul class="decision-facts">${details}</ul>` : ''}
             ${basedOn}
-            <details class="recap-details">
-                <summary>See the numbers</summary>
-                <ul class="recap-standouts">${details}</ul>
-            </details>
         </div>`;
 }
 

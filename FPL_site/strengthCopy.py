@@ -131,6 +131,15 @@ def _versus_league(strong, weak):
     return 'about average for the league'
 
 
+def _tone(change):
+    """'worse' when this week is noticeably or slightly down on usual, else 'same'.
+
+    Absences only ever weaken a team, so 'better' is never returned today; the
+    gauge still knows how to draw it if a future signal can lift a team.
+    """
+    return 'same' if _tier(change) is None else 'worse'
+
+
 def gauge_summary(strength):
     """Gauge positions (as a share of the league average) and their spoken words.
 
@@ -145,15 +154,19 @@ def gauge_summary(strength):
     defence_usual = league / strength['conceded']      # higher means it concedes less
     conceded_ratio = _round(strength['conceded'] / league)
     attack_ratio = _round(attack_usual)
+    attack_change = _drop(strength['scored'], strength['scored_adjusted'])
+    defence_change = _rise(strength['conceded'], strength['conceded_adjusted'])
+    attack_versus = _versus_usual(attack_change, 'weaker')
+    defence_versus = _versus_usual(defence_change, 'leakier')
     attack_words = 'Attack: ' + ', '.join([
-        _versus_usual(_drop(strength['scored'], strength['scored_adjusted']), 'weaker'),
-        _versus_league(attack_ratio >= STRONG_RATIO, attack_ratio <= WEAK_RATIO)])
+        attack_versus, _versus_league(attack_ratio >= STRONG_RATIO, attack_ratio <= WEAK_RATIO)])
     defence_words = 'Defence: ' + ', '.join([
-        _versus_usual(_rise(strength['conceded'], strength['conceded_adjusted']), 'leakier'),
-        _versus_league(conceded_ratio <= WEAK_RATIO, conceded_ratio >= STRONG_RATIO)])
+        defence_versus, _versus_league(conceded_ratio <= WEAK_RATIO, conceded_ratio >= STRONG_RATIO)])
+    # 'versus' is the visible label under each gauge, and 'tone' picks its colour.
+    # Both come from the same tier as the headline, so they can never disagree with it.
     return {
         'attack': {'now': round(strength['scored_adjusted'] / league, 3), 'usual': round(attack_usual, 3),
-                   'words': attack_words},
+                   'words': attack_words, 'versus': attack_versus.capitalize(), 'tone': _tone(attack_change)},
         'defence': {'now': round(league / strength['conceded_adjusted'], 3), 'usual': round(defence_usual, 3),
-                    'words': defence_words},
+                    'words': defence_words, 'versus': defence_versus.capitalize(), 'tone': _tone(defence_change)},
     }

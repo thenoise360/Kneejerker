@@ -16,22 +16,24 @@ test('escapes player names', () => {
     assert.equal(escapeHtml(null), '');
 });
 
-test('guest recap shows verdict and reason by default, numbers inside details', () => {
+test('guest recap: verdict and reason first, then the figures as tiles and the standouts', () => {
     const html = renderGuestRecap(guest, 5);
-    const [beforeDetails, insideDetails] = html.split('<details');
-    assert.match(beforeDetails, /A fairly typical week/);
-    assert.match(beforeDetails, /Haaland led the way with a hat-trick\./);
-    assert.doesNotMatch(beforeDetails, /48/);
-    assert.match(insideDetails, /See the numbers/);
-    assert.match(insideDetails, /Average score: 48 points/);
-    assert.match(insideDetails, /Highest score: 126 points/);
-    assert.match(insideDetails, /A hat-trick/);
-    assert.match(insideDetails, /Manchester City/);
+    const [beforeTiles, tilesOn] = html.split('<div class="stat-tiles">');
+    assert.match(beforeTiles, /A fairly typical week/);
+    assert.match(beforeTiles, /Haaland led the way with a hat-trick\./);
+    assert.doesNotMatch(beforeTiles, /48/);
+    // Numbers are part of the card now, not behind a "See the numbers" expander.
+    assert.doesNotMatch(html, /<details|See the numbers/);
+    assert.match(tilesOn, /<span class="stat-tile-value">48<\/span><span class="stat-tile-label">Average points<\/span>/);
+    assert.match(tilesOn, /<span class="stat-tile-value">126<\/span><span class="stat-tile-label">Highest points<\/span>/);
+    assert.match(tilesOn, /Standout players/);
+    assert.match(tilesOn, /A hat-trick/);
+    assert.match(tilesOn, /Manchester City/);
 });
 
 test('guest recap without a highest score omits it', () => {
     const html = renderGuestRecap({ ...guest, highest_score: null }, 5);
-    assert.doesNotMatch(html, /Highest score/);
+    assert.doesNotMatch(html, /Highest points/);
 });
 
 test('guest recap escapes hostile names', () => {
@@ -63,13 +65,15 @@ const personal = {
     right_call: { tier: 'captain', title: 'Your captain call', reason: 'Captaining Salah paid off.', name: 'Salah', points: 12 },
 };
 
-test('personal recap: verdict and right call by default, numbers in details', () => {
+test('personal recap: verdict and right call first, then your score beside the average', () => {
     const html = renderPersonalRecap(personal, 5);
-    const [beforeDetails, insideDetails] = html.split('<details');
-    assert.match(beforeDetails, /Above average\. Nicely done\./);
-    assert.match(beforeDetails, /Your captain call/);
-    assert.doesNotMatch(beforeDetails, /61/);
-    assert.match(insideDetails, /You scored 61 points\. The average was 48 points\./);
+    const [beforeTiles, tilesOn] = html.split('<div class="stat-tiles">');
+    assert.match(beforeTiles, /Above average\. Nicely done\./);
+    assert.match(beforeTiles, /Your captain call/);
+    assert.doesNotMatch(beforeTiles.split('recap-call-points')[0], /61/);
+    assert.match(tilesOn, /stat-tile--highlight"><span class="stat-tile-value">61<\/span><span class="stat-tile-label">Your points/);
+    assert.match(tilesOn, /<span class="stat-tile-value">48<\/span><span class="stat-tile-label">Average points/);
+    assert.doesNotMatch(html, /<details/);
 });
 
 test('personal recap: verdict heading carries the contrast-safe class', () => {
@@ -100,22 +104,23 @@ test('personal recap: missing right call still renders without throwing', () => 
     assert.doesNotMatch(html, /undefined|<strong>/);
 });
 
-test('personal recap: nothing before the details expander contains a digit', () => {
+test('personal recap: the verdict and the call wording contain no digits', () => {
     const html = renderPersonalRecap(personal, 5);
-    const beforeDetails = html.split('<details')[0];
+    // Only the heading and the call sentence; the points tag and tiles come after.
+    const words = html.split('<span class="recap-call-points">')[0];
     // The "your gameweek 5" label is the one allowed number; strip it, then no digits may remain.
-    const visible = beforeDetails.replace(/<[^>]+>/g, ' ').replace(/gameweek \d+/g, 'gameweek');
+    const visible = words.replace(/<[^>]+>/g, ' ').replace(/gameweek \d+/g, 'gameweek');
     assert.doesNotMatch(visible, /\d/);
 });
 
-test('personal recap: the right-call points sit inside the details', () => {
-    const insideDetails = renderPersonalRecap(personal, 5).split('<details')[1];
-    assert.match(insideDetails, /Salah scored 12 points\./);
+test('personal recap: the right-call points sit on the call line', () => {
+    const html = renderPersonalRecap(personal, 5);
+    assert.match(html, /Captaining Salah paid off\. <span class="recap-call-points">Salah: 12 points<\/span><\/p>/);
 });
 
 test('personal recap: no right-call points line when points is not set', () => {
     const html = renderPersonalRecap({ ...personal, right_call: { ...personal.right_call, points: null } }, 5);
-    assert.doesNotMatch(html, /scored null|scored undefined|Salah scored/);
+    assert.doesNotMatch(html, /recap-call-points|null|undefined/);
 });
 
 test('personal recap: the ok card offers a way to change the team', () => {

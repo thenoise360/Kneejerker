@@ -8,13 +8,19 @@ const decision = {
     details: ['Our prediction for Salah: about 8.0 points'],
 };
 
-test('decision shows title and reason by default, numbers in details', () => {
+test('decision shows title and reason first, then the figures as facts', () => {
     const html = renderDecision({ decision, based_on: 'everyone', squad_gameweek: null });
-    const [before, inside] = html.split('<details');
+    const [before, facts] = html.split('<ul class="decision-facts">');
     assert.match(before, /Captain: Salah stands out/);
     assert.match(before, /your call/);
     assert.doesNotMatch(before, /8\.0/);
-    assert.match(inside, /about 8\.0 points/);
+    assert.match(facts, /<li>Our prediction for Salah: about 8\.0 points<\/li>/);
+    assert.doesNotMatch(html, /<details/);
+});
+
+test('no facts list when there are no details', () => {
+    const html = renderDecision({ decision: { ...decision, details: [] }, based_on: 'everyone' });
+    assert.doesNotMatch(html, /decision-facts/);
 });
 
 test('says which team it is based on', () => {
@@ -38,7 +44,7 @@ test('decision heading carries the readable verdict class', () => {
     assert.match(html, /<h3 class="recap-verdict">Captain: Salah stands out<\/h3>/);
 });
 
-test('no digit appears before the details element', () => {
+test('no digit appears before the facts', () => {
     const captain = {
         kind: 'captain', title: 'Captain: Salah stands out',
         reason: "Across every team, Salah is the strongest option we're seeing. It's your call.",
@@ -46,7 +52,7 @@ test('no digit appears before the details element', () => {
     };
     // Everyone view, so there is no "Based on your team from gameweek N" line.
     const html = renderDecision({ decision: captain, based_on: 'everyone', squad_gameweek: null });
-    const [before, inside] = html.split('<details');
+    const [before, inside] = html.split('<ul class="decision-facts">');
     // Escaped apostrophes (&#39;) contain digits but are not numbers a reader sees.
     // Tags such as <h3> also contain digits, so only the visible text is checked.
     const visible = before.replace(/<[^>]*>/g, ' ').replace(/&#\d+;/g, "'");
