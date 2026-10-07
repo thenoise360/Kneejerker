@@ -7,7 +7,9 @@
 
 {% macro headline_line(h) -%}
 {%- if h.reason_key == 'starter_doubt' -%}
-  {%- if h.tier == 'confirmed' %}{{ h.player }} is set to miss this gameweek{% else %}{{ h.player }} is a doubt for this gameweek{% endif -%}
+  {%- if h.reason == 'ruled_out' %}{{ h.player }} is set to miss this gameweek
+  {%- elif h.reason == 'missed_last_game' %}{{ h.player }} didn't feature last game
+  {%- else %}{{ h.player }} is a doubt for this gameweek{% endif -%}
 {%- elif h.reason_key == 'starter_blank' -%}
   {%- if h.players|length == 1 %}{{ h.player }} has no match this gameweek{% else %}{{ name_list(h.players) }} have no match this gameweek{% endif -%}
 {%- elif h.reason_key == 'unused_free_transfers' -%}

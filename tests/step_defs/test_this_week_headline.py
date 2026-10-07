@@ -23,6 +23,7 @@ def starters(a, b, c):
         'fixtures': {t: {'opponent': 'Everton', 'is_home': True, 'difficulty': 2} for t in TEAMS.values()},
         'predictions': {},
         'free_transfers': None,
+        'signals': {},
         'rules': HEADLINE_RULES,
     }
 
@@ -35,6 +36,16 @@ def ranking(ctx, first, second, third):
 @given(parsers.parse('"{name}" has a {chance:d} percent chance of playing'))
 def doubt(ctx, name, chance):
     ctx['availability'][IDS[name]].update(chance=chance, status='d')
+
+
+@given(parsers.parse('"{name}" was subbed off early last game'))
+def subbed_early(ctx, name):
+    ctx['signals'][IDS[name]] = {'minutes_recent': [90, 90, 90, 90, 62]}
+
+
+@given(parsers.parse('"{name}" is one booking from a ban'))
+def one_from_ban(ctx, name):
+    ctx['signals'][IDS[name]] = {'yellows_season': 4}   # gameweek 6: a ban comes at five
 
 
 @given(parsers.parse('"{name}" has no match this gameweek'))
@@ -53,7 +64,7 @@ def guest(ctx):
 
 
 def _resolve(ctx):
-    risks = {p['id']: assess_risk(ctx['availability'][p['id']], None, 6) for p in ctx['squad']}
+    risks = {p['id']: assess_risk(ctx['availability'][p['id']], ctx['signals'].get(p['id']), 6) for p in ctx['squad']}
     injuries = resolve_injuries(ctx['squad'], ctx['availability'], risks)
     captaincy = resolve_captaincy(ctx['squad'], ctx['availability'], ctx['predictions'],
                                   ctx['fixtures'], risks)

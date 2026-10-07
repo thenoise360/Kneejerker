@@ -99,7 +99,7 @@ def _week_v2_context():
             context['hub'] = get_this_week_hub(this_week['gameweek'], last_gameweek,
                                                team_id=_parse_team_id(request.args.get('team_id')))
         except Exception as e:
-            logger.error(f"Error building the This Week hub for the page: {e}")
+            logger.exception("Error building the This Week hub for the page")
     return context
 
 GAMEWEEKS_IN_SEASON = 38
@@ -167,7 +167,7 @@ def week_this_week_hub():
     try:
         return jsonify(get_this_week_hub(gameweek, last_gameweek, team_id=team_id))
     except Exception as e:
-        logger.error(f"Error building the This Week hub: {e}")
+        logger.exception("Error building the This Week hub")
         return jsonify({'error': 'server_error'}), 500
 
 @app.route('/radar')

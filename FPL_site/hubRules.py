@@ -13,8 +13,19 @@ WORTH_A_LOOK = ('confirmed', 'high', 'medium')
 DOUBT_BELOW = 75               # same line as weekDecision: under 75% is a doubt
 GUEST_SHORTLIST = 3
 
+# Only these reasons mean "might not play". Bookings and early substitutions
+# deserve a look in the injuries row, but a fit player isn't "a doubt" because of them.
+AVAILABILITY_REASONS = ('ruled_out', 'official_doubt', 'missed_last_game')
+
 # The headline is the first of these rules that fires. Reorder here and nowhere else.
 HEADLINE_RULES = ('starter_doubt', 'starter_blank', 'unused_free_transfers', 'captain_choice')
+
+
+def _availability_reason(risk):
+    for reason in (risk or {}).get('reasons', []):
+        if reason['key'] in AVAILABILITY_REASONS:
+            return reason
+    return None
 
 
 #################################################
@@ -42,7 +53,9 @@ def resolve_injuries(squad, availability, risks):
 
 def _is_worry(pid, availability, risks):
     chance = availability[pid]['chance']
-    return (chance is not None and chance < DOUBT_BELOW) or risks.get(pid, {}).get('tier') in WORTH_A_LOOK
+    risk = risks.get(pid, {})
+    return ((chance is not None and chance < DOUBT_BELOW)
+            or (risk.get('tier') in WORTH_A_LOOK and _availability_reason(risk) is not None))
 
 
 def _ranked_options(player_ids, availability, predictions, fixtures, risks):
@@ -77,12 +90,13 @@ def resolve_captaincy(squad, availability, predictions, fixtures, risks):
 #################################################
 
 def _starter_doubt(ctx):
-    starters = [p for p in ctx['injuries'].get('players', []) if p['starter']]
-    if not starters:
-        return None
-    top = starters[0]
-    return {'decision': 'injuries', 'reason_key': 'starter_doubt', 'player': top['name'],
-            'tier': top['tier'], 'risk_pct': top['risk_pct']}
+    # Only a doubt about playing counts; the list is already in the order we want.
+    for p in ctx['injuries'].get('players', []):
+        reason = _availability_reason(p) if p['starter'] else None
+        if reason:
+            return {'decision': 'injuries', 'reason_key': 'starter_doubt', 'player': p['name'],
+                    'reason': reason['key'], 'tier': p['tier'], 'risk_pct': p['risk_pct']}
+    return None
 
 
 def _starter_blank(ctx):

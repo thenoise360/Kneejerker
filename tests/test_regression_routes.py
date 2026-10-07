@@ -77,9 +77,22 @@ def test_club_page_always_has_both_cards(client):
     assert 'id="prediction-record-slot"' in html
 
 
-def test_hub_flag_defaults_off():
-    from FPL_site.config import current_config
-    assert getattr(current_config, 'THIS_WEEK_HUB', None) is False
+def test_hub_flag_defaults_off(monkeypatch):
+    # Reload the config with the variable removed, so a developer's own
+    # environment or .env file can't change the answer.
+    import importlib
+    import dotenv
+    # import_module, because the FPL_site package re-uses the name 'config' for something else.
+    config = importlib.import_module('FPL_site.config')
+    monkeypatch.delenv('THIS_WEEK_HUB', raising=False)
+    monkeypatch.setattr(dotenv, 'load_dotenv', lambda *a, **k: False)  # keep .env from adding it back
+    try:
+        reloaded = importlib.reload(config)
+        assert reloaded.DevelopmentConfig.THIS_WEEK_HUB is False
+        assert reloaded.ProductionConfig.THIS_WEEK_HUB is False
+    finally:
+        monkeypatch.undo()  # put the real environment and loader back before the second reload
+        importlib.reload(config)
 
 
 def test_week_page_with_hub_flag_on(client, monkeypatch):

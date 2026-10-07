@@ -37,9 +37,8 @@
     {# Always rendered; hidden for a known team so "Change it" has a form to show again. #}
     <div id="hub-team-slot"{% if hub and hub.based_on == 'your_team' %} hidden{% endif %}>
         <form class="card recap-team-form" id="hub-team-form" method="get" action="{{ url_for('home') }}">
-            {% if hub and hub.team_status == 'not_found' %}<p class="sub">We couldn't find that team number. Check it and try again.</p>
-            {% elif hub and hub.team_status == 'unavailable' %}<p class="sub">We couldn't reach the official game just now, so this is for everyone. Try again in a moment.</p>
-            {% elif hub and hub.team_status == 'invalid' %}<p class="sub">Team numbers are numbers only, for example 1234567.</p>{% endif %}
+            {# Its own element so weekV2.js can rewrite the message; empty when there is nothing to say. #}
+            <p class="sub" id="hub-team-status">{% if hub and hub.team_status == 'not_found' %}We couldn't find that team number. Check it and try again.{% elif hub and hub.team_status == 'unavailable' %}We couldn't reach the official game just now, so this is for everyone. Try again in a moment.{% elif hub and hub.team_status == 'invalid' %}Team numbers are numbers only, for example 1234567.{% endif %}</p>
             <label for="hub-team-input">Your team number, to make this about your team</label>
             <div class="recap-team-row">
                 <input id="hub-team-input" name="team_id" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 1234567" required>

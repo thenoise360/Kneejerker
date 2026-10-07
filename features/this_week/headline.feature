@@ -32,6 +32,16 @@ Feature: The one decision at the top of This Week
     When the headline is chosen with the captain rule first
     Then the headline decision is "captaincy" because "captain_choice" about "Haaland"
 
+  Scenario: A fit starter subbed off early is not called a doubt
+    Given "Haaland" was subbed off early last game
+    When the headline is chosen
+    Then the headline decision is "captaincy" because "captain_choice" about "Haaland"
+
+  Scenario: A starter one booking from a ban is not called a doubt
+    Given "Haaland" is one booking from a ban
+    When the headline is chosen
+    Then the headline decision is "captaincy" because "captain_choice" about "Haaland"
+
   Scenario: Nothing to do on injuries when everyone is fit
     When the injuries decision is worked out
     Then the injuries decision is "nothing_to_do"

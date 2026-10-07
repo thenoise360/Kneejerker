@@ -48,6 +48,18 @@ def test_headline_and_rows_render():
     assert 'More decisions are on the way' in html
 
 
+@pytest.mark.parametrize('reason,phrase', [
+    ('ruled_out', 'Rice is set to miss this gameweek'),
+    ('official_doubt', 'Rice is a doubt for this gameweek'),
+    ('missed_last_game', "Rice didn't feature last game"),
+    (None, 'Rice is a doubt for this gameweek'),
+])
+def test_doubt_headline_wording_follows_the_reason(reason, phrase):
+    payload = hub()
+    payload['headline'] = dict(payload['headline'], reason=reason)
+    assert phrase in render(payload).replace('&#39;', "'")
+
+
 def test_states_pair_an_icon_with_words():
     html = render(hub())
     assert re.search(r'<span aria-hidden="true">[^<]+</span>\s*Needs a look', html)

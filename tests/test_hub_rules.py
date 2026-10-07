@@ -1,7 +1,7 @@
 import os
 os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
 
-from FPL_site.hubRules import resolve_injuries, resolve_captaincy, NEEDS_LOOK
+from FPL_site.hubRules import resolve_injuries, resolve_captaincy, select_headline, NEEDS_LOOK
 
 FIX = {'opponent': 'Everton', 'is_home': True, 'difficulty': 2}
 
@@ -57,3 +57,39 @@ def test_expected_involvement_is_rounded_for_display():
 def test_no_predictions_still_needs_a_look_with_no_suggestion():
     result = resolve_captaincy([_p(1)], {1: _a('A')}, {}, {10: FIX}, {})
     assert result == {'state': NEEDS_LOOK, 'suggested': None, 'vice': None, 'shortlist': []}
+
+
+def _ctx(squad, availability, risks, predictions=None):
+    return {'squad': squad, 'availability': availability, 'fixtures': {10: FIX},
+            'injuries': resolve_injuries(squad, availability, risks),
+            'captaincy': resolve_captaincy(squad, availability, predictions or {}, {10: FIX}, risks)}
+
+
+def test_bench_doubt_does_not_fire_the_headline():
+    risks = {1: {'pct': 75, 'tier': 'high', 'reasons': [{'key': 'official_doubt', 'chance': 25}]}}
+    ctx = _ctx([_p(1, starter=False)], {1: _a('Bench', chance=25)}, risks)
+    assert select_headline(ctx, ('starter_doubt',)) is None
+
+
+def test_booked_or_early_subbed_starter_stays_in_the_captain_shortlist():
+    squad = [_p(1), _p(2)]
+    availability = {1: _a('Subbed'), 2: _a('Booked')}
+    risks = {1: {'pct': 50, 'tier': 'medium', 'reasons': [{'key': 'subbed_early'}]},
+             2: {'pct': 75, 'tier': 'high', 'reasons': [{'key': 'one_booking_from_ban'}]}}
+    result = resolve_captaincy(squad, availability, {1: 1.0, 2: 0.9}, {10: FIX}, risks)
+    assert [o['name'] for o in result['shortlist']] == ['Subbed', 'Booked']
+
+
+def test_official_doubt_with_a_reason_is_still_a_captain_worry():
+    risks = {1: {'pct': 50, 'tier': 'medium', 'reasons': [{'key': 'missed_last_game'}]}}
+    assert resolve_captaincy([_p(1)], {1: _a('A')}, {1: 1.0}, {10: FIX}, risks)['shortlist'] == []
+
+
+def test_headline_carries_the_availability_reason():
+    risks = {1: {'pct': 75, 'tier': 'high', 'reasons': [{'key': 'subbed_early'}, {'key': 'missed_last_game'}]},
+             2: {'pct': 100, 'tier': 'confirmed', 'reasons': [{'key': 'ruled_out'}]}}
+    ctx = _ctx([_p(1), _p(2)], {1: _a('A'), 2: _a('B')}, risks)
+    headline = select_headline(ctx, ('starter_doubt',))
+    assert headline['player'] == 'B' and headline['reason'] == 'ruled_out'
+    ctx = _ctx([_p(1)], {1: _a('A')}, {1: risks[1]})
+    assert select_headline(ctx, ('starter_doubt',))['reason'] == 'missed_last_game'

@@ -6,6 +6,7 @@ import { renderGuestRecap, renderPersonalRecap, renderTeamPrompt, renderMessage,
 import { safeLocalStorage } from './lib/safeStorage.js';
 import { readTeamId, saveTeamId, clearTeamId, parseTeamId } from './lib/teamId.js';
 import { renderHubBody } from './lib/hubView.js';
+import { teamStatusSentence } from './lib/hubCopy.js';
 import { welcomeBackMessage, readLastVisit, recordVisit } from './lib/returningUser.js';
 import { createLatestGuard } from './lib/latestOnly.js';
 import { renderDecision, renderDecisionSkeleton } from './lib/decisionView.js';
@@ -28,12 +29,13 @@ export function initializeWeekV2() {
     const lastWeekView = document.getElementById('last-week-view');
     // Only the Week page marks last-week-view with data-week-v2, so other pages do nothing here.
     if (!lastWeekView || lastWeekView.dataset.weekV2 !== 'true') return;
+    // First, so the recap, decision and hub all start from the same team number.
+    adoptTeamFromAddress();
     showWelcomeBack(lastWeekView);
     loadLastWeekRecap(lastWeekView);
     showDeadline();
     loadDecision();
-    adoptTeamFromAddress();
-    bindHubTeamForm();
+    bindHubTeamForm(lastWeekView);
     loadHub();
 }
 
@@ -59,7 +61,8 @@ async function loadLastWeekRecap(lastWeekView) {
     const personalSlot = document.getElementById('personal-recap-slot');
     if (!gameweek || !guestSlot) return;  // server already rendered a friendly message
 
-    const teamId = readTeamId(safeLocalStorage(window));
+    // Saved number first, then the visit-only one (see sessionTeamId above).
+    const teamId = readTeamId(safeLocalStorage(window)) ?? sessionTeamId;
     const query = new URLSearchParams({ gameweek });
     if (teamId !== null) query.set('team_id', String(teamId));
 
@@ -161,7 +164,7 @@ async function loadDecision() {
     if (hub.dataset.lastGameweek) query.set('last_gameweek', hub.dataset.lastGameweek);
     // safeLocalStorage copes with blocked storage, so a failure here never
     // leaves the loading skeleton spinning.
-    const teamId = readTeamId(safeLocalStorage(window));
+    const teamId = readTeamId(safeLocalStorage(window)) ?? sessionTeamId;
     if (teamId !== null) query.set('team_id', String(teamId));
 
     const token = decisionGuard.start();  // taken before the await, so older requests go stale
@@ -184,35 +187,50 @@ async function loadDecision() {
 }
 
 // Without JavaScript, the hub's form reloads the page as /this-week?team_id=123.
-// If someone arrives that way, remember the number they typed, the same as the
-// other team forms do, so the next visit is personal straight away.
+// If someone arrives that way we use that number for this visit. We do NOT save
+// it yet: nobody has checked it is a real team, and a typo saved forever would
+// keep showing the wrong view. loadHub saves it once the server says it's real.
 function adoptTeamFromAddress() {
-    const fromAddress = parseTeamId(new URLSearchParams(window.location.search).get('team_id'));
-    if (fromAddress === null) return;
-    sessionTeamId = fromAddress;  // still works for this visit if storage is blocked
-    saveTeamId(safeLocalStorage(window), fromAddress);
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('team_id')) return;
+    const fromAddress = parseTeamId(params.get('team_id'));
+    if (fromAddress !== null) sessionTeamId = fromAddress;
+    // Take the number out of the address bar (keeping any other parameters) so
+    // it doesn't leak into analytics page views, browser history or shared links.
+    params.delete('team_id');
+    const rest = params.toString();
+    try {
+        window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
+    } catch {
+        // Cosmetic and privacy only; the page works the same if this fails.
+    }
 }
 
-// With JavaScript we can do better than a page reload: save the number, then
-// fetch just the hub. preventDefault() stops the browser's own form submit.
-function bindHubTeamForm() {
+// With JavaScript we can do better than a page reload: fetch just the hub for
+// the typed number. preventDefault() stops the browser's own form submit.
+function bindHubTeamForm(lastWeekView) {
     const form = document.getElementById('hub-team-form');
     const input = document.getElementById('hub-team-input');
     if (!form || !input) return;
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        // Decide validity ourselves: saveTeamId also returns null when storage is
-        // blocked, and a perfectly good number shouldn't be rejected for that.
+        // Decide validity ourselves with parseTeamId (it returns null for
+        // anything that isn't a good number). Saving is left until the server
+        // confirms the team exists, so a typo never gets remembered.
         const typed = parseTeamId(input.value);
         if (typed === null) {
             input.setCustomValidity('Please enter the number only, for example 1234567.');
             input.reportValidity();
             return;
         }
-        sessionTeamId = typed;
-        saveTeamId(safeLocalStorage(window), typed);  // remember it for next time, if storage allows
-        loadHub();
-        loadDecision();
+        sessionTeamId = typed;  // used for this visit while we check it
+        const data = await loadHub();
+        // loadHub has saved the number by now if the server confirmed it. Only
+        // then do the other sections switch to this team, so all three agree.
+        if (data && data.team_status === 'ok') {
+            loadDecision();
+            if (lastWeekView) loadLastWeekRecap(lastWeekView);
+        }
     });
     input.addEventListener('input', () => input.setCustomValidity(''));
 }
@@ -220,11 +238,14 @@ function bindHubTeamForm() {
 // Fetches the hub as JSON and redraws its body with the conversational wording.
 // If anything goes wrong we simply keep what the server already drew: that
 // version is plainer, but it's correct, so there's nothing to "fix" on screen.
+// Returns the response data, or null when it failed or a newer request took over,
+// so callers only act on an answer that is still current.
 async function loadHub() {
     const hub = document.getElementById('this-week-hub');
     const body = document.getElementById('hub-body');
     const teamSlot = document.getElementById('hub-team-slot');
-    if (!hub || !body || !hub.dataset.gameweek) return;
+    const teamStatus = document.getElementById('hub-team-status');
+    if (!hub || !body || !hub.dataset.gameweek) return null;
 
     const query = new URLSearchParams({ gameweek: hub.dataset.gameweek });
     if (hub.dataset.lastGameweek) query.set('last_gameweek', hub.dataset.lastGameweek);
@@ -238,16 +259,34 @@ async function loadHub() {
         const res = await fetch(`/api/week/this-week?${query}`);
         if (!res.ok) throw new Error(`status ${res.status}`);
         const data = await res.json();
-        if (!hubGuard.isLatest(token)) return;
+        if (!hubGuard.isLatest(token)) return null;
         if (data.status === 'ready') {
             body.innerHTML = renderHubBody(data);
             hub.dataset.basedOn = data.based_on;
             // A known team doesn't need the "your team number" form any more.
             if (teamSlot) teamSlot.hidden = data.based_on === 'your_team';
+            // textContent never interprets HTML; '' clears an old message.
+            if (teamStatus) teamStatus.textContent = teamStatusSentence(data.team_status);
+            if (teamId !== null) settleTeamNumber(teamId, data.team_status);
         }
+        return data;
     } catch (err) {
         console.error("Failed to load this week's hub", err);
+        return null;
     } finally {
         if (hubGuard.isLatest(token)) body.removeAttribute('aria-busy');
+    }
+}
+
+// What to do with a team number once the server has judged it.
+//  ok           -> a real team, so remember it for next visit (if storage allows).
+//  not_found    -> a typo (or an old saved one): forget it so it can't stick forever.
+//  unavailable  -> the official game may just be slow, so change nothing.
+function settleTeamNumber(teamId, teamStatus) {
+    if (teamStatus === 'ok') {
+        saveTeamId(safeLocalStorage(window), teamId);
+    } else if (teamStatus === 'not_found') {
+        clearTeamId(safeLocalStorage(window));
+        if (sessionTeamId === teamId) sessionTeamId = null;
     }
 }

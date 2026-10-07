@@ -16,9 +16,13 @@ export function joinNames(names) {
 // One function per reason key, looked up by name. A lookup object like this
 // replaces a long chain of if/else, and adding a new key is one new line.
 const HEADLINES = {
-    starter_doubt: (h) => (h.tier === 'confirmed'
-        ? `${h.player} looks set to miss this one. Worth sorting before you do anything else. Your call.`
-        : `${h.player} is a doubt this week. Worth a look before you lock anything else in.`),
+    // The server says *why* (reason); the wording follows it. An unknown or
+    // missing reason falls back to the plain "doubt" sentence.
+    starter_doubt: (h) => {
+        if (h.reason === 'ruled_out') return `${h.player} looks set to miss this one. Worth sorting before you do anything else. Your call.`;
+        if (h.reason === 'missed_last_game') return `${h.player} didn't feature last game. Worth checking they're fit before the deadline.`;
+        return `${h.player} is a doubt this week. Worth a look before you lock anything else in.`;
+    },
     starter_blank: (h) => (h.players.length === 1
         ? `${h.player} has no match this gameweek, so they'd score nothing if they start.`
         : `${joinNames(h.players)} have no match this gameweek, so they'd score nothing if they start.`),
@@ -49,4 +53,17 @@ export function rowSentence(key, decision) {
             : `Our lean: ${decision.suggested.name}. Your call.`;
     }
     return '';
+}
+
+// The sentence under the team form when the number didn't work out. Same three
+// sentences the server draws, so the page reads the same with or without
+// JavaScript. Anything else (a good number, a guest) needs no message.
+const TEAM_STATUS_SENTENCES = {
+    not_found: "We couldn't find that team number. Check it and try again.",
+    unavailable: "We couldn't reach the official game just now, so this is for everyone. Try again in a moment.",
+    invalid: 'Team numbers are numbers only, for example 1234567.',
+};
+
+export function teamStatusSentence(teamStatus) {
+    return TEAM_STATUS_SENTENCES[teamStatus] || '';
 }
