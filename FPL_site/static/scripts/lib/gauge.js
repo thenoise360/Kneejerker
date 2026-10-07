@@ -46,7 +46,7 @@ function zoneArcs(zones, min, max, value) {
         const active = v >= zone.from && (v < zone.to || last);
         const start = valueToAngle(zone.from, min, max) - (index === 0 ? 0 : GAP_DEGREES / 2);
         const end = valueToAngle(zone.to, min, max) + (last ? 0 : GAP_DEGREES / 2);
-        return `<path class="gauge-zone" d="${arcPath(start, end)}" fill="none" stroke="${active ? 'var(--plum)' : 'var(--grey)'}" stroke-width="10"/>`;
+        return `<path class="gauge-zone" d="${arcPath(start, end)}" fill="none" stroke="${active ? 'var(--plum)' : 'var(--grey-mid)'}" stroke-width="10"/>`;
     }).join('');
 }
 
@@ -65,11 +65,11 @@ export function renderGauge({ value, min, max, marker = null, leftLabel, rightLa
         markerTick = `<line class="gauge-marker" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${MARKER_COLOUR}" stroke-width="3" stroke-linecap="round"/>`;
     }
     const [nx, ny] = point(valueToAngle(value, min, max), RADIUS);
-    return `<svg class="gauge" viewBox="0 0 160 90" style="width:100%; max-width:200px;" role="img" aria-label="${escapeHtml(ariaLabel)}">`
+    return `<svg class="gauge" viewBox="0 0 160 100" style="width:100%; max-width:200px;" role="img" aria-label="${escapeHtml(ariaLabel)}">`
         + track + markerTick
         + `<circle class="gauge-needle" cx="${nx}" cy="${ny}" r="6" fill="var(--plum)" stroke="#fff" stroke-width="2"/>`
-        + `<text class="gauge-end" x="2" y="87" text-anchor="start" font-size="14" fill="#666">${escapeHtml(leftLabel)}</text>`
-        + `<text class="gauge-end" x="158" y="87" text-anchor="end" font-size="14" fill="#666">${escapeHtml(rightLabel)}</text>`
+        + `<text class="gauge-end" x="2" y="96" text-anchor="start" font-size="14" fill="#666">${escapeHtml(leftLabel)}</text>`
+        + `<text class="gauge-end" x="158" y="96" text-anchor="end" font-size="14" fill="#666">${escapeHtml(rightLabel)}</text>`
         + `<text class="gauge-centre" x="${CX}" y="${CY - 8}" text-anchor="middle" font-size="14" font-weight="700" fill="var(--charcoal)">${escapeHtml(centreLabel)}</text>`
         + `</svg>`;
 }

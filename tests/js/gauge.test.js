@@ -50,7 +50,7 @@ test('zones give one arc path per zone', () => {
 
 test('scales to its container', () => {
     assert.match(renderGauge(base), /width:100%; max-width:200px/);
-    assert.match(renderGauge(base), /viewBox="0 0 160 90"/);
+    assert.match(renderGauge(base), /viewBox="0 0 160 100"/);
 });
 
 test('the marker is a short radial tick at the expected angle', () => {
@@ -87,4 +87,25 @@ test('end labels are at least 11 pixels at a 130 pixel wide column and stay insi
     for (const size of sizes) assert.ok(size * 130 / 160 >= 11, `size ${size}`);
     assert.match(svg, /text-anchor="start"/);
     assert.match(svg, /text-anchor="end"/);
+});
+
+test('the end labels sit on their own row below the lowest point of the arc and needle', () => {
+    for (const value of [0.5, 1.5, 1]) {
+        const svg = renderGauge({ ...base, value, marker: value });
+        const ys = [...svg.matchAll(/<text class="gauge-end"[^>]* y="([\d.]+)"/g)].map(m => Number(m[1]));
+        assert.equal(ys.length, 2);
+        const fontSize = Number(svg.match(/class="gauge-end"[^>]*font-size="(\d+)"/)[1]);
+        // Lowest point of the arc ends and of a needle clamped there: centre y 76 + half stroke 5 or needle 6 + 2 outline.
+        const lowest = 76 + 8;
+        for (const y of ys) assert.ok(y - fontSize * 0.75 > lowest, `label top ${y - fontSize * 0.75} vs ${lowest}`);
+        const height = Number(svg.match(/viewBox="0 0 160 (\d+)"/)[1]);
+        for (const y of ys) assert.ok(y + fontSize * 0.25 <= height);
+    }
+});
+
+test('inactive zones use the darker grey so they show on the off-white card', () => {
+    const zones = [{ from: 0, to: 1, label: 'A' }, { from: 1, to: 2, label: 'B' }];
+    const svg = renderGauge({ ...base, min: 0, max: 2, value: 0.5, zones });
+    assert.match(svg, /class="gauge-zone"[^>]*stroke="var\(--grey-mid\)"/);
+    assert.doesNotMatch(svg, /class="gauge-zone"[^>]*stroke="var\(--grey\)"/);
 });
