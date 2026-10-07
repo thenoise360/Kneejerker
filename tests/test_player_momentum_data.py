@@ -211,9 +211,9 @@ def test_load_player_momentum_ready_has_no_score(monkeypatch):
     assert conn.closed
 
 
-def test_load_player_momentum_not_ready_cases(monkeypatch):
+def test_load_player_momentum_unknown_player_is_none_and_not_ready_cases(monkeypatch):
     monkeypatch.setattr(pm, 'connect_db', lambda: FakeConn(FakeCursor([])))
-    assert pm.load_player_momentum(1)['status'] == 'not_ready'
+    assert pm.load_player_momentum(1) is None
     monkeypatch.setattr(pm, 'connect_db', lambda: None)
     payload = pm.load_player_momentum(1)
     assert payload['message']['title'] == 'Momentum is on its way'

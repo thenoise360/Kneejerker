@@ -300,7 +300,8 @@ def load_player_momentum(player_id):
                 raise
             return dict(NOT_READY)
         if not row:
-            return dict(NOT_READY)
+            # The table exists but this player is not in it (unknown or departed).
+            return None
         return {'status': 'ready', 'label': row['label'], 'reason': row['reason'],
                 'signals': _public_signals(row['signals_json'])}
     finally:

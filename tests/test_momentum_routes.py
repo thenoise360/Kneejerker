@@ -47,3 +47,11 @@ def test_radar_feature_flag_marker(client, monkeypatch, flag):
 def test_feature_momentum_defaults_off():
     from FPL_site.config import Config
     assert Config.FEATURE_MOMENTUM is False
+
+
+def test_radar_leaves_out_the_slide_for_a_missing_momentum_payload():
+    # fetchJsonSafe turns a 404 into null, and buildMiniCards only adds the slide when it has a payload.
+    source = open(os.path.join(os.path.dirname(__file__), '..', 'FPL_site', 'static', 'scripts', 'radar.js'),
+                  encoding='utf-8').read()
+    assert 'if (!res.ok) return null;' in source
+    assert 'if (momentum) {' in source
