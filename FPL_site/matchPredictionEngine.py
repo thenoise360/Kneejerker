@@ -29,7 +29,7 @@ from scipy.optimize import minimize
 from scipy.stats import poisson, nbinom
 
 from FPL_site.dataModels import connect_db, generateCurrentGameweek, db, season_start
-from FPL_site.teamStrength import build_team_strengths, fetch_squad_rows, persist_team_strengths
+from FPL_site.teamStrength import DEFAULT_RATING_KEY, rating_for, build_team_strengths, fetch_squad_rows, persist_team_strengths
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ MODEL_VERSION = 'dixon-coles-2026-10'
 KICKOFF_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 GAMEWEEKS_PER_SEASON = 38
+TEAMS_PER_SEASON = 20
 HISTORY_SEASONS_BACK = 3          # completed seasons pooled alongside the current one
 DECAY_RATE = 0.02                 # per-gameweek exponential decay across the pooled timeline
 STABLE_GAMES_THIS_SEASON = 5      # games played this season before a team's range stops widening
@@ -51,6 +52,26 @@ MAX_DISPERSION = 1.0 + STABLE_GAMES_THIS_SEASON * 0.3
 PRESEASON_DISPERSION_CAP = 1.0 + (MAX_DISPERSION - 1.0) * 0.5
 CONFIDENCE = 0.50                 # width of the reported low/high range (0.50 = 25th-75th percentile)
 HOME_ADV_INIT = 0.25
+# Low-data shrinkage (Release P3, Task 7). Newly promoted sides have ~5 pooled games, which
+# gave extreme maximum-likelihood ratings (Coventry attack -1.75, ~0.26 goals a game).
+# An L2 penalty SHRINKAGE * sum((rating - prior)^2) pulls every team towards its prior:
+# (0, 0) for teams with >= ESTABLISHED_GAMES pooled fixtures, PROMOTED_PRIOR otherwise.
+# SHRINKAGE = 8 chosen by backtest_model-style holdouts (6, 15, 25; targets 2022, 2023, 2025):
+# overall mean absolute error fell (0.996 -> 0.978 for 2022/23, 0.878 -> 0.869 for 2025) and
+# error on fixtures involving promoted teams fell 1.010 -> 0.954; it is the smallest value
+# that also keeps today's weakest attack at ~0.73 goals a game against an average side.
+# Note: time decay leaves only ~46 effective games per team, so the penalty is not negligible
+# for established sides either: top teams shrink by roughly 10-15% (Man City scores 1.80 -> 1.68).
+# The established/promoted prior switch counts raw (undecayed) pooled games, while the penalty
+# acts against decay-weighted information; the two are deliberately not the same measure.
+SHRINKAGE = 8.0
+ESTABLISHED_GAMES = 38
+# PROMOTED_PRIOR = (attack, defence), derived from data: the mean unshrunk fitted rating of
+# teams in their first pooled season (fit through that season's gameweek 38, centred on the
+# established teams' average): Bournemouth, Fulham, Nott'm Forest (2022); Luton, Sheffield Utd
+# (2023). Attack -0.137, defence +0.281 -> rounded. Only 5 team-seasons: treat as approximate.
+# (2024/2025 team-seasons were excluded: the 2024 teams table is corrupt, see task report.)
+PROMOTED_PRIOR = (-0.14, 0.28)
 
 NEXT_N_GAMEWEEKS = 5
 
@@ -58,13 +79,17 @@ NEXT_N_GAMEWEEKS = 5
 #               Data fetching                  #
 #################################################
 
-def fetch_teams_for_season(cursor, year_start):
-    """id -> row for one season's team roster (id is only valid within that year_start)."""
+def fetch_team_rows(cursor, year_start):
     cursor.execute(
         f"SELECT id, code, name, short_name FROM {db}.bootstrapstatic_teams WHERE year_start = %s",
         (year_start,)
     )
-    return {row['id']: row for row in cursor.fetchall()}
+    return cursor.fetchall()
+
+
+def fetch_teams_for_season(cursor, year_start):
+    """id -> row for one season's team roster (id is only valid within that year_start)."""
+    return {row['id']: row for row in fetch_team_rows(cursor, year_start)}
 
 
 def fetch_finished_fixtures(cursor, year_start):
@@ -111,8 +136,18 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
     games_this_season = {}
 
     for season_index, year_start in enumerate(seasons):
-        teams = fetch_teams_for_season(cursor, year_start)
-        if not teams:
+        team_rows = fetch_team_rows(cursor, year_start)
+        if not team_rows:
+            continue
+        teams = {row['id']: row for row in team_rows}
+        if len(team_rows) != TEAMS_PER_SEASON or len(teams) != TEAMS_PER_SEASON:
+            # A roster that is not exactly 20 rows with 20 distinct ids has id collisions
+            # (seen in 2024, where a later bootstrap run overwrote ids), so every id -> code
+            # lookup for that season is wrong and its results would be credited to the wrong
+            # clubs. Skip the season rather than poison the fit. Kept as a tripwire.
+            logger.warning("build_rating_dataset: season %s has a corrupt team roster "
+                           "(%s rows, %s distinct ids, expected %s) - skipping it.",
+                           year_start, len(team_rows), len(teams), TEAMS_PER_SEASON)
             continue
         id_to_code = {tid: t['code'] for tid, t in teams.items()}
         season_offset = season_index * GAMEWEEKS_PER_SEASON
@@ -149,13 +184,21 @@ def build_rating_dataset(cursor, current_season, current_gw, current_season_max_
 #################################################
 
 def _unpack_theta(theta, n):
-    """theta = [attack_1..attack_{n-1} (attack_0 fixed at 0), defence_0..defence_{n-1}, home_adv, rho]."""
-    attack = np.zeros(n)
-    attack[1:] = theta[0:n - 1]
-    defence = theta[n - 1:2 * n - 1]
-    home_adv = theta[2 * n - 1]
-    rho = theta[2 * n]
-    return attack, defence, home_adv, rho
+    """
+    theta = [attack_0..attack_{n-1}, defence_0..defence_{n-1}, home_adv, rho, intercept].
+
+    All attacks are free. The old "attack_0 fixed at 0" constraint is gone: the
+    shrinkage penalty already removes the attack+c / defence-c invariance (it
+    anchors the ratings to the priors). The league scoring level is an
+    unpenalised `intercept` (global mean log-rate) so the penalty cannot drag
+    it towards one goal a game.
+    """
+    attack = theta[0:n]
+    defence = theta[n:2 * n]
+    home_adv = theta[2 * n]
+    rho = theta[2 * n + 1]
+    intercept = theta[2 * n + 2]
+    return attack, defence, home_adv, rho, intercept
 
 
 def _dc_tau(x, y, lam, mu, rho):
@@ -168,22 +211,54 @@ def _dc_tau(x, y, lam, mu, rho):
     return tau
 
 
-def _dixon_coles_nll(theta, n, idx_h, idx_a, goals_h, goals_a, weights):
-    attack, defence, home_adv, rho = _unpack_theta(theta, n)
-    lam = np.clip(np.exp(attack[idx_h] + defence[idx_a] + home_adv), 1e-6, 15.0)
-    mu = np.clip(np.exp(attack[idx_a] + defence[idx_h]), 1e-6, 15.0)
+def _dixon_coles_nll(theta, n, idx_h, idx_a, goals_h, goals_a, weights,
+                     shrinkage=0.0, prior_att=None, prior_def=None):
+    attack, defence, home_adv, rho, intercept = _unpack_theta(theta, n)
+    lam = np.clip(np.exp(intercept + attack[idx_h] + defence[idx_a] + home_adv), 1e-6, 15.0)
+    mu = np.clip(np.exp(intercept + attack[idx_a] + defence[idx_h]), 1e-6, 15.0)
     tau = np.clip(_dc_tau(goals_h, goals_a, lam, mu, rho), 1e-10, None)
     log_lik = weights * (np.log(tau) + poisson.logpmf(goals_h, lam) + poisson.logpmf(goals_a, mu))
-    return -np.sum(log_lik)
+    nll = -np.sum(log_lik)
+    if shrinkage:
+        nll += shrinkage * (np.sum((attack - prior_att) ** 2) + np.sum((defence - prior_def) ** 2))
+    return nll
 
 
-def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE):
-    """Returns ({code: {'attack', 'defence'}}, home_adv, rho)."""
+def team_priors(rows, codes, established_games=ESTABLISHED_GAMES, promoted_prior=None):
+    """
+    (prior_att, prior_def) arrays: league average (0, 0) for teams with at least
+    `ESTABLISHED_GAMES` pooled fixtures, `promoted_prior` for the rest.
+    """
+    if promoted_prior is None:
+        promoted_prior = PROMOTED_PRIOR
+    games = {c: 0 for c in codes}
+    for r in rows:
+        games[r['code_h']] += 1
+        games[r['code_a']] += 1
+    established = np.array([games[c] >= established_games for c in codes])
+    prior_att = np.where(established, 0.0, promoted_prior[0])
+    prior_def = np.where(established, 0.0, promoted_prior[1])
+    return prior_att, prior_def
+
+
+def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE,
+                    shrinkage=None, promoted_prior=None, established_games=ESTABLISHED_GAMES):
+    """
+    Returns ({code: {'attack', 'defence'}}, home_adv, rho).
+
+    An L2 penalty `shrinkage * sum((rating - prior)^2)` pulls low-data teams
+    (newly promoted sides with a handful of pooled games) towards a typical
+    promoted side instead of an extreme maximum-likelihood rating.
+    """
+    if shrinkage is None:
+        shrinkage = SHRINKAGE
     n = len(codes)
     if n < 2 or not rows:
         logger.warning("fit_dixon_coles: not enough data to fit (n=%s teams, %s fixtures) - "
                         "falling back to league-average ratings for everyone.", n, len(rows))
-        return {c: {'attack': 0.0, 'defence': 0.0} for c in codes}, HOME_ADV_INIT, 0.0
+        fallback = {c: {'attack': 0.0, 'defence': 0.0} for c in codes}
+        fallback[DEFAULT_RATING_KEY] = {'attack': PROMOTED_PRIOR[0], 'defence': PROMOTED_PRIOR[1]}
+        return fallback, HOME_ADV_INIT, 0.0
 
     code_index = {c: i for i, c in enumerate(codes)}
     idx_h = np.array([code_index[r['code_h']] for r in rows])
@@ -193,21 +268,33 @@ def fit_dixon_coles(rows, codes, reference_gw, decay_rate=DECAY_RATE):
     gw = np.array([r['unified_gw'] for r in rows], dtype=float)
     weights = np.exp(-decay_rate * np.clip(reference_gw - gw, 0, None))
 
-    theta0 = np.zeros(2 * n + 1)
-    theta0[2 * n - 1] = HOME_ADV_INIT
-    bounds = [(-3.0, 3.0)] * (n - 1) + [(-3.0, 3.0)] * n + [(-1.0, 1.0), (-0.3, 0.3)]
+    prior_att, prior_def = team_priors(rows, codes, established_games, promoted_prior)
+
+    theta0 = np.zeros(2 * n + 3)
+    theta0[2 * n] = HOME_ADV_INIT
+    bounds = [(-3.0, 3.0)] * (2 * n) + [(-1.0, 1.0), (-0.3, 0.3), (-2.0, 2.0)]
 
     result = minimize(
         _dixon_coles_nll, theta0,
-        args=(n, idx_h, idx_a, goals_h, goals_a, weights),
+        args=(n, idx_h, idx_a, goals_h, goals_a, weights, shrinkage, prior_att, prior_def),
         method='L-BFGS-B', bounds=bounds,
     )
     if not result.success:
         logger.warning("fit_dixon_coles: optimizer did not converge cleanly (%s) - using best iterate anyway.",
                         result.message)
 
-    attack, defence, home_adv, rho = _unpack_theta(result.x, n)
+    attack, defence, home_adv, rho, intercept = _unpack_theta(result.x, n)
+    # Fold the league intercept into the ratings (half each) so that
+    # exp(attack_h + defence_a + home_adv) is the home rate everywhere downstream.
+    attack = attack + intercept / 2.0
+    defence = defence + intercept / 2.0
     ratings = {codes[i]: {'attack': float(attack[i]), 'defence': float(defence[i])} for i in range(n)}
+    # Reserved key: the rating for any team with no fixtures in the pool (a promoted side at
+    # gameweek 0): a typical promoted side with the league level folded in like the others.
+    # A reserved key (not a second return value) keeps every fit_dixon_coles caller and the
+    # ratings dict handed to teamStrength unchanged; lookups go through rating_for().
+    ratings[DEFAULT_RATING_KEY] = {'attack': float(PROMOTED_PRIOR[0] + intercept / 2.0),
+                                   'defence': float(PROMOTED_PRIOR[1] + intercept / 2.0)}
     return ratings, float(home_adv), float(rho)
 
 
@@ -292,6 +379,13 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
     computed_at = datetime.utcnow()
     is_preseason = current_gw == 0
 
+    # Persisted ratings are centred on the current teams' league average (the fit's
+    # level includes the league scoring rate), so "attack above 0.15" on the club page
+    # means "better than an average side". Expected goals use the uncentred ratings.
+    current = [rating_for(ratings, t['code']) for t in teams.values()]
+    mean_attack = float(np.mean([r['attack'] for r in current])) if current else 0.0
+    mean_defence = float(np.mean([r['defence'] for r in current])) if current else 0.0
+
     rows = []
     for fx in fixtures:
         team_h_info = teams.get(fx['team_h'])
@@ -300,8 +394,8 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
             continue
 
         code_h, code_a = team_h_info['code'], team_a_info['code']
-        rating_h = ratings.get(code_h, {'attack': 0.0, 'defence': 0.0})
-        rating_a = ratings.get(code_a, {'attack': 0.0, 'defence': 0.0})
+        rating_h = rating_for(ratings, code_h)
+        rating_a = rating_for(ratings, code_a)
 
         lam_home = float(np.exp(rating_h['attack'] + rating_a['defence'] + home_adv))
         lam_away = float(np.exp(rating_a['attack'] + rating_h['defence']))
@@ -317,8 +411,8 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
             'kickoff_time': fx['kickoff_time'],
             'team_id': fx['team_h'], 'opponent_id': fx['team_a'], 'is_home': 1,
             **_distribution_columns(home_dist), 'computed_at': computed_at,
-            'attack_rating': float(rating_h['attack']),
-            'defence_rating': float(rating_h['defence']),
+            'attack_rating': float(rating_h['attack'] - mean_attack),
+            'defence_rating': float(rating_h['defence'] - mean_defence),
             'home_adv': float(home_adv)
         })
         rows.append({
@@ -326,8 +420,8 @@ def build_fixture_predictions(cursor, current_season, current_gw, ratings, home_
             'kickoff_time': fx['kickoff_time'],
             'team_id': fx['team_a'], 'opponent_id': fx['team_h'], 'is_home': 0,
             **_distribution_columns(away_dist), 'computed_at': computed_at,
-            'attack_rating': float(rating_a['attack']),
-            'defence_rating': float(rating_a['defence']),
+            'attack_rating': float(rating_a['attack'] - mean_attack),
+            'defence_rating': float(rating_a['defence'] - mean_defence),
             'home_adv': 0.0
         })
     return rows
@@ -367,7 +461,12 @@ def persist_match_predictions(conn, rows):
          r['attack_rating'], r['defence_rating'], r['home_adv'], r['computed_at'])
         for r in rows
     ]
-    cursor.execute(f"DELETE FROM {PREDICTIONS_TABLE} WHERE gameweek < %s", (min(r['gameweek'] for r in rows),))
+    # Relies on autocommit being OFF (the mysql.connector default, which connect_db does not
+    # override): DELETE and INSERT stay in one transaction and readers see the old rows until
+    # the single commit. With autocommit on, the table would be briefly empty.
+    # Full replace (like persist_team_strengths): a season rollover must not leave
+    # last season's rows behind. DELETE + INSERT share one transaction and one commit.
+    cursor.execute(f"DELETE FROM {PREDICTIONS_TABLE}")
     cursor.executemany(f"""
         INSERT INTO {PREDICTIONS_TABLE}
             (fixture_code, team_id, gameweek, opponent_id, is_home,
@@ -623,8 +722,8 @@ def backtest_model(target_season, holdout_gw=25, gw_window=13):
         model_errors, baseline_errors = [], []
         for fx in held_out:
             code_h, code_a = id_to_code.get(fx['team_h']), id_to_code.get(fx['team_a'])
-            rating_h = ratings.get(code_h, {'attack': 0.0, 'defence': 0.0})
-            rating_a = ratings.get(code_a, {'attack': 0.0, 'defence': 0.0})
+            rating_h = rating_for(ratings, code_h)
+            rating_a = rating_for(ratings, code_a)
             lam_home = float(np.exp(rating_h['attack'] + rating_a['defence'] + home_adv))
             lam_away = float(np.exp(rating_a['attack'] + rating_h['defence']))
 
