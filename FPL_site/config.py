@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 class Config:
     """Base configuration."""
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Hides the player momentum card until the daily job has data. Off by default.
+    FEATURE_MOMENTUM = False
 
 class DevelopmentConfig(Config):
     """Development configuration."""
@@ -13,6 +15,7 @@ class DevelopmentConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
     MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
+    FEATURE_MOMENTUM = os.getenv('FEATURE_MOMENTUM', '').lower() == 'true'
 
     # Print out the variables for debugging
     print(f"Development - HOST: {HOST}")
@@ -26,6 +29,7 @@ class ProductionConfig(Config):
     PASSWORD = os.getenv('PASSWORD')
     DATABASE = os.getenv('DATABASE')
     MIXPANEL_TOKEN = os.getenv('MIXPANEL_TOKEN')
+    FEATURE_MOMENTUM = os.getenv('FEATURE_MOMENTUM', '').lower() == 'true'
 
     print(f"Production - MIXPANEL_TOKEN: {MIXPANEL_TOKEN}")
 

@@ -26,6 +26,7 @@ from .weekResolver import DEADLINE_FORMAT
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
 from .teamStrength import load_team_strength
 from .predictionRecord import load_prediction_record
+from .playerMomentum import load_player_momentum
 
 # Remove ==================================================
 
@@ -143,7 +144,8 @@ def week_this_week_decision():
 def radar():
     logger.info("Request for radar page")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    return render_template('radar.html', is_ajax=is_ajax, title='Radar', mixpanel_token=current_config.MIXPANEL_TOKEN)
+    return render_template('radar.html', is_ajax=is_ajax, title='Radar', mixpanel_token=current_config.MIXPANEL_TOKEN,
+                           momentum=getattr(current_config, 'FEATURE_MOMENTUM', False))
 
 @app.route('/discovery')
 def discovery():
@@ -250,6 +252,20 @@ def club_strength(team_id):
 
     if payload is None:
         return jsonify({'error': 'unknown_team'}), 404
+
+    return jsonify(payload)
+
+@app.route('/api/player/<int:player_id>/momentum')
+def player_momentum(player_id):
+    logger.info(f"Request for player momentum: player_id={player_id}")
+    try:
+        payload = load_player_momentum(player_id)
+    except Exception as e:
+        logger.error(f"Error loading player momentum: {e}")
+        return jsonify({'error': 'server_error'}), 500
+
+    if payload is None:
+        return jsonify({'error': 'unknown_player'}), 404
 
     return jsonify(payload)
 
