@@ -28,7 +28,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import poisson, nbinom
 
-from FPL_site.dataModels import connect_db, generateCurrentGameweek, db, season_start
+from FPL_site.dataModels import connect_db, generateCurrentGameweek, db, current_season_start, refresh_season_start
 from FPL_site.teamStrength import DEFAULT_RATING_KEY, rating_for, build_team_strengths, fetch_squad_rows, persist_team_strengths
 
 logger = logging.getLogger(__name__)
@@ -412,7 +412,9 @@ def expected_goals_range(lam, games_played_this_season, confidence=CONFIDENCE, i
 #        Fitting + building predictions         #
 #################################################
 
-def fit_current_ratings(cursor, current_season=season_start, current_gw=None):
+def fit_current_ratings(cursor, current_season=None, current_gw=None):
+    if current_season is None:
+        current_season = current_season_start()
     if current_gw is None:
         current_gw = generateCurrentGameweek()
     rows, codes, games_this_season, reference_gw = build_rating_dataset(cursor, current_season, current_gw)
@@ -610,6 +612,10 @@ def run_daily_match_predictions():
     route never re-fits inside a web request.
     """
     logger.info("Starting daily match-outcome prediction run.")
+    # Re-read the season now: the update step may just have rolled it over, and this process
+    # resolved it at import, before that happened.
+    refresh_season_start()
+    season_now = current_season_start()
     conn = connect_db()
     if conn is None:
         logger.error("run_daily_match_predictions: could not connect to the database.")
@@ -617,7 +623,7 @@ def run_daily_match_predictions():
     try:
         cursor = conn.cursor(dictionary=True)
         ratings, home_adv, rho, games_this_season, current_gw = fit_current_ratings(cursor)
-        rows = build_fixture_predictions(cursor, season_start, current_gw, ratings, home_adv, games_this_season)
+        rows = build_fixture_predictions(cursor, season_now, current_gw, ratings, home_adv, games_this_season)
         persist_match_predictions(conn, rows)
         # Keep an honest, append-only record of what we predicted before kickoff.
         try:
@@ -627,8 +633,8 @@ def run_daily_match_predictions():
             _safe_rollback(conn)
         # Team strength has its own guard: a failure here must never undo the predictions.
         try:
-            teams = fetch_teams_for_season(cursor, season_start)
-            strengths = build_team_strengths(teams, ratings, home_adv, fetch_squad_rows(cursor, season_start))
+            teams = fetch_teams_for_season(cursor, season_now)
+            strengths = build_team_strengths(teams, ratings, home_adv, fetch_squad_rows(cursor, season_now))
             persist_team_strengths(conn, strengths)
         except Exception:
             logger.exception("Team strength failed; predictions were still saved.")
@@ -665,7 +671,7 @@ def load_team_fixture_outlook(team_id, num_gameweeks=NEXT_N_GAMEWEEKS):
     try:
         cursor = conn.cursor(dictionary=True)
         team_id = int(team_id)
-        teams = fetch_teams_for_season(cursor, season_start)
+        teams = fetch_teams_for_season(cursor, current_season_start())
         team_info = teams.get(team_id)
         if not team_info:
             return None
@@ -732,7 +738,7 @@ def list_current_teams():
         return []
     try:
         cursor = conn.cursor(dictionary=True)
-        teams = fetch_teams_for_season(cursor, season_start)
+        teams = fetch_teams_for_season(cursor, current_season_start())
         return sorted(
             [{'id': t['id'], 'name': t['name'], 'short_name': t['short_name']} for t in teams.values()],
             key=lambda t: t['name']

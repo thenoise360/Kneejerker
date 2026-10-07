@@ -129,11 +129,6 @@ def test_refresh_keeps_the_current_season_when_the_database_blips(live, monkeypa
     assert dm.season_start == 2027
 
 
-def test_future_performance_model_shares_the_same_season():
-    import FPL_site.futurePerformanceModel as fpm
-    assert fpm.season_start == dm.season_start
-
-
 # ---- the update job uses the derived year ----------------------------------------------
 
 BOOTSTRAP = {

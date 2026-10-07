@@ -7,6 +7,7 @@ import requests
 from datetime import datetime
 import pytz
 from dataModels import get_players
+import dataModels as _legacy_data_models  # top-level copy (via sys.path), not FPL_site.dataModels
 from config import current_config
 
 # Access configuration variables
@@ -327,6 +328,8 @@ def update_all_tables():
         return
     update_bootstrap_static_tables(user, password, db, host, bootstrap=bootstrap, year_start=year_start)
     update_fixtures_tables(user, password, db, host, year_start=year_start)
+    # get_players() below reads this copy's season; make it see the year just written.
+    _legacy_data_models.refresh_season_start()
     update_element_summary_tables(user, password, db, host, year_start=year_start)
 
 if __name__ == "__main__":
