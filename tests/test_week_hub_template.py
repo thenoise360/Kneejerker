@@ -65,7 +65,9 @@ def test_nothing_to_do_and_guest_states():
 
 
 def test_team_form_hidden_for_a_known_team():
-    assert 'id="hub-team-form"' not in render(hub())
+    html = render(hub())
+    assert re.search(r'<div id="hub-team-slot"[^>]* hidden', html)
+    assert 'id="hub-team-form"' in html
 
 
 @pytest.mark.parametrize('team_status,phrase', [

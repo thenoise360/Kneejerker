@@ -34,8 +34,8 @@
         </div>
     {% endif %}
     </div>
-    <div id="hub-team-slot">
-    {% if not hub or hub.based_on != 'your_team' %}
+    {# Always rendered; hidden for a known team so "Change it" has a form to show again. #}
+    <div id="hub-team-slot"{% if hub and hub.based_on == 'your_team' %} hidden{% endif %}>
         <form class="card recap-team-form" id="hub-team-form" method="get" action="{{ url_for('home') }}">
             {% if hub and hub.team_status == 'not_found' %}<p class="sub">We couldn't find that team number. Check it and try again.</p>
             {% elif hub and hub.team_status == 'unavailable' %}<p class="sub">We couldn't reach the official game just now, so this is for everyone. Try again in a moment.</p>
@@ -46,6 +46,5 @@
                 <button type="submit" class="btn-pill">Show my team</button>
             </div>
         </form>
-    {% endif %}
     </div>
 </div>

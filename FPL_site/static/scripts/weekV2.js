@@ -19,6 +19,10 @@ let deadlineTimer = null;
 const recapGuard = createLatestGuard();
 const decisionGuard = createLatestGuard();
 const hubGuard = createLatestGuard();
+// A team number we know about for this visit only. When the browser blocks
+// storage we can't remember a number, but we must still use it for the page the
+// person is looking at, or the hub would swap their team for the guest view.
+let sessionTeamId = null;
 
 export function initializeWeekV2() {
     const lastWeekView = document.getElementById('last-week-view');
@@ -94,9 +98,10 @@ function bindChangeTeam(personalSlot, lastWeekView) {
     if (!button) return;
     button.addEventListener('click', () => {
         clearTeamId(safeLocalStorage(window));
+        sessionTeamId = null;  // forget the visit-only copy too, or loadHub would still use it
         personalSlot.innerHTML = renderTeamPrompt();
         bindTeamForm(lastWeekView);
-        loadDecision();
+        loadDecision();  // no team number any more, so This week falls back to the everyone view
         loadHub();  // the hub personalises too
     });
 }
@@ -109,13 +114,16 @@ function bindTeamForm(lastWeekView) {
     if (!form || !input) return;
     form.addEventListener('submit', (event) => {
         event.preventDefault();  // stop the browser reloading the page
-        if (saveTeamId(safeLocalStorage(window), input.value) === null) {
+        // Decide validity ourselves: saveTeamId also returns null when storage is
+        // blocked, and a perfectly good number shouldn't be rejected for that.
+        const typed = parseTeamId(input.value);
+        if (typed === null) {
             input.setCustomValidity('Please enter the number only, for example 1234567.');
             input.reportValidity();
             return;
         }
         loadLastWeekRecap(lastWeekView);
-        loadDecision();
+        loadDecision();  // a saved team number also personalises This week
         loadHub();  // the hub personalises too
     });
     input.addEventListener('input', () => input.setCustomValidity(''));
@@ -183,7 +191,9 @@ async function loadDecision() {
 // other team forms do, so the next visit is personal straight away.
 function adoptTeamFromAddress() {
     const fromAddress = parseTeamId(new URLSearchParams(window.location.search).get('team_id'));
-    if (fromAddress !== null) saveTeamId(safeLocalStorage(window), fromAddress);
+    if (fromAddress === null) return;
+    sessionTeamId = fromAddress;  // still works for this visit if storage is blocked
+    saveTeamId(safeLocalStorage(window), fromAddress);
 }
 
 // With JavaScript we can do better than a page reload: save the number, then
@@ -199,6 +209,8 @@ function bindHubTeamForm() {
             input.reportValidity();
             return;
         }
+        sessionTeamId = typed;
+        saveTeamId(safeLocalStorage(window), typed);  // remember it for next time, if storage allows
         loadHub();
         loadDecision();
     });
@@ -216,7 +228,8 @@ async function loadHub() {
 
     const query = new URLSearchParams({ gameweek: hub.dataset.gameweek });
     if (hub.dataset.lastGameweek) query.set('last_gameweek', hub.dataset.lastGameweek);
-    const teamId = readTeamId(safeLocalStorage(window));
+    // Saved number first; otherwise the visit-only one (see sessionTeamId above).
+    const teamId = readTeamId(safeLocalStorage(window)) ?? sessionTeamId;
     if (teamId !== null) query.set('team_id', String(teamId));
 
     const token = hubGuard.start();  // a newer request makes this one stale
