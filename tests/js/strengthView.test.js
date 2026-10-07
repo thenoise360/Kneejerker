@@ -64,8 +64,10 @@ test('gauge values are computed from the payload', () => {
     assert.ok(Math.abs(g.attack.marker - 1.5 / 1.5) < 1e-9);
     assert.ok(Math.abs(g.defence.value - 1.5 / 1.1) < 1e-9);
     assert.ok(Math.abs(g.defence.marker - 1.5 / 1.0) < 1e-9);
-    assert.equal(g.attack.min, 0.5);
-    assert.equal(g.attack.max, 1.5);
+    assert.equal(g.attack.min, 0.4);
+    assert.equal(g.attack.max, 1.8);
+    assert.equal(g.defence.min, 0.4);
+    assert.equal(g.defence.max, 1.8);
 });
 
 test('aria labels are words only', () => {

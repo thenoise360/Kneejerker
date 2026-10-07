@@ -21,8 +21,11 @@ function oneDecimal(value) {
     return Number(value).toFixed(1);
 }
 
-const GAUGE_MIN = 0.5;
-const GAUGE_MAX = 1.5;
+// The dial runs from 0.4 to 1.8 times the league average, not 0.5 to 1.5: top
+// sides score well over 1.5 times the average, and a narrower range would pin
+// their needle and "usual" tick against the end of the scale.
+const GAUGE_MIN = 0.4;
+const GAUGE_MAX = 1.8;
 
 // Where each gauge's needle and "usual" tick sit, as a share of the league
 // average goals scored. Returns null when the payload cannot support gauges
