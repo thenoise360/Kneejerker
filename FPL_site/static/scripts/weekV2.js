@@ -20,7 +20,7 @@ const decisionGuard = createLatestGuard();
 
 export function initializeWeekV2() {
     const lastWeekView = document.getElementById('last-week-view');
-    // The flag-off page has no data-week-v2 attribute, so this is a no-op there.
+    // Only the Week page marks last-week-view with data-week-v2, so other pages do nothing here.
     if (!lastWeekView || lastWeekView.dataset.weekV2 !== 'true') return;
     showWelcomeBack(lastWeekView);
     loadLastWeekRecap(lastWeekView);
@@ -64,6 +64,7 @@ async function loadLastWeekRecap(lastWeekView) {
         if (!recapGuard.isLatest(token)) return;  // a newer request has taken over
         if (data.status !== 'ready') {
             guestSlot.innerHTML = renderMessage(data.message);
+            if (personalSlot) personalSlot.innerHTML = '';  // don't leave an old team's card showing
             return;
         }
         guestSlot.innerHTML = renderGuestRecap(data.guest, data.gameweek);
@@ -78,6 +79,7 @@ async function loadLastWeekRecap(lastWeekView) {
         console.error('Failed to load last week recap', err);
         if (!recapGuard.isLatest(token)) return;
         guestSlot.innerHTML = renderMessage(RECAP_LOAD_FAILED);
+        if (personalSlot) personalSlot.innerHTML = '';
     }
 }
 
