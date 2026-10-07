@@ -67,3 +67,4 @@ def test_club_strength_slot_follows_flag(client, monkeypatch, flag):
     monkeypatch.setattr(views.current_config, 'FEATURE_TEAM_DETAIL', flag, raising=False)
     html = client.get('/club/1').get_data(as_text=True)
     assert ('id="team-strength-slot"' in html) is flag
+    assert ('id="prediction-record-slot"' in html) is flag
