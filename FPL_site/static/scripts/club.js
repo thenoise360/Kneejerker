@@ -18,10 +18,9 @@ function initializeClubPage() {
 
     fetchOutlook(teamId);
 
-    // The strength card only exists in the page when the feature is switched on.
-    if (document.getElementById('team-strength-slot')) loadStrength(teamId);
-    // Same for the prediction record card.
-    if (document.getElementById('prediction-record-slot')) loadRecord(teamId);
+    // The two cards load on their own, so one failing never blocks the other.
+    loadStrength(teamId);
+    loadRecord(teamId);
 }
 
 async function loadStrength(teamId) {

@@ -222,8 +222,7 @@ def club(team_id):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     return render_template(
         'club.html', is_ajax=is_ajax, title='Fixture outlook',
-        mixpanel_token=current_config.MIXPANEL_TOKEN, team_id=team_id,
-        team_detail=getattr(current_config, 'FEATURE_TEAM_DETAIL', False)
+        mixpanel_token=current_config.MIXPANEL_TOKEN, team_id=team_id
     )
 
 @app.route('/api/club/<int:team_id>/fixture-outlook')
