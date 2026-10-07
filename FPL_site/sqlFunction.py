@@ -1,4 +1,5 @@
 ﻿import sys
+import logging
 import os
 from tqdm import tqdm
 import mysql.connector
@@ -14,9 +15,10 @@ user = current_config.USER
 password = current_config.PASSWORD
 db = current_config.DATABASE
 
-# Fallback only: the update job derives the year from bootstrap-static's gameweek 1 deadline
-# (see season_start_from_events) so the summer rollover no longer needs a manual edit.
-season_start = "2026"
+# There is deliberately no fallback year: the update job derives year_start from bootstrap-static's
+# gameweek 1 deadline (see season_start_from_events). If it cannot, it writes nothing, because data
+# filed under a guessed year is what corrupted the 2024 season.
+logger = logging.getLogger(__name__)
 BOOTSTRAP_URL = "https://fantasy.premierleague.com/api/bootstrap-static/"
 
 
@@ -42,9 +44,9 @@ def season_start_from_events(events):
 
 
 def resolve_year_start(bootstrap):
-    """year_start for this run, as the string the tables have always been written with."""
-    year = season_start_from_events((bootstrap or {}).get('events'))
-    return str(year) if year is not None else season_start
+    """year_start for this run as the string the tables have always been written with, or None."""
+    year = season_start_from_events((bootstrap or {}).get('events') if isinstance(bootstrap, dict) else None)
+    return str(year) if year is not None else None
 
 
 def fetch_bootstrap_static():
@@ -119,6 +121,9 @@ def update_bootstrap_static_tables(user, password, database, host, bootstrap=Non
         return
     if year_start is None:
         year_start = resolve_year_start(bootstrap)
+    if year_start is None:
+        logger.error("Cannot work out the season year from bootstrap-static; writing nothing.")
+        return
 
     current_gameweek = generateCurrentGameweek(bootstrap)
     if current_gameweek is None:
@@ -177,6 +182,9 @@ def update_bootstrap_static_tables(user, password, database, host, bootstrap=Non
     db_connect.close()
 
 def update_fixtures_tables(user, password, database, host, year_start=None):
+    if year_start is None:
+        logger.error("update_fixtures_tables: no season year given; writing nothing.")
+        return
     print("Updating Fixtures Tables...")
     db_connect = connect_to_db(user, password, database, host)
     if not db_connect:
@@ -184,8 +192,6 @@ def update_fixtures_tables(user, password, database, host, year_start=None):
         return
     cursor = db_connect.cursor()
 
-    if year_start is None:
-        year_start = season_start
     response = requests.get("https://fantasy.premierleague.com/api/fixtures/").json()
     table = "fixtures_fixtures"
     existing_columns = get_column_names(cursor, table)
@@ -236,6 +242,9 @@ def update_fixtures_tables(user, password, database, host, year_start=None):
 
 
 def update_element_summary_tables(user, password, database, host, year_start=None):
+    if year_start is None:
+        logger.error("update_element_summary_tables: no season year given; writing nothing.")
+        return
     print("Updating Element Summary Tables...")
     db_connect = connect_to_db(user, password, database, host)
     if not db_connect:
@@ -243,8 +252,6 @@ def update_element_summary_tables(user, password, database, host, year_start=Non
         return
     cursor = db_connect.cursor()
 
-    if year_start is None:
-        year_start = season_start
     players = get_players()
     table_data = {
         "fixtures": "elementsummary_fixtures",
@@ -313,6 +320,11 @@ def update_all_tables():
     # pre-season data is written under the new year without anyone editing a constant.
     bootstrap = fetch_bootstrap_static()
     year_start = resolve_year_start(bootstrap)
+    if year_start is None:
+        logger.error("update_all_tables: could not work out the season year (bootstrap-static "
+                     "failed or had no usable events); skipping the whole run so nothing is "
+                     "filed under a guessed year.")
+        return
     update_bootstrap_static_tables(user, password, db, host, bootstrap=bootstrap, year_start=year_start)
     update_fixtures_tables(user, password, db, host, year_start=year_start)
     update_element_summary_tables(user, password, db, host, year_start=year_start)

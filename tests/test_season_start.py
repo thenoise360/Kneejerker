@@ -1,5 +1,6 @@
 import os
 os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
+import logging
 import sys
 
 import pytest
@@ -171,10 +172,26 @@ def test_update_job_writes_the_derived_year_and_fetches_bootstrap_once(job):
         assert all(rec['year_start'] == '2027' for rec in batch)   # string, as before
 
 
-def test_update_job_falls_back_to_the_constant_without_events(job, monkeypatch):
+@pytest.mark.parametrize('payload', ['no_events', 'garbled', 'fetch_failed'])
+def test_update_job_writes_nothing_when_the_year_cannot_be_derived(job, monkeypatch, caplog, payload):
     urls, writes = job
-    monkeypatch.setitem(BOOTSTRAP, 'events', [])
-    sf.update_all_tables()
-    assert writes
-    for _, batch in writes:
-        assert all(rec['year_start'] == sf.season_start for rec in batch)
+    connects = []
+    monkeypatch.setattr(sf, 'connect_to_db', lambda *a: connects.append(a) or FakeDB(writes))
+    if payload == 'no_events':
+        monkeypatch.setitem(BOOTSTRAP, 'events', [])
+    elif payload == 'garbled':
+        monkeypatch.setitem(BOOTSTRAP, 'events', [{'deadline_time': 'garbage'}])
+    else:
+        monkeypatch.setattr(sf, 'fetch_bootstrap_static', lambda: None)
+    with caplog.at_level(logging.ERROR):
+        sf.update_all_tables()
+    assert connects == [] and writes == []
+    assert any('year' in m.lower() for m in caplog.messages)
+    assert not any('fixtures' in u and 'bootstrap' not in u for u in urls)
+
+
+def test_individual_writers_refuse_to_write_without_a_year(job):
+    urls, writes = job
+    sf.update_fixtures_tables('u', 'p', 'd', 'h')
+    sf.update_element_summary_tables('u', 'p', 'd', 'h')
+    assert writes == [] and urls == []
