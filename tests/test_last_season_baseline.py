@@ -108,7 +108,7 @@ def test_not_in_the_league_last_season_is_new():
     cur = cursor_for(this_el={'code': 1, 'team_code': 3}, last_el=None)
     out = ph.fetch_last_season_baseline(cur, 12, this_year=2026)
     assert out['played'] is False
-    assert out['headline'] == 'New to the league last season'
+    assert out['headline'] == 'Not in the Premier League last season'
 
 
 def test_in_the_league_but_no_minutes_is_didnt_play():

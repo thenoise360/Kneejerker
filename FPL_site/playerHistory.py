@@ -21,7 +21,7 @@ STEADY_FROM = 3.0
 BIG_RETURN_FROM = 8
 STEADY_RETURN_FROM = 3
 
-NEW_TO_LEAGUE = 'New to the league last season'
+NEW_TO_LEAGUE = 'Not in the Premier League last season'
 DID_NOT_PLAY = "Didn't play last season"
 
 
