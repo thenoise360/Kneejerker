@@ -24,8 +24,30 @@ def test_walk_forward_can_keep_players_without_an_official_number(monkeypatch):
 
 class Missing:
     def execute(self, sql, params=None):
-        raise RuntimeError("Table 'expected_points_log' doesn't exist")
+        raise RuntimeError("Table 'expected_points_accuracy' doesn't exist")
 
 
 def test_nothing_backfilled_yet_when_the_log_table_is_missing():
     assert bf.fetch_backfilled(Missing()) == set()
+
+
+def test_a_gameweek_counts_as_backfilled_only_once_its_accuracy_row_exists():
+    seen = []
+
+    class Cur:
+        def execute(self, sql, params=None):
+            seen.append((sql, params))
+
+        def fetchall(self):
+            return [{'year_start': 2025, 'gameweek': 6}]
+
+    assert bf.fetch_backfilled(Cur()) == {(2025, 6)}
+    sql, params = seen[0]
+    assert 'expected_points_accuracy' in sql and 'expected_points_log' not in sql
+    assert params == ('backfill', bf.MODEL_VERSION)
+
+
+def test_an_unreadable_accuracy_table_is_warned_about_not_swallowed(caplog):
+    with caplog.at_level('WARNING'):
+        assert bf.fetch_backfilled(Missing()) == set()
+    assert 'RuntimeError' in caplog.text
