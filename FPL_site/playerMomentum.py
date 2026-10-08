@@ -29,9 +29,13 @@ def not_tracked(key):
     return {'key': key, 'direction': 'not_tracked', 'reason': None, 'magnitude': 0}
 
 
-def fixtures_signal(position, upcoming, baseline_for, baseline_against):
-    if not upcoming:
-        return _signal('fixtures', 'same', 'no game this week', 0)
+def fixture_change(position, upcoming, baseline_for, baseline_against):
+    """How much easier (+) or harder (-) the fixtures are than an average opponent, as a fraction.
+
+    Attackers: their team's expected goals against the team's usual. Defenders and
+    goalkeepers: the opponent's expected goals against what the team usually concedes.
+    Shared by the momentum signal and the per-fixture difficulty on the decision screens.
+    """
     if position in ATTACKING:
         baseline = baseline_for
         average = sum(f['own_mean'] for f in upcoming) / len(upcoming)
@@ -41,11 +45,27 @@ def fixtures_signal(position, upcoming, baseline_for, baseline_against):
         baseline = baseline_against
         average = sum(f['opp_mean'] for f in upcoming) / len(upcoming)
         change = (baseline - average) / baseline if baseline else 0.0
-    change = _round(change)
-    magnitude = abs(change)
+    return _round(change)
+
+
+def fixture_direction(change):
+    """'up' (kinder), 'down' (tougher) or 'same', using the 20% line."""
     if change >= FIXTURE_CHANGE_FROM:
-        return _signal('fixtures', 'up', 'kinder fixtures coming up', magnitude)
+        return 'up'
     if change <= -FIXTURE_CHANGE_FROM:
+        return 'down'
+    return 'same'
+
+
+def fixtures_signal(position, upcoming, baseline_for, baseline_against):
+    if not upcoming:
+        return _signal('fixtures', 'same', 'no game this week', 0)
+    change = fixture_change(position, upcoming, baseline_for, baseline_against)
+    magnitude = abs(change)
+    direction = fixture_direction(change)
+    if direction == 'up':
+        return _signal('fixtures', 'up', 'kinder fixtures coming up', magnitude)
+    if direction == 'down':
         return _signal('fixtures', 'down', 'tougher fixtures coming up', magnitude)
     return _signal('fixtures', 'same', 'fixtures look about average', magnitude)
 
@@ -159,7 +179,7 @@ def fetch_last_gameweek_minutes(cursor, year_start, gameweek):
 def fetch_upcoming_predictions(cursor, from_gw, to_gw):
     """One row per team per upcoming fixture, with the opponent's expected goals alongside."""
     cursor.execute("""
-        SELECT mine.team_id, mine.gameweek,
+        SELECT mine.team_id, mine.gameweek, mine.opponent_id, mine.is_home,
                mine.expected_goals_mean AS own_mean,
                theirs.expected_goals_mean AS opp_mean
         FROM team_fixture_predictions mine
