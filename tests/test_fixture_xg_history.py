@@ -97,3 +97,29 @@ def test_fill_missing_only_fits_gameweeks_not_already_stored(monkeypatch):
     added = fx.fill_missing(FakeConn(cursor), cursor, [(2025, 6), (2025, 7)])
     assert fitted == [(2025, 7)]
     assert added == 1
+
+
+def test_one_gameweek_failing_does_not_stop_the_later_ones(monkeypatch):
+    cursor = FakeCursor(stored=[])
+    conn = FakeConn(cursor)
+    conn.rollbacks = 0
+    conn.rollback = lambda: setattr(conn, 'rollbacks', conn.rollbacks + 1)
+
+    def fit(c, y, g):
+        if g == 1:
+            raise RuntimeError('refit failed')
+        return {10: {'team_xg': 1.0, 'opp_xg': 1.0, 'matches': 1, 'home_share': 1.0}}
+
+    monkeypatch.setattr(fx, 'fit_as_of', fit)
+    assert fx.fill_missing(conn, cursor, [(2025, 1), (2025, 2)]) == 1
+    inserts = [c for c in cursor.calls if isinstance(c[1], list) and c[1]]
+    assert [rows[0][1] for _, rows in inserts] == [2]
+    assert conn.rollbacks == 1
+
+
+def test_a_gameweek_that_fits_no_teams_is_not_counted_as_added(monkeypatch):
+    cursor = FakeCursor(stored=[])
+    conn = FakeConn(cursor)
+    monkeypatch.setattr(fx, 'fit_as_of', lambda c, y, g: {})
+    assert fx.fill_missing(conn, cursor, [(2025, 1)]) == 0
+    assert conn.commits == 0

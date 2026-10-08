@@ -85,13 +85,22 @@ def fill_missing(conn, cursor, wanted):
     for year, gw in wanted:
         if (year, gw) in stored:
             continue
-        teams = fit_as_of(cursor, year, gw)
-        cursor.executemany(f"""
-            INSERT IGNORE INTO {TABLE} (year_start, gameweek, team_code, team_xg, opp_xg, matches, home_share)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, [(year, gw, code, t['team_xg'], t['opp_xg'], t['matches'], t['home_share'])
-              for code, t in teams.items()])
-        conn.commit()
+        try:
+            teams = fit_as_of(cursor, year, gw)
+            if not teams:
+                logger.warning("fixture_xg_history: no teams fitted for %s gameweek %s, not stored.", year, gw)
+                continue
+            cursor.executemany(f"""
+                INSERT IGNORE INTO {TABLE} (year_start, gameweek, team_code, team_xg, opp_xg, matches, home_share)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, [(year, gw, code, t['team_xg'], t['opp_xg'], t['matches'], t['home_share'])
+                  for code, t in teams.items()])
+            conn.commit()
+        except Exception:
+            logger.exception("fixture_xg_history: could not store %s gameweek %s, carrying on.", year, gw)
+            if hasattr(conn, 'rollback'):
+                conn.rollback()
+            continue
         added += 1
         logger.info("fixture_xg_history: stored %s gameweek %s (%d teams).", year, gw, len(teams))
     return added
