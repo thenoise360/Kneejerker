@@ -175,3 +175,45 @@ def test_hub_options_carry_the_summary():
 def test_guest_candidates_are_the_best_predicted():
     assert candidate_ids([], {i: float(i) for i in range(1, 30)}) == list(range(29, 19, -1))
     assert candidate_ids([5, 6], {1: 9.0}) == [5, 6]
+
+
+class RecordingCursor:
+    """Answers the 'which stored gameweek' lookup, then the rows; records what was asked."""
+    def __init__(self, stored):
+        self.stored, self.calls, self._next = stored, [], None
+
+    def execute(self, sql, params=()):
+        self.calls.append((sql, params))
+        if 'MAX(gameweek)' in sql:
+            below = [g for g in self.stored if 'gameweek < %s' not in sql or g < params[0]]
+            self._next = {'gameweek': max(below) if below else None}
+        else:
+            self._next = [{'player_id': 1, 'predicted_performance': 5.0, 'element_type': 3, 'gw': params[0]}]
+
+    def fetchone(self):
+        return self._next
+
+    def fetchall(self):
+        return self._next
+
+
+def test_predictions_for_a_gameweek_come_from_the_run_stored_under_the_previous_one():
+    # The daily job stores its forecast for the next gameweek under the current one:
+    # the run made during gameweek 5 is the forecast for gameweek 6.
+    cursor = RecordingCursor(stored=[3, 4, 5])
+    rows = pc.fetch_predicted_points(cursor, 6)
+    assert rows[0]['gw'] == 5
+
+
+def test_predictions_fall_back_to_the_latest_run_when_none_is_older():
+    cursor = RecordingCursor(stored=[5])
+    rows = pc.fetch_predicted_points(cursor, 1)
+    assert rows[0]['gw'] == 5
+
+
+def test_no_stored_predictions_means_no_rows():
+    assert pc.fetch_predicted_points(RecordingCursor(stored=[]), 6) == []
+
+
+def test_the_default_gameweek_is_the_one_the_latest_run_forecasts():
+    assert pc.fetch_latest_prediction_gameweek(RecordingCursor(stored=[4, 5])) == 6

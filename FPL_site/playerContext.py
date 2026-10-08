@@ -25,13 +25,30 @@ DIFFICULTY_WORDS = {'up': 'easier', 'same': 'average', 'down': 'tougher'}
 #                  Fetchers                     #
 #################################################
 
+def _stored_run(cursor, sql, params=()):
+    cursor.execute(sql, params)
+    row = cursor.fetchone()
+    return row['gameweek'] if row and row['gameweek'] is not None else None
+
+
 def fetch_predicted_points(cursor, gameweek):
-    """Rows of player_predictions for one gameweek; empty if the table doesn't exist yet."""
+    """Rows of player_predictions forecasting `gameweek`; empty if none are stored.
+
+    The daily job stores its forecast for the next gameweek under the current one (the
+    run made during gameweek 5 forecasts gameweek 6), so use the latest run stored before
+    `gameweek`. With nothing older, use the latest run at all, as load_stored_predictions does.
+    """
     try:
+        run = _stored_run(cursor, "SELECT MAX(gameweek) AS gameweek FROM player_predictions "
+                                  "WHERE gameweek < %s", (gameweek,))
+        if run is None:
+            run = _stored_run(cursor, "SELECT MAX(gameweek) AS gameweek FROM player_predictions")
+        if run is None:
+            return []
         cursor.execute("""
             SELECT player_id, predicted_performance, element_type
             FROM player_predictions WHERE gameweek = %s
-        """, (gameweek,))
+        """, (run,))
         return cursor.fetchall()
     except Exception as e:   # a missing table just means the daily job hasn't run
         logger.warning("fetch_predicted_points: %s", e)
@@ -39,13 +56,13 @@ def fetch_predicted_points(cursor, gameweek):
 
 
 def fetch_latest_prediction_gameweek(cursor):
+    """The gameweek the latest stored run forecasts: the one after it was stored under."""
     try:
-        cursor.execute("SELECT MAX(gameweek) AS gameweek FROM player_predictions")
-        row = cursor.fetchone()
+        run = _stored_run(cursor, "SELECT MAX(gameweek) AS gameweek FROM player_predictions")
     except Exception as e:
         logger.warning("fetch_latest_prediction_gameweek: %s", e)
         return None
-    return row['gameweek'] if row and row['gameweek'] is not None else None
+    return run + 1 if run is not None else None
 
 
 def fetch_team_rows(cursor, years):
