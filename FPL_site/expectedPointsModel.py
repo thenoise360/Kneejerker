@@ -17,7 +17,7 @@ from FPL_site.expectedPointsFeatures import FEATURES, MODEL_VERSION, training_ro
 from FPL_site.expectedPointsRecord import (deadline_for, next_gameweek, is_settled, log_forecasts,
                                            forecast_of_record, template_squad, accuracy_for_gameweek,
                                            persist_accuracy, persist_current, LOG_TABLE, ACCURACY_TABLE, LIVE)
-from FPL_site.fixtureXgHistory import load_fixture_xg, fill_missing
+from FPL_site.fixtureXgHistory import load_fixture_xg, fill_missing, fetch_gameweek_fixtures
 from FPL_site.matchPredictionEngine import fetch_team_code_map, kickoff_in_season_window
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,10 @@ def predict(models, rows):
     out = [math.nan] * len(rows)
     by_position = {}
     for i, r in enumerate(rows):
-        if float(r.get('matches_in_gameweek') or 0) == 0:
+        matches = r.get('matches_in_gameweek')
+        if matches is not None and math.isnan(float(matches)):
+            continue   # the club has a match but we have no numbers for it: unknown, not a blank
+        if float(matches or 0) == 0:
             out[i] = 0.0
         elif r['position'] in models:
             by_position.setdefault(r['position'], []).append(i)
@@ -161,6 +164,13 @@ def fetch_live_fixture_xg(cursor, year_start, gameweek, id_to_code):
     return out
 
 
+def fetch_clubs_with_fixture(cursor, year_start, gameweek, id_to_code):
+    """Codes of the clubs that have a match in the gameweek (season-window filtered), so a real
+    blank gameweek can be told apart from a match we have no numbers for."""
+    fixtures = fetch_gameweek_fixtures(cursor, year_start, gameweek)
+    return {id_to_code[t] for f in fixtures for t in (f['team_h'], f['team_a']) if t in id_to_code}
+
+
 def fetch_actual_points(cursor, year_start, gameweek):
     """{player id: points} for a gameweek; duplicate rows and other seasons' matches are ignored."""
     cursor.execute(f"""SELECT DISTINCT element, fixture, round, kickoff_time, total_points
@@ -187,7 +197,9 @@ def fetch_recorded_gameweeks(cursor, year_start, source=LIVE):
                            WHERE year_start = %s AND model_version = %s AND source = %s""",
                        (year_start, MODEL_VERSION, source))
         return {r['gameweek'] for r in cursor.fetchall()}
-    except Exception:
+    except Exception as e:
+        logger.warning("expected points: could not read the accuracy table (%s); treating nothing as "
+                       "recorded.", type(e).__name__)
         return set()   # the table is created on the first accuracy write
 
 
@@ -204,23 +216,30 @@ def record_settled_gameweeks(conn, cursor, events, year_start, now):
         if gw in done or not is_settled(events, gw):
             continue
         try:
-            log_rows = fetch_log_rows(cursor, year_start, gw, LIVE)
+            try:
+                log_rows = fetch_log_rows(cursor, year_start, gw, LIVE)
+            except Exception as err:
+                logger.warning("expected points: could not read the log for gameweek %s (%s).",
+                               gw, type(err).__name__)
+                continue   # no log table yet
+            if not log_rows:
+                continue
+            record = forecast_of_record(log_rows, deadline_for(events, gw), LIVE)
+            before = [s for s in snapshots if s['gameweek'] == gw - 1]
+            position = {s['player_id']: s['element_type'] for s in before}
+            for pid, r in record.items():
+                r['position'] = position.get(pid)
+            actual = fetch_actual_points(cursor, year_start, gw)
+            squad = template_squad([{'player_id': s['player_id'], 'position': s['element_type'],
+                                     'selected': s['selected']} for s in before])
+            result = accuracy_for_gameweek(record, actual, squad, set(actual))
+            persist_accuracy(conn, gw, year_start, result, now, LIVE)
+            logger.info("Expected points accuracy for gameweek %s: ours %s, official %s.",
+                        gw, result['mae_ours'], result['mae_official'])
         except Exception:
-            continue   # no log table yet
-        if not log_rows:
-            continue
-        record = forecast_of_record(log_rows, deadline_for(events, gw), LIVE)
-        before = [s for s in snapshots if s['gameweek'] == gw - 1]
-        position = {s['player_id']: s['element_type'] for s in before}
-        for pid, r in record.items():
-            r['position'] = position.get(pid)
-        actual = fetch_actual_points(cursor, year_start, gw)
-        squad = template_squad([{'player_id': s['player_id'], 'position': s['element_type'],
-                                 'selected': s['selected']} for s in before])
-        result = accuracy_for_gameweek(record, actual, squad, set(actual))
-        persist_accuracy(conn, gw, year_start, result, now, LIVE)
-        logger.info("Expected points accuracy for gameweek %s: ours %s, official %s.",
-                    gw, result['mae_ours'], result['mae_official'])
+            logger.exception("expected points: could not record accuracy for gameweek %s, carrying on.", gw)
+            if hasattr(conn, 'rollback'):
+                conn.rollback()
 
 
 def run_daily_expected_points(now=None):
@@ -257,16 +276,36 @@ def run_daily_expected_points(now=None):
                 logger.error("expected points: no snapshot for gameweek %s, so gameweek %s is not forecast "
                              "(did the update job fail today?).", gameweek - 1, gameweek)
         if players:
-            models = train(training_rows(history, snapshots, fixture_xg))
-            fixture_xg.update(fetch_live_fixture_xg(cursor, year, gameweek, fetch_team_code_map(cursor, year)))
-            rows = prediction_rows(history, snapshots, fixture_xg, year, gameweek, players)
-            values = predict(models, rows)
-            official = {p['player_id']: p['ep_next'] for p in players}
-            forecasts = [{'player_id': r['player_id'], 'code': r['code'], 'gameweek': gameweek,
-                          'expected_points': v, 'official_expected_points': official.get(r['player_id'])}
-                         for r, v in zip(rows, values) if not math.isnan(v)]
-            persist_current(conn, forecasts, year, now)
-            log_forecasts(conn, forecasts, year, gameweek, deadline_for(events, gameweek), now)
+            id_to_code = fetch_team_code_map(cursor, year)
+            live_xg = fetch_live_fixture_xg(cursor, year, gameweek, id_to_code)
+            if not live_xg:
+                logger.error("expected points: no stored fixture predictions for gameweek %s, so it is not "
+                             "forecast (did the match prediction job fail today?).", gameweek)
+            else:
+                # a gameweek still being played is not a finished target to learn from
+                settled_history = [h for h in history
+                                   if h['year_start'] != year or is_settled(events, h['gameweek'])]
+                models = train(training_rows(settled_history, snapshots, fixture_xg))
+                fixture_xg.update(live_xg)
+                rows = prediction_rows(history, snapshots, fixture_xg, year, gameweek, players)
+                with_fixture = fetch_clubs_with_fixture(cursor, year, gameweek, id_to_code)
+                for r, p in zip(rows, players):
+                    if p['team_code'] in with_fixture and (year, gameweek, p['team_code']) not in fixture_xg:
+                        r['matches_in_gameweek'] = math.nan   # a match we have no numbers for, not a blank
+                values = predict(models, rows)
+                official = {p['player_id']: p['ep_next'] for p in players}
+                forecasts = [{'player_id': r['player_id'], 'code': r['code'], 'gameweek': gameweek,
+                              'expected_points': v, 'official_expected_points': official.get(r['player_id'])}
+                             for r, v in zip(rows, values) if not math.isnan(v)]
+                deadline = deadline_for(events, gameweek)
+                for write in (lambda: log_forecasts(conn, forecasts, year, gameweek, deadline, now),
+                              lambda: persist_current(conn, forecasts, year, now)):
+                    try:
+                        write()
+                    except Exception:
+                        logger.exception("expected points: a write failed, carrying on with the rest.")
+                        if hasattr(conn, 'rollback'):
+                            conn.rollback()
         record_settled_gameweeks(conn, cursor, events, year, now)
     finally:
         conn.close()
