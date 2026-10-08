@@ -11,19 +11,19 @@ if os.path.join(project_root, 'FPL_site') not in sys.path:
 
 from sqlFunction import update_all_tables
 from FPL_site.dataModels import refresh_season_start
-from FPL_site.futurePerformanceModel import run_daily_predictions
+from FPL_site.expectedPointsModel import run_daily_expected_points
 from FPL_site.matchPredictionEngine import run_daily_match_predictions
 
 logger = logging.getLogger(__name__)
 
 # Each job persists to its own table and is independent of the others - one
-# job failing (e.g. run_daily_predictions() on an empty preseason training
+# job failing (e.g. run_daily_expected_points() on an empty preseason training
 # set) must not stop the rest from running and refreshing their own data.
 #
 # The season is never frozen at import for these jobs: after the update step has (possibly) written
 # a new season, refresh_season_start() re-reads it, and the model jobs also re-read it at the top
 # of their own run and look it up at call time (dataModels.current_season_start()).
-for job in (update_all_tables, run_daily_predictions, run_daily_match_predictions):
+for job in (update_all_tables, run_daily_match_predictions, run_daily_expected_points):
     try:
         job()
     except Exception:
