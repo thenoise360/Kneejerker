@@ -6,6 +6,7 @@ the deadline count, and the log is append-only.
 """
 import json
 import logging
+import math
 from datetime import datetime
 
 from FPL_site.expectedPointsFeatures import MODEL_VERSION
@@ -17,6 +18,8 @@ ACCURACY_TABLE = 'expected_points_accuracy'
 CURRENT_TABLE = 'player_expected_points'
 DEADLINE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 TEMPLATE_SHAPE = {1: 2, 2: 5, 3: 5, 4: 3}
+LIVE = 'live'
+BACKFILL = 'backfill'
 
 
 def _deadline(event):
@@ -41,39 +44,47 @@ def is_settled(events, gameweek):
     return bool(event and event.get('finished') and event.get('data_checked'))
 
 
-def log_forecasts(conn, rows, gameweek, deadline, now):
-    if deadline is None or now >= deadline or not rows:
+def log_forecasts(conn, rows, year_start, gameweek, deadline, now, source=LIVE):
+    """Append forecasts to the log. LIVE ones only count if made before the deadline; a BACKFILL
+    replays a past season, so its deadline is ignored (pass None)."""
+    if source == LIVE and (deadline is None or now >= deadline):
+        return 0
+    rows = [r for r in rows if not math.isnan(r['expected_points'])]
+    if not rows:
         return 0
     cursor = conn.cursor()
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {LOG_TABLE} (
+            year_start INT NOT NULL,
             player_id INT NOT NULL,
             code INT NOT NULL,
             gameweek INT NOT NULL,
             expected_points FLOAT,
             official_expected_points FLOAT,
             model_version VARCHAR(40) NOT NULL,
+            source VARCHAR(10) NOT NULL,
             logged_at DATETIME NOT NULL,
             log_date DATE NOT NULL,
-            PRIMARY KEY (player_id, gameweek, model_version, log_date)
+            PRIMARY KEY (year_start, player_id, gameweek, model_version, source, log_date)
         )
     """)
     cursor.executemany(f"""
         INSERT IGNORE INTO {LOG_TABLE}
-            (player_id, code, gameweek, expected_points, official_expected_points,
-             model_version, logged_at, log_date)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """, [(r['player_id'], r['code'], gameweek, r['expected_points'], r['official_expected_points'],
-           MODEL_VERSION, now, now.date()) for r in rows])
+            (year_start, player_id, code, gameweek, expected_points, official_expected_points,
+             model_version, source, logged_at, log_date)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, [(year_start, r['player_id'], r['code'], gameweek, r['expected_points'],
+           r['official_expected_points'], MODEL_VERSION, source, now, now.date()) for r in rows])
     conn.commit()
-    logger.info("Logged %d expected points forecasts for gameweek %s.", len(rows), gameweek)
+    logger.info("Logged %d %s expected points forecasts for %s gameweek %s.", len(rows), source,
+                year_start, gameweek)
     return len(rows)
 
 
-def forecast_of_record(log_rows, deadline):
+def forecast_of_record(log_rows, deadline, source=LIVE):
     record = {}
     for r in sorted(log_rows, key=lambda r: r['logged_at']):
-        if r['logged_at'] < deadline:
+        if source == BACKFILL or r['logged_at'] < deadline:
             record[r['player_id']] = r
     return record
 
@@ -122,13 +133,14 @@ def accuracy_for_gameweek(record, actual, squad, playing):
     }
 
 
-def persist_accuracy(conn, gameweek, year_start, result, now):
+def persist_accuracy(conn, gameweek, year_start, result, now, source=LIVE):
     cursor = conn.cursor()
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {ACCURACY_TABLE} (
             year_start INT NOT NULL,
             gameweek INT NOT NULL,
             model_version VARCHAR(40) NOT NULL,
+            source VARCHAR(10) NOT NULL,
             players INT NOT NULL,
             mae_ours FLOAT,
             mae_official FLOAT,
@@ -138,35 +150,36 @@ def persist_accuracy(conn, gameweek, year_start, result, now):
             captain_ours_points INT,
             captain_official_points INT,
             computed_at DATETIME NOT NULL,
-            PRIMARY KEY (year_start, gameweek, model_version)
+            PRIMARY KEY (year_start, gameweek, model_version, source)
         )
     """)
     cursor.execute(f"""
         REPLACE INTO {ACCURACY_TABLE}
-            (year_start, gameweek, model_version, players, mae_ours, mae_official, mae_by_position,
+            (year_start, gameweek, model_version, source, players, mae_ours, mae_official, mae_by_position,
              captain_ours, captain_official, captain_ours_points, captain_official_points, computed_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (year_start, gameweek, MODEL_VERSION, result['players'], result['mae_ours'],
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (year_start, gameweek, MODEL_VERSION, source, result['players'], result['mae_ours'],
           result['mae_official'], json.dumps(result['mae_by_position']), result['captain_ours'],
           result['captain_official'], result['captain_ours_points'], result['captain_official_points'], now))
     conn.commit()
 
 
-def persist_current(conn, rows, now):
+def persist_current(conn, rows, year_start, now):
     cursor = conn.cursor()
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {CURRENT_TABLE} (
+            year_start INT NOT NULL,
             player_id INT NOT NULL,
             code INT NOT NULL,
             gameweek INT NOT NULL,
             expected_points FLOAT,
             model_version VARCHAR(40) NOT NULL,
             computed_at DATETIME NOT NULL,
-            PRIMARY KEY (player_id, gameweek)
+            PRIMARY KEY (year_start, player_id, gameweek)
         )
     """)
     cursor.executemany(f"""
-        REPLACE INTO {CURRENT_TABLE} (player_id, code, gameweek, expected_points, model_version, computed_at)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, [(r['player_id'], r['code'], r['gameweek'], r['expected_points'], MODEL_VERSION, now) for r in rows])
+        REPLACE INTO {CURRENT_TABLE} (year_start, player_id, code, gameweek, expected_points, model_version, computed_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, [(year_start, r['player_id'], r['code'], r['gameweek'], r['expected_points'], MODEL_VERSION, now) for r in rows])
     conn.commit()

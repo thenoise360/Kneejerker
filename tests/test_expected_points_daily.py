@@ -44,8 +44,8 @@ def patch_job(monkeypatch, calls, now_events=EVENTS):
     monkeypatch.setattr(em, 'fetch_live_fixture_xg', lambda cur, y, gw, m: {})
     monkeypatch.setattr(em, 'train', lambda rows: {})
     monkeypatch.setattr(em, 'predict', lambda models, rows: [3.2 for _ in rows])
-    monkeypatch.setattr(em, 'persist_current', lambda conn, rows, now: calls.setdefault('current', rows))
-    monkeypatch.setattr(em, 'log_forecasts', lambda conn, rows, gw, deadline, now:
+    monkeypatch.setattr(em, 'persist_current', lambda conn, rows, year, now: calls.setdefault('current', rows))
+    monkeypatch.setattr(em, 'log_forecasts', lambda conn, rows, year, gw, deadline, now:
                         calls.setdefault('log', (rows, gw, deadline)) and len(rows))
     monkeypatch.setattr(em, 'record_settled_gameweeks', lambda conn, cur, events, year, now:
                         calls.setdefault('settled', True))
@@ -150,3 +150,19 @@ def test_history_rows_outside_the_season_window_are_dropped(monkeypatch):
 
     out = em.fetch_history_rows(Cur([]), [2026])
     assert len(out) == 1 and out[0]['code'] == 70
+
+
+def test_reading_the_log_filters_by_season_and_source():
+    seen = []
+
+    class Cur:
+        def execute(self, sql, params=None):
+            seen.append((sql, params))
+
+        def fetchall(self):
+            return []
+
+    em.fetch_log_rows(Cur(), 2026, 6)
+    sql, params = seen[0]
+    assert 'year_start = %s' in sql and 'source = %s' in sql
+    assert params == (2026, 6, em.MODEL_VERSION, 'live')

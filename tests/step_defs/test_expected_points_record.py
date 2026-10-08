@@ -53,7 +53,21 @@ def _passed(ctx):
 def _log(ctx, n):
     rows = [{'player_id': i, 'code': 100 + i, 'expected_points': 3.0, 'official_expected_points': 2.5}
             for i in range(n)]
-    ctx['written'] = rec.log_forecasts(FakeConn(), rows, 6, ctx['deadline'], NOW)
+    ctx['written'] = rec.log_forecasts(FakeConn(), rows, 2026, 6, ctx['deadline'], NOW)
+
+
+@when(parsers.parse('the daily job logs {n:d} forecasts for the {season:d} season'))
+def _log_season(ctx, n, season):
+    rows = [{'player_id': i, 'code': 100 + i, 'expected_points': 3.0, 'official_expected_points': 2.5}
+            for i in range(n)]
+    ctx['conn'] = FakeConn()
+    rec.log_forecasts(ctx['conn'], rows, season, 6, ctx['deadline'], NOW)
+
+
+@then(parsers.parse('every logged row is for the {season:d} season'))
+def _season_rows(ctx, season):
+    records = ctx['conn'].cur.calls[1][1]
+    assert records and all(record[0] == season for record in records)
 
 
 @then(parsers.parse('{n:d} rows are written to the log'))

@@ -10,6 +10,11 @@ Feature: We keep every week's forecasts so we can say how accurate we were
     When the daily job logs 3 forecasts
     Then nothing is written to the log
 
+  Scenario: Every forecast is stored with its season
+    Given the gameweek 6 deadline is tomorrow
+    When the daily job logs 3 forecasts for the 2026 season
+    Then every logged row is for the 2026 season
+
   Scenario: The forecast of record is the last one before the deadline
     Given forecasts for a player of 4.0 on Wednesday, 5.0 on Thursday and 9.0 after the Friday deadline
     When I take the forecast of record

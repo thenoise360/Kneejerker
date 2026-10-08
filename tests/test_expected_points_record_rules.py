@@ -43,13 +43,13 @@ def test_deadlines_and_the_next_gameweek_come_from_the_events():
 def test_the_log_is_append_only_and_idempotent_per_day():
     conn = FakeConn()
     rec.log_forecasts(conn, [{'player_id': 1, 'code': 101, 'expected_points': 3.0,
-                              'official_expected_points': 2.5}], 6,
+                              'official_expected_points': 2.5}], 2026, 6,
                       datetime(2026, 10, 10, 10), datetime(2026, 10, 8, 6))
     create_sql = conn.cur.calls[0][0]
     insert_sql, records = conn.cur.calls[1]
-    assert 'PRIMARY KEY (player_id, gameweek, model_version, log_date)' in create_sql
+    assert 'PRIMARY KEY (year_start, player_id, gameweek, model_version, source, log_date)' in create_sql
     assert insert_sql.strip().startswith(f'INSERT IGNORE INTO {rec.LOG_TABLE}')
-    assert records[0][-3:] == (MODEL_VERSION, datetime(2026, 10, 8, 6), datetime(2026, 10, 8).date())
+    assert records[0][-4:] == (MODEL_VERSION, rec.LIVE, datetime(2026, 10, 8, 6), datetime(2026, 10, 8).date())
     assert conn.commits == 1
 
 
@@ -98,3 +98,51 @@ def test_accuracy_rows_replace_rather_than_duplicate():
                                          'captain_ours_points': 5, 'captain_official_points': 3},
                          datetime(2026, 10, 12))
     assert conn.cur.calls[1][0].strip().startswith(f'REPLACE INTO {rec.ACCURACY_TABLE}')
+
+
+def test_every_logged_row_carries_its_season_and_source():
+    conn = FakeConn()
+    rec.log_forecasts(conn, [{'player_id': 1, 'code': 101, 'expected_points': 3.0,
+                              'official_expected_points': 2.5}], 2026, 6,
+                      datetime(2026, 10, 10, 10), datetime(2026, 10, 8, 6))
+    create_sql = conn.cur.calls[0][0]
+    insert_sql, records = conn.cur.calls[1]
+    assert 'PRIMARY KEY (year_start, player_id, gameweek, model_version, source, log_date)' in create_sql
+    assert records[0][0] == 2026
+    assert records[0][7] == rec.LIVE
+
+
+def test_a_backfill_is_logged_after_the_deadline_but_a_live_forecast_is_not():
+    late = datetime(2026, 10, 11)
+    row = [{'player_id': 1, 'code': 101, 'expected_points': 3.0, 'official_expected_points': None}]
+    assert rec.log_forecasts(FakeConn(), row, 2025, 6, datetime(2026, 10, 10), late) == 0
+    conn = FakeConn()
+    assert rec.log_forecasts(conn, row, 2025, 6, None, late, source=rec.BACKFILL) == 1
+    assert conn.cur.calls[1][1][0][7] == rec.BACKFILL
+
+
+def test_nan_forecasts_are_never_written():
+    conn = FakeConn()
+    rows = [{'player_id': 1, 'code': 101, 'expected_points': float('nan'), 'official_expected_points': 2.0},
+            {'player_id': 2, 'code': 102, 'expected_points': 4.0, 'official_expected_points': 2.0}]
+    assert rec.log_forecasts(conn, rows, 2026, 6, datetime(2026, 10, 10), datetime(2026, 10, 8)) == 1
+
+
+def test_the_backfill_record_ignores_the_deadline():
+    rows = [{'player_id': 1, 'expected_points': 4.0, 'logged_at': datetime(2026, 10, 9)}]
+    assert rec.forecast_of_record(rows, None, source=rec.BACKFILL)[1]['expected_points'] == 4.0
+
+
+def test_current_forecasts_and_accuracy_are_keyed_by_season():
+    conn = FakeConn()
+    rec.persist_current(conn, [{'player_id': 1, 'code': 101, 'gameweek': 6, 'expected_points': 3.0}],
+                        2026, datetime(2026, 10, 8))
+    assert 'PRIMARY KEY (year_start, player_id, gameweek)' in conn.cur.calls[0][0]
+    assert conn.cur.calls[1][1][0][0] == 2026
+    conn = FakeConn()
+    rec.persist_accuracy(conn, 6, 2025, {'players': 1, 'mae_ours': 1.0, 'mae_official': 2.0,
+                                         'mae_by_position': {}, 'captain_ours': 1, 'captain_official': 2,
+                                         'captain_ours_points': 5, 'captain_official_points': 3},
+                         datetime(2026, 10, 12), source=rec.BACKFILL)
+    assert 'PRIMARY KEY (year_start, gameweek, model_version, source)' in conn.cur.calls[0][0]
+    assert rec.BACKFILL in conn.cur.calls[1][1]

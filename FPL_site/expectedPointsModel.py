@@ -16,7 +16,7 @@ from FPL_site.dataModels import connect_db, current_season_start, refresh_season
 from FPL_site.expectedPointsFeatures import FEATURES, MODEL_VERSION, training_rows, prediction_rows
 from FPL_site.expectedPointsRecord import (deadline_for, next_gameweek, is_settled, log_forecasts,
                                            forecast_of_record, template_squad, accuracy_for_gameweek,
-                                           persist_accuracy, persist_current, LOG_TABLE, ACCURACY_TABLE)
+                                           persist_accuracy, persist_current, LOG_TABLE, ACCURACY_TABLE, LIVE)
 from FPL_site.fixtureXgHistory import load_fixture_xg, fill_missing
 from FPL_site.matchPredictionEngine import fetch_team_code_map, kickoff_in_season_window
 
@@ -173,17 +173,19 @@ def fetch_actual_points(cursor, year_start, gameweek):
     return points
 
 
-def fetch_log_rows(cursor, gameweek):
+def fetch_log_rows(cursor, year_start, gameweek, source=LIVE):
     cursor.execute(f"""SELECT player_id, code, expected_points, official_expected_points, logged_at
-                       FROM {LOG_TABLE} WHERE gameweek = %s AND model_version = %s""",
-                   (gameweek, MODEL_VERSION))
+                       FROM {LOG_TABLE} WHERE year_start = %s AND gameweek = %s
+                       AND model_version = %s AND source = %s""",
+                   (year_start, gameweek, MODEL_VERSION, source))
     return cursor.fetchall()
 
 
-def fetch_recorded_gameweeks(cursor, year_start):
+def fetch_recorded_gameweeks(cursor, year_start, source=LIVE):
     try:
-        cursor.execute(f"SELECT gameweek FROM {ACCURACY_TABLE} WHERE year_start = %s AND model_version = %s",
-                       (year_start, MODEL_VERSION))
+        cursor.execute(f"""SELECT gameweek FROM {ACCURACY_TABLE}
+                           WHERE year_start = %s AND model_version = %s AND source = %s""",
+                       (year_start, MODEL_VERSION, source))
         return {r['gameweek'] for r in cursor.fetchall()}
     except Exception:
         return set()   # the table is created on the first accuracy write
@@ -195,19 +197,19 @@ def fetch_recorded_gameweeks(cursor, year_start):
 
 def record_settled_gameweeks(conn, cursor, events, year_start, now):
     """Write accuracy for every settled gameweek we logged forecasts for and haven't recorded."""
-    done = fetch_recorded_gameweeks(cursor, year_start)
+    done = fetch_recorded_gameweeks(cursor, year_start, LIVE)
     snapshots = [s for s in fetch_snapshot_rows(cursor, [year_start])]
     for e in events:
         gw = e['id']
         if gw in done or not is_settled(events, gw):
             continue
         try:
-            log_rows = fetch_log_rows(cursor, gw)
+            log_rows = fetch_log_rows(cursor, year_start, gw, LIVE)
         except Exception:
             continue   # no log table yet
         if not log_rows:
             continue
-        record = forecast_of_record(log_rows, deadline_for(events, gw))
+        record = forecast_of_record(log_rows, deadline_for(events, gw), LIVE)
         before = [s for s in snapshots if s['gameweek'] == gw - 1]
         position = {s['player_id']: s['element_type'] for s in before}
         for pid, r in record.items():
@@ -216,7 +218,7 @@ def record_settled_gameweeks(conn, cursor, events, year_start, now):
         squad = template_squad([{'player_id': s['player_id'], 'position': s['element_type'],
                                  'selected': s['selected']} for s in before])
         result = accuracy_for_gameweek(record, actual, squad, set(actual))
-        persist_accuracy(conn, gw, year_start, result, now)
+        persist_accuracy(conn, gw, year_start, result, now, LIVE)
         logger.info("Expected points accuracy for gameweek %s: ours %s, official %s.",
                     gw, result['mae_ours'], result['mae_official'])
 
@@ -263,8 +265,8 @@ def run_daily_expected_points(now=None):
             forecasts = [{'player_id': r['player_id'], 'code': r['code'], 'gameweek': gameweek,
                           'expected_points': v, 'official_expected_points': official.get(r['player_id'])}
                          for r, v in zip(rows, values) if not math.isnan(v)]
-            persist_current(conn, forecasts, now)
-            log_forecasts(conn, forecasts, gameweek, deadline_for(events, gameweek), now)
+            persist_current(conn, forecasts, year, now)
+            log_forecasts(conn, forecasts, year, gameweek, deadline_for(events, gameweek), now)
         record_settled_gameweeks(conn, cursor, events, year, now)
     finally:
         conn.close()
