@@ -141,12 +141,12 @@ pytest-bdd `features/expected_points/`, never touching MySQL or the live API:
 - missing history gives empty rolling features, not zeros;
 - predictions are non-negative; one model per position;
 - backtest comparison maths on a tiny hand-made dataset (both tests, pass and fail);
-- source switch: `official` vs `own` and the wording key.
+- source switch: `official` vs `own` and the wording key;
+- weekly record: a log row written after the deadline is refused; same-day reruns add nothing;
+  the forecast of record is the latest pre-deadline row; accuracy is only computed for finished
+  gameweeks and is replaced (not duplicated) on recompute.
 
 ## Out of scope
 
 Multi-gameweek forecasts, transfer recommendations from this model, removing
-`futurePerformanceModel.py`, any user-facing change before the backtest passes.
-- weekly record: a log row written after the deadline is refused; same-day reruns add nothing;
-  the forecast of record is the latest pre-deadline row; accuracy is only computed for finished
-  gameweeks and is replaced (not duplicated) on recompute.
+`futurePerformanceModel.py`, any user-facing change before the backtest passes, a page showing the weekly record.
