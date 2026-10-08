@@ -27,6 +27,14 @@ test('every state badge has words next to its icon', () => {
     assert.match(renderHubBody(data), /<span aria-hidden="true">✓<\/span> Nothing to do this week/);
 });
 
+test('the captain row is tappable only when there is a lean to look into', () => {
+    const withLean = renderHubBody(data);
+    assert.match(withLean, /data-key="captaincy"[^>]*data-opens="captain" role="button" tabindex="0"/);
+    assert.match(withLean, /See the options/);
+    const noLean = renderHubBody({ ...data, decisions: { ...data.decisions, captaincy: { state: 'needs_look', suggested: null, shortlist: [] } } });
+    assert.ok(!noLean.includes('data-opens'));
+});
+
 test('an unavailable hub shows the calm message', () => {
     assert.match(renderHubBody({ status: 'unavailable' }), /We couldn't load this week's decisions/);
 });
