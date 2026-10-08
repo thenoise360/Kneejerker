@@ -101,3 +101,52 @@ def test_run_update_runs_our_model_instead_of_the_old_one():
     src = open(os.path.join(os.path.dirname(em.__file__), 'run_update.py'), encoding='utf-8').read()
     assert 'run_daily_expected_points' in src
     assert 'run_daily_predictions,' not in src and 'import run_daily_predictions' not in src
+
+
+def test_a_stale_snapshot_is_never_logged_as_the_forecast_of_record(monkeypatch):
+    calls = {}
+    patch_job(monkeypatch, calls)
+    monkeypatch.setattr(em, 'fetch_snapshot_rows', lambda c, y: [
+        {'code': 1, 'player_id': 7, 'year_start': 2026, 'gameweek': 4, 'element_type': 3, 'team_code': 3,
+         'now_cost': 60, 'chance_of_playing_next_round': None, 'ep_next': 4.5,
+         'expected_goals': 0.0, 'expected_assists': 0.0}])
+    em.run_daily_expected_points(now=datetime(2026, 10, 8, 6))
+    assert 'log' not in calls and 'current' not in calls
+    assert calls['settled'] is True
+
+
+class FakeCursor:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def execute(self, sql, params=None):
+        self.sql = sql
+
+    def fetchall(self):
+        return self.rows
+
+
+def test_actual_points_ignore_duplicates_and_other_seasons_matches():
+    rows = [{'element': 7, 'fixture': 1, 'round': 5, 'kickoff_time': '2026-10-03T14:00:00Z', 'total_points': 6},
+            {'element': 7, 'fixture': 2, 'round': 5, 'kickoff_time': '2026-10-04T14:00:00Z', 'total_points': 2},
+            {'element': 8, 'fixture': 3, 'round': 5, 'kickoff_time': '2025-10-04T14:00:00Z', 'total_points': 9}]
+    cur = FakeCursor(rows)
+    assert em.fetch_actual_points(cur, 2026, 5) == {7: 8}
+    assert 'DISTINCT' in cur.sql
+
+
+def test_history_rows_outside_the_season_window_are_dropped(monkeypatch):
+    monkeypatch.setattr(em, 'fetch_team_code_map', lambda c, y: {1: 10, 2: 20})
+    base = {'year_start': 2026, 'element': 7, 'round': 5, 'fixture': 1, 'opponent_team': 2, 'was_home': 1,
+            'minutes': 90, 'goals_scored': 0, 'assists': 0, 'clean_sheets': 0, 'bonus': 0,
+            'total_points': 2, 'team_id': 1}
+
+    class Cur(FakeCursor):
+        def fetchall(self):
+            if 'bootstrapstatic_elements' in self.sql:
+                return [{'year_start': 2026, 'id': 7, 'code': 70}]
+            return [dict(base, kickoff_time='2026-10-03T14:00:00Z'),
+                    dict(base, fixture=2, kickoff_time='2025-10-03T14:00:00Z')]
+
+    out = em.fetch_history_rows(Cur([]), [2026])
+    assert len(out) == 1 and out[0]['code'] == 70

@@ -18,7 +18,7 @@ from FPL_site.expectedPointsRecord import (deadline_for, next_gameweek, is_settl
                                            forecast_of_record, template_squad, accuracy_for_gameweek,
                                            persist_accuracy, persist_current, LOG_TABLE, ACCURACY_TABLE)
 from FPL_site.fixtureXgHistory import load_fixture_xg, fill_missing
-from FPL_site.matchPredictionEngine import fetch_team_code_map
+from FPL_site.matchPredictionEngine import fetch_team_code_map, kickoff_in_season_window
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +90,7 @@ def fetch_history_rows(cursor, years):
     cursor.execute(f"""
         SELECT DISTINCT h.year_start, h.element, h.round, h.fixture, h.opponent_team, h.was_home,
                h.minutes, h.goals_scored, h.assists, h.clean_sheets, h.bonus, h.total_points,
+               f.kickoff_time AS kickoff_time,
                CASE WHEN h.was_home = 1 THEN f.team_h ELSE f.team_a END AS team_id
         FROM {db}.elementsummary_history h
         JOIN {db}.fixtures_fixtures f
@@ -98,6 +99,8 @@ def fetch_history_rows(cursor, years):
     """, tuple(years))
     rows = []
     for r in cursor.fetchall():
+        if not kickoff_in_season_window(r['kickoff_time'], r['year_start']):
+            continue
         code = codes.get((r['year_start'], r['element']))
         team_map = team_maps.get(r['year_start'], {})
         if code is None or r['team_id'] not in team_map:
@@ -159,9 +162,15 @@ def fetch_live_fixture_xg(cursor, year_start, gameweek, id_to_code):
 
 
 def fetch_actual_points(cursor, year_start, gameweek):
-    cursor.execute(f"""SELECT element, SUM(total_points) AS points FROM {db}.elementsummary_history
-                       WHERE year_start = %s AND round = %s GROUP BY element""", (year_start, gameweek))
-    return {r['element']: int(r['points']) for r in cursor.fetchall()}
+    """{player id: points} for a gameweek; duplicate rows and other seasons' matches are ignored."""
+    cursor.execute(f"""SELECT DISTINCT element, fixture, round, kickoff_time, total_points
+                       FROM {db}.elementsummary_history WHERE year_start = %s AND round = %s""",
+                   (year_start, gameweek))
+    points = {}
+    for r in cursor.fetchall():
+        if kickoff_in_season_window(r['kickoff_time'], year_start):
+            points[r['element']] = points.get(r['element'], 0) + int(r['total_points'] or 0)
+    return points
 
 
 def fetch_log_rows(cursor, gameweek):
@@ -239,11 +248,15 @@ def run_daily_expected_points(now=None):
             if hasattr(conn, 'rollback'):
                 conn.rollback()
         fixture_xg = load_fixture_xg(cursor)
+        players = []
         if gameweek is not None:
+            players = [s for s in snapshots if s['year_start'] == year and s['gameweek'] == gameweek - 1]
+            if not players:
+                logger.error("expected points: no snapshot for gameweek %s, so gameweek %s is not forecast "
+                             "(did the update job fail today?).", gameweek - 1, gameweek)
+        if players:
             models = train(training_rows(history, snapshots, fixture_xg))
             fixture_xg.update(fetch_live_fixture_xg(cursor, year, gameweek, fetch_team_code_map(cursor, year)))
-            latest_gw = max((s['gameweek'] for s in snapshots if s['year_start'] == year), default=None)
-            players = [s for s in snapshots if s['year_start'] == year and s['gameweek'] == latest_gw]
             rows = prediction_rows(history, snapshots, fixture_xg, year, gameweek, players)
             values = predict(models, rows)
             official = {p['player_id']: p['ep_next'] for p in players}
