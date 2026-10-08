@@ -150,3 +150,29 @@ pytest-bdd `features/expected_points/`, never touching MySQL or the live API:
 
 Multi-gameweek forecasts, transfer recommendations from this model, removing
 `futurePerformanceModel.py`, any user-facing change before the backtest passes, a page showing the weekly record.
+
+## Amendment 2026-10-08: seasons on every row, and backfilling past seasons (user requirement)
+
+**Season on every prediction.** Player ids are re-issued every season, so every stored forecast
+carries `year_start`: `expected_points_log` and `player_expected_points` gain a `year_start`
+column, and it joins their primary keys (log: `year_start, player_id, gameweek, model_version,
+source, log_date`; current: `year_start, player_id, gameweek`). Every reader filters by season.
+
+**Backfill.** Past seasons can be filled in by replaying the model gameweek by gameweek with only
+the data available at the time: for target gameweek G, train on gameweeks strictly before G, use
+the snapshot taken after G − 1 (price, availability, the official `ep_next`), the match engine
+fitted as of G − 1 (`fixture_xg_history`), and history rows from earlier gameweeks only. This is
+the backtest's walk-forward, written to the record instead of only summarised.
+- Run by hand: `python -m FPL_site.expectedPointsBackfill [--from-season 2024] [--from-gameweek 6]`.
+  Default start: the earliest season with history (2024), gameweek 6.
+- Backfilled rows are written today, after those deadlines, so they never mix with the honest
+  live record: a `source` column on `expected_points_log` and `expected_points_accuracy` is
+  `'live'` (the daily job, pre-deadline only) or `'backfill'` (replayed). `forecast_of_record`
+  applies the deadline rule to live rows only; for backfill it takes the replay's row.
+- Accuracy rows are written for every backfilled settled gameweek with `source = 'backfill'`,
+  keyed `year_start, gameweek, model_version, source`.
+- Re-running the backfill for the same model version changes nothing (`INSERT IGNORE`; the
+  backfill uses one fixed `log_date` per run and skips gameweeks already backfilled).
+- Known limit: history rows and snapshots can be corrected by the official game after the fact,
+  so a replay is "data as stored now for that point in time", not a byte-for-byte copy of what was
+  visible on the day.
