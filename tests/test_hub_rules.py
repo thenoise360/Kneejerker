@@ -49,9 +49,9 @@ def test_guest_captaincy_is_top_three_across_everyone():
     assert result['vice']['name'] == 'P4'
 
 
-def test_predicted_points_are_rounded_for_display():
+def test_expected_points_are_rounded_for_display():
     result = resolve_captaincy([_p(1)], {1: _a('A')}, {1: 7.46}, {10: FIX}, {})
-    assert result['suggested']['predicted_points'] == 7.5
+    assert result['suggested']['expected_points'] == 7.5
 
 
 def test_option_has_the_agreed_summary_shape():
@@ -60,7 +60,7 @@ def test_option_has_the_agreed_summary_shape():
                 'recent_points': [2, 13, 6, 2, 9]}}
     option = resolve_captaincy([_p(1)], {1: _a('A')}, {1: 7.4}, {10: FIX}, {}, info)['suggested']
     assert option == {'id': 1, 'name': 'A', 'team_short': 'MCI', 'position': 'Forward', 'price': 145,
-                      'predicted_points': 7.4,
+                      'expected_points': 7.4,
                       'this_week': {'opponent_short': 'BOU', 'is_home': True, 'difficulty': 'easier'},
                       'recent_points': [2, 13, 6, 2, 9]}
 
@@ -78,7 +78,7 @@ def test_a_player_without_a_prediction_is_ranked_last_not_dropped():
     availability = {1: _a('Zed'), 2: _a('Abe')}
     result = resolve_captaincy([_p(1), _p(2)], availability, {1: 3.0}, {10: FIX}, {})
     assert [o['name'] for o in result['shortlist']] == ['Zed', 'Abe']
-    assert result['shortlist'][1]['predicted_points'] is None
+    assert result['shortlist'][1]['expected_points'] is None
     assert result['suggested']['name'] == 'Zed' and result['vice'] is None
 
 

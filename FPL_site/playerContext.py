@@ -1,14 +1,14 @@
 """Supporting player information for the This Week decision screens.
 
 Pure functions shape rows into facts (never sentences). The fetchers are thin:
-a cursor in, rows out. Nothing here fits a model: predicted points, momentum and
+a cursor in, rows out. Nothing here fits a model: expected points (the official game's), momentum and
 fixture expectations are all read from what the daily jobs stored.
 """
 import json
 import logging
 from collections import defaultdict
 
-from FPL_site.dataModels import connect_db, season_start
+from FPL_site.dataModels import connect_db, season_start, get_week_view_state
 from FPL_site.playerMomentum import (
     fixture_change, fixture_direction, fetch_upcoming_predictions, fetch_team_baselines,
 )
@@ -25,44 +25,24 @@ DIFFICULTY_WORDS = {'up': 'easier', 'same': 'average', 'down': 'tougher'}
 #                  Fetchers                     #
 #################################################
 
-def _stored_run(cursor, sql, params=()):
-    cursor.execute(sql, params)
-    row = cursor.fetchone()
-    return row['gameweek'] if row and row['gameweek'] is not None else None
+def fetch_expected_points(cursor, year_start):
+    """Rows {player_id, expected_points, element_type} from the latest stored snapshot.
 
-
-def fetch_predicted_points(cursor, gameweek):
-    """Rows of player_predictions forecasting `gameweek`; empty if none are stored.
-
-    The daily job stores its forecast for the next gameweek under the current one (the
-    run made during gameweek 5 forecasts gameweek 6), so use the latest run stored before
-    `gameweek`. With nothing older, use the latest run at all, as load_stored_predictions does.
+    The official game's own expected points for the next gameweek (ep_next), stored daily in
+    bootstrapstatic_elements. Our own model will replace this source later, so keep it behind
+    this one fetcher and expected_points_map.
     """
     try:
-        run = _stored_run(cursor, "SELECT MAX(gameweek) AS gameweek FROM player_predictions "
-                                  "WHERE gameweek < %s", (gameweek,))
-        if run is None:
-            run = _stored_run(cursor, "SELECT MAX(gameweek) AS gameweek FROM player_predictions")
-        if run is None:
-            return []
         cursor.execute("""
-            SELECT player_id, predicted_performance, element_type
-            FROM player_predictions WHERE gameweek = %s
-        """, (run,))
+            SELECT id AS player_id, ep_next AS expected_points, element_type
+            FROM bootstrapstatic_elements
+            WHERE year_start = %s
+              AND gameweek = (SELECT MAX(gameweek) FROM bootstrapstatic_elements WHERE year_start = %s)
+        """, (year_start, year_start))
         return cursor.fetchall()
-    except Exception as e:   # a missing table just means the daily job hasn't run
-        logger.warning("fetch_predicted_points: %s", e)
-        return []
-
-
-def fetch_latest_prediction_gameweek(cursor):
-    """The gameweek the latest stored run forecasts: the one after it was stored under."""
-    try:
-        run = _stored_run(cursor, "SELECT MAX(gameweek) AS gameweek FROM player_predictions")
     except Exception as e:
-        logger.warning("fetch_latest_prediction_gameweek: %s", e)
-        return None
-    return run + 1 if run is not None else None
+        logger.warning("fetch_expected_points: %s", e)
+        return []
 
 
 def fetch_team_rows(cursor, years):
@@ -148,18 +128,18 @@ def fetch_momentum_row(cursor, player_id):
 #                 Pure shaping                  #
 #################################################
 
-def predicted_points_map(rows):
-    """{player_id: predicted points}; players whose prediction is null are left out."""
-    return {r['player_id']: float(r['predicted_performance'])
-            for r in rows if r['predicted_performance'] is not None}
+def expected_points_map(rows):
+    """{player_id: expected points}; players with no stored value are left out."""
+    return {r['player_id']: float(r['expected_points'])
+            for r in rows if r['expected_points'] is not None}
 
 
 def position_averages(rows):
-    """{element_type: average predicted points} over everyone with a stored prediction."""
+    """{element_type: average expected points} over everyone with a stored value."""
     totals = defaultdict(list)
     for r in rows:
-        if r['predicted_performance'] is not None and r['element_type'] is not None:
-            totals[r['element_type']].append(float(r['predicted_performance']))
+        if r['expected_points'] is not None and r['element_type'] is not None:
+            totals[r['element_type']].append(float(r['expected_points']))
     return {k: sum(v) / len(v) for k, v in totals.items()}
 
 
@@ -236,7 +216,7 @@ def recent_points(history_rows, before_gameweek=None, count=RECENT_GAMES):
 
 def option_facts(player_id, availability, element_types, prices, gameweek, upcoming, baselines,
                  team_shorts, recent):
-    """The summary every hub option carries, apart from id, name and predicted points."""
+    """The summary every hub option carries, apart from id, name and expected points."""
     team = availability[player_id]['team']
     position = element_types.get(player_id)
     return {'team_short': team_shorts.get(team),
@@ -296,14 +276,14 @@ def momentum_view(row):
 def build_player_context(gameweek, data):
     """Compose the route payload from already-fetched rows. Unknown ids are omitted.
 
-    data keys: ids (requested order), players, predictions, upcoming, baselines, teams,
+    data keys: ids (requested order), players, expected_points, upcoming, baselines, teams,
     element_codes, history, momentum ({id: row}).
     """
     team_rows = data['teams']
     team_shorts = {t['id']: t['short_name'] for t in team_rows if t['year_start'] == season_start}
     team_codes = {t['id']: t['code'] for t in team_rows if t['year_start'] == season_start}
-    predicted = predicted_points_map(data['predictions'])
-    averages = position_averages(data['predictions'])
+    expected = expected_points_map(data['expected_points'])
+    averages = position_averages(data['expected_points'])
     by_id = {p['id']: p for p in data['players']}
 
     players = []
@@ -325,13 +305,13 @@ def build_player_context(gameweek, data):
             vs_opponent = {'opponent_short': team_shorts.get(this_week['opponent_id']),
                            'games': games_against(history, team_rows, opponent_code)
                            if opponent_code is not None else []}
-        predicted_points = predicted.get(pid)
+        expected_points = expected.get(pid)
         average = averages.get(position)
         players.append({
             'id': pid, 'name': p['web_name'], 'team_short': team_shorts.get(team),
             'position': POSITION_NAMES.get(position), 'price': p['now_cost'],
-            'predicted_points': round(predicted_points, 1) if predicted_points is not None else None,
-            'position_average_predicted_points': round(average, 1) if average is not None else None,
+            'expected_points': round(expected_points, 1) if expected_points is not None else None,
+            'position_average_expected_points': round(average, 1) if average is not None else None,
             'recent_games': recent_games([r for r in history if r['year_start'] == season_start],
                                          team_shorts, gameweek),
             'momentum': momentum_view(data['momentum'].get(pid)),
@@ -345,6 +325,12 @@ def build_player_context(gameweek, data):
 #               Live-route entry                #
 #################################################
 
+def default_gameweek():
+    """The gameweek the This Week page shows as upcoming, or None when there isn't one."""
+    this_week = get_week_view_state()['this_week']
+    return this_week['gameweek'] if this_week['mode'] == 'upcoming' else None
+
+
 def get_player_context(ids, gameweek=None):
     """The player-context payload; {'status': 'unavailable'} if the database is down."""
     conn = connect_db()
@@ -353,18 +339,18 @@ def get_player_context(ids, gameweek=None):
         return {'status': 'unavailable'}
     years = (season_start, season_start - 1)
     try:
-        cursor = conn.cursor(dictionary=True)
         if gameweek is None:
-            gameweek = fetch_latest_prediction_gameweek(cursor)
+            gameweek = default_gameweek()
         if gameweek is None:
             return {'status': 'unavailable'}
+        cursor = conn.cursor(dictionary=True)
         players = fetch_player_rows(cursor, season_start, ids)
         element_codes = fetch_element_ids_by_code(cursor, years, [p['code'] for p in players])
         pairs = [(r['year_start'], r['id']) for r in element_codes]
         data = {
             'ids': ids,
             'players': players,
-            'predictions': fetch_predicted_points(cursor, gameweek),
+            'expected_points': fetch_expected_points(cursor, season_start),
             'upcoming': fetch_upcoming_predictions(cursor, gameweek, gameweek + NEXT_FIXTURES - 1),
             'baselines': fetch_team_baselines(cursor),
             'teams': fetch_team_rows(cursor, years),

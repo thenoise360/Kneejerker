@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { renderCaptainView, optionById, allOptions } from '../../FPL_site/static/scripts/lib/captainView.js';
 
 const opt = (id, name, extra = {}) => ({
-    id, name, team_short: 'MCI', position: 'Forward', price: 100, predicted_points: 5,
+    id, name, team_short: 'MCI', position: 'Forward', price: 100, expected_points: 5,
     this_week: { opponent_short: 'BOU', is_home: true, difficulty: 'average' }, recent_points: [1, 2, 3], ...extra,
 });
 const captaincy = {

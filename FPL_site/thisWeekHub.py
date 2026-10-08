@@ -10,7 +10,7 @@ from FPL_site.weekDecision import (
     fetch_availability_rows, fetch_fixture_rows, fixtures_by_team,
 )
 from FPL_site.playerContext import (
-    fetch_predicted_points, predicted_points_map, fetch_team_rows, fetch_recent_point_rows,
+    fetch_expected_points, expected_points_map, fetch_team_rows, fetch_recent_point_rows,
     recent_points, option_facts,
 )
 from FPL_site.playerMomentum import fetch_upcoming_predictions, fetch_team_baselines
@@ -35,7 +35,7 @@ GUEST_CANDIDATES = 10   # guests see the top three; a few extra keep the list st
 
 
 def candidate_ids(squad_ids, predictions):
-    """Whose summary facts the hub needs: the squad, or for a guest the best predicted."""
+    """Whose summary facts the hub needs: the squad, or for a guest the highest expected points."""
     if squad_ids:
         return list(squad_ids)
     ranked = sorted(predictions, key=lambda pid: (-predictions[pid], pid))
@@ -53,7 +53,7 @@ def _option_info(gameweek, ids, availability_rows, availability, facts):
 
 def build_hub(gameweek, squad_context, availability_rows, predictions, fixtures, history_rows,
               facts=None):
-    """predictions: {player_id: stored predicted points}. facts: rows for the option summaries
+    """predictions: {player_id: the official game's expected points}. facts: rows for the option summaries
     (team_shorts, upcoming, baselines, recent_rows); without them options carry no summary."""
     squad = squad_context.get('squad', []) if squad_context['status'] == 'ok' else []
     availability = hub_availability(availability_rows)
@@ -90,7 +90,7 @@ def _load_week_data(gameweek, squad_ids):
     try:
         cursor = conn.cursor(dictionary=True)
         availability_rows = fetch_availability_rows(cursor, season_start)
-        predictions = predicted_points_map(fetch_predicted_points(cursor, gameweek))
+        predictions = expected_points_map(fetch_expected_points(cursor, season_start))
         fixtures = fixtures_by_team(fetch_fixture_rows(cursor, season_start, gameweek))
         history_rows = fetch_squad_history_rows(cursor, season_start, squad_ids, gameweek)
         facts = {

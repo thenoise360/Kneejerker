@@ -5,7 +5,7 @@
 import { escapeHtml } from './escapeHtml.js';
 import { buildStatBlock, buildChartLegend, COMPARISON_COLORS } from './statBlock.js';
 import {
-    COPY, priceText, venueText, difficultyWord, predictedPointsText, pointsWord,
+    COPY, priceText, venueText, difficultyWord, expectedPointsText, pointsWord,
     gameLine, noGamesAgainst, positionAverageText,
 } from './playerInfoCopy.js';
 
@@ -45,11 +45,11 @@ function gamesAgainst(player) {
 
 function header(player) {
     const facts = [player.team_short, player.position, priceText(player.price)].filter(Boolean).map(e).join(' · ');
-    const avg = positionAverageText(player.position_average_predicted_points);
+    const avg = positionAverageText(player.position_average_expected_points);
     return `
         <h3 class="player-sheet-name">${e(player.name)}</h3>
         <p class="sub">${facts}</p>
-        <p class="player-sheet-predicted">${e(predictedPointsText(player.predicted_points))}${avg ? ` <span class="sub">(${e(avg)})</span>` : ''}</p>`;
+        <p class="player-sheet-predicted">${e(expectedPointsText(player.expected_points))}${avg ? ` <span class="sub">(${e(avg)})</span>` : ''}</p>`;
 }
 
 function last5Section(player) {
@@ -117,14 +117,14 @@ export function renderSinglePlayer(player) {
 }
 
 // Stat blocks for the compare. Each returns '' when neither player has the number.
-function predictedBlock(players) {
-    if (players.every((p) => p.predicted_points === null || p.predicted_points === undefined)) return '';
-    return buildStatBlock('Predicted points', players, (p) => {
-        const has = p.predicted_points !== null && p.predicted_points !== undefined;
-        const avg = p.position_average_predicted_points;
+function expectedBlock(players) {
+    if (players.every((p) => p.expected_points === null || p.expected_points === undefined)) return '';
+    return buildStatBlock(COPY.expectedBlockLabel, players, (p) => {
+        const has = p.expected_points !== null && p.expected_points !== undefined;
+        const avg = p.position_average_expected_points;
         return {
-            value: has ? p.predicted_points : null,
-            display: has ? oneDecimal(p.predicted_points) : '—',
+            value: has ? p.expected_points : null,
+            display: has ? oneDecimal(p.expected_points) : '—',
             avgValue: avg === null || avg === undefined ? undefined : avg,
         };
     }, { compareText: 'The dotted line is the average for that player\'s position.' });
@@ -177,7 +177,7 @@ function fixtureColumns(players) {
 
 export function renderComparison(players) {
     const legend = buildChartLegend(players.map((p, i) => ({ label: p.name, color: COMPARISON_COLORS[i] })));
-    const blocks = [predictedBlock(players), recentAverageBlock(players), minutesBlock(players), againstBlock(players)]
+    const blocks = [expectedBlock(players), recentAverageBlock(players), minutesBlock(players), againstBlock(players)]
         .filter(Boolean).join('');
     const stats = blocks ? `<div class="mp-stat-list">${blocks}</div>${legend}` : legend;
     return `

@@ -2,7 +2,7 @@
 // One compact row per captain (or, later, transfer) option. Pure: returns an
 // HTML string. The page's click handling reads the data-action attributes.
 import { escapeHtml } from './escapeHtml.js';
-import { COPY, priceText, fixtureText, predictedPointsText, formStripLabel } from './playerInfoCopy.js';
+import { COPY, priceText, fixtureText, expectedPointsText, formStripLabel } from './playerInfoCopy.js';
 
 // Bar heights are a share of the best game in the strip. Zero or negative
 // scores still get a thin stub so the five games always show as five bars.
@@ -33,7 +33,7 @@ export function renderOptionRow(option, { selected = false, badge = '', note = '
                 <div class="option-meta">${meta}</div>
                 ${noteHtml}
                 <div class="option-fixture">${escapeHtml(fixtureText(option.this_week))}</div>
-                <div class="option-points">${escapeHtml(predictedPointsText(option.predicted_points))}</div>
+                <div class="option-points">${escapeHtml(expectedPointsText(option.expected_points))}</div>
             </div>
             <div class="option-side">
                 ${renderFormStrip(option.recent_points)}

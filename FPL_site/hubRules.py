@@ -59,7 +59,7 @@ def _is_worry(pid, availability, risks):
 
 
 def _rank_key(pid, availability, predictions):
-    # Highest predicted points first; no stored prediction goes after everyone who has one.
+    # Highest expected points first; no stored value goes after everyone who has one.
     predicted = predictions.get(pid)
     return (predicted is None, -(predicted or 0.0), availability[pid]['name'])
 
@@ -70,7 +70,7 @@ def _option(pid, availability, predictions, info):
     return {'id': pid, 'name': availability[pid]['name'],
             'team_short': facts.get('team_short'), 'position': facts.get('position'),
             'price': facts.get('price'),
-            'predicted_points': round(predicted, 1) if predicted is not None else None,
+            'expected_points': round(predicted, 1) if predicted is not None else None,
             'this_week': facts.get('this_week'),
             'recent_points': facts.get('recent_points', [])}
 
@@ -85,17 +85,17 @@ def _ranked_options(player_ids, availability, predictions, fixtures, risks, info
 
 def _leaning(option):
     # We only lean on someone we have a number for.
-    return option if option and option['predicted_points'] is not None else None
+    return option if option and option['expected_points'] is not None else None
 
 
 def resolve_captaincy(squad, availability, predictions, fixtures, risks, info=None):
     """Captaincy applies every week, so it always needs a look.
 
-    predictions: {player_id: stored predicted points}. info: optional per-player summary
+    predictions: {player_id: expected points}. info: optional per-player summary
     facts (team_short, position, price, this_week, recent_points) from playerContext.
 
     With a team: their fit starters with a match, plus the rest of the squad as `others`.
-    As a guest: the top three across everyone with a prediction, and no others.
+    As a guest: the top three across everyone with a stored value, and no others.
     """
     others = []
     if squad:

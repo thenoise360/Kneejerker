@@ -24,21 +24,25 @@ Out (unchanged roadmap work): saving a captain/vice choice (Release 2 plan stora
 
 - Every number traces to a backend function; JSON carries facts and keys, never prose.
 - All sentences live in JavaScript phrase-bank modules (`hubCopy.js` pattern). No acronyms:
-  "predicted points", "Captain", "Vice", "Make captain"/"Make vice" — never xP, C, VC, EO.
+  "expected points", "Captain", "Vice", "Make captain"/"Make vice" — never xP, C, VC, EO.
 - Mobile first, 375–430px. No horizontal scroll.
-- Never fit models in a request: read `player_predictions` (`load_stored_predictions`-style read,
-  through `connect_db()`), stored match predictions, `elementsummary_history`.
+- Never fit models in a request: read the official game's stored expected points
+  (`bootstrapstatic_elements.ep_next`, latest snapshot, through `connect_db()`), stored match predictions, `elementsummary_history`.
 - Entities across seasons are matched by `code` (player and team), never by `id`.
 - Tests never touch MySQL or the live API; monkeypatch fetchers. Add the new route to
   `tests/test_regression_routes.py`.
 
-## 1. Captain lean ranks by predicted points
+## 1. Captain lean ranks by expected points
 
-`hubRules._ranked_options` sorts by stored predicted points (`player_predictions.predicted_performance`
-for the hub gameweek) instead of `involvement_predictions`. Same filters as today (has a match, not
-a worry). Ties break on name. A player with no stored prediction is ranked after everyone with one
+`hubRules._ranked_options` sorts by the official game's expected points for the next gameweek
+(`bootstrapstatic_elements.ep_next`, each player's row from the latest snapshot of the season, read by
+`playerContext.fetch_expected_points`) instead of `involvement_predictions`.
+Why not `player_predictions`: its `predicted_performance` is a 5-gameweek aggregate, not points for one
+gameweek, so it must not be ranked or shown as points. Our own model will replace this source later,
+behind the same fetcher. Same filters as today (has a match, not
+a worry). Ties break on name. A player with no stored value is ranked after everyone with one
 (not dropped). The hub row and headline follow automatically. `expected_involvement` is replaced
-by `predicted_points` in option objects; update every consumer (Jinja macro, `hubCopy.js`, tests).
+by `expected_points` in option objects; update every consumer (Jinja macro, `hubCopy.js`, tests).
 
 ## 2. Option summary (in `/api/week/this-week` → `decisions.captaincy`)
 
@@ -52,7 +56,7 @@ Option object (both lists):
 {
   "id": 351, "name": "Haaland", "team_short": "MCI", "position": "Forward",
   "price": 145,                      // tenths of a million
-  "predicted_points": 7.4,           // null if not stored
+  "expected_points": 7.5,            // null if not stored
   "this_week": {"opponent_short": "BOU", "is_home": true, "difficulty": "easier"},  // null if no match
   "recent_points": [2, 13, 6, 2, 9]  // last up to 5 finished gameweeks, oldest first
 }
@@ -72,8 +76,8 @@ team's baseline scored; defenders and goalkeepers: opponent expected goals vs ba
   "status": "ready", "gameweek": 6,
   "players": [{
     "id": 351, "name": "Haaland", "team_short": "MCI", "position": "Forward", "price": 145,
-    "predicted_points": 7.4,
-    "position_average_predicted_points": 3.1,
+    "expected_points": 7.5,
+    "position_average_expected_points": 3.1,
     "recent_games": [{"gameweek": 1, "opponent_short": "WOL", "is_home": false,
                       "minutes": 90, "goals": 2, "assists": 0, "points": 13}],   // up to 5, oldest first
     "momentum": {"label": "Rising", "signals": [...]},   // playerMomentum.player_momentum output, or null

@@ -12,7 +12,7 @@ STATE = {'this_week': {'mode': 'upcoming', 'gameweek': 6, 'deadline': '2026-10-1
          'last_week': {'status': 'final', 'gameweek': 5, 'deadline': '2026-10-03T10:00:00Z'}}
 
 OPTION = {'id': 2, 'name': 'Haaland', 'team_short': 'MCI', 'position': 'Forward', 'price': 145,
-          'predicted_points': 7.4,
+          'expected_points': 7.4,
           'this_week': {'opponent_short': 'BOU', 'is_home': False, 'difficulty': 'easier'},
           'recent_points': [2, 13, 6, 2, 9]}
 VICE = dict(OPTION, id=3, name='Salah')

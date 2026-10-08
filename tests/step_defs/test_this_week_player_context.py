@@ -52,8 +52,8 @@ def bench(ctx, name):
     ctx['availability'][IDS[name]] = {'name': name, 'team': TEAM, 'chance': None, 'status': 'a', 'news': ''}
 
 
-@given(parsers.re(r'their predicted points are (?P<pairs>.+)'))
-def predicted(ctx, pairs):
+@given(parsers.re(r'their expected points are (?P<pairs>.+)'))
+def expected(ctx, pairs):
     for name, value in re.findall(r'"(\w+)" ([\d.]+)', pairs):
         ctx['predictions'][IDS[name]] = float(value)
 

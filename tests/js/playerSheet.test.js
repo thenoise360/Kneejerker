@@ -6,7 +6,7 @@ import {
 
 const haaland = {
     id: 351, name: 'Haaland', team_short: 'MCI', position: 'Forward', price: 145,
-    predicted_points: 7.4, position_average_predicted_points: 3.1,
+    expected_points: 7.4, position_average_expected_points: 3.1,
     recent_games: [
         { gameweek: 1, opponent_short: 'WOL', is_home: false, minutes: 90, goals: 2, assists: 0, points: 13 },
         { gameweek: 2, opponent_short: 'ARS', is_home: true, minutes: 80, goals: 0, assists: 1, points: 6 },
@@ -17,7 +17,7 @@ const haaland = {
 };
 const salah = {
     id: 5, name: 'Salah', team_short: 'LIV', position: 'Midfielder', price: 130,
-    predicted_points: 6.1, position_average_predicted_points: 3.4,
+    expected_points: 6.1, position_average_expected_points: 3.4,
     recent_games: [{ gameweek: 1, opponent_short: 'CHE', is_home: true, minutes: 90, goals: 1, assists: 1, points: 9 }],
     momentum: null,
     next_fixtures: [{ gameweek: 6, opponent_short: 'EVE', is_home: false, difficulty: 'tougher' }],
@@ -31,7 +31,7 @@ test('single player shows the four sections', () => {
     assert.match(html, /Next 3 fixtures/);
     assert.match(html, /Against BOU/);
     assert.match(html, /MCI · Forward · £14\.5m/);
-    assert.match(html, /7\.4 predicted points/);
+    assert.match(html, /The official game expects 7\.4 points/);
     assert.match(html, /Average 3\.1 for the position/);
     assert.match(html, /13 points/);
     assert.match(html, /90 minutes, 2 goals/);
@@ -60,14 +60,14 @@ test('no match this week gives the plain message instead of an opponent section'
 });
 
 test('no prediction is stated', () => {
-    assert.match(renderSinglePlayer({ ...salah, predicted_points: null }), /No prediction yet/);
+    assert.match(renderSinglePlayer({ ...salah, expected_points: null }), /No expected points yet/);
 });
 
 test('two players give the Discovery comparison with a shared legend', () => {
     const html = renderPlayerSheet([haaland, salah]);
     assert.match(html, /class="mp-stat-list"/);
     assert.equal((html.match(/class="chart-legend"/g) || []).length, 1);
-    assert.match(html, /Predicted points/);
+    assert.match(html, /Expected points \(official game\)/);
     assert.match(html, /Average points, last 5 games/);
     assert.match(html, /Minutes, last 5 games/);
     assert.match(html, /Average points against this week's opponent/);
@@ -79,10 +79,10 @@ test('two players give the Discovery comparison with a shared legend', () => {
 });
 
 test('compare shows a dash for a player who lacks a number', () => {
-    const html = renderComparison([haaland, { ...salah, predicted_points: null, recent_games: [] }]);
-    assert.match(html, /Predicted points/);
+    const html = renderComparison([haaland, { ...salah, expected_points: null, recent_games: [] }]);
+    assert.match(html, /Expected points \(official game\)/);
     // Only the player who has the number gets a dot in the bar.
-    assert.equal((html.split('Predicted points')[1].split('mp-stat-block')[0].match(/mp-stat-dot"/g) || []).length, 1);
+    assert.equal((html.split('Expected points (official game)')[1].split('mp-stat-block')[0].match(/mp-stat-dot"/g) || []).length, 1);
 });
 
 test('compare leaves out a stat neither player has', () => {

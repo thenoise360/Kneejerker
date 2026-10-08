@@ -24,7 +24,8 @@ export const COPY = {
     noNextFixtures: 'No fixtures to show yet.',
     noMatchThisWeek: 'No match this week.',
     loadFailed: "We couldn't load the player details just now. Try again in a moment.",
-    noPrediction: 'No prediction yet',
+    expectedBlockLabel: 'Expected points (official game)',
+    noPrediction: 'No expected points yet',
     compareHeading: 'Side by side',
     nextFixturesCompareHeading: 'Next fixtures',
 };
@@ -52,9 +53,9 @@ export function fixtureText(thisWeek) {
     return word ? `${base} · ${word}` : base;
 }
 
-export function predictedPointsText(value) {
+export function expectedPointsText(value) {
     if (value === null || value === undefined) return COPY.noPrediction;
-    return `${Number(value).toFixed(1)} predicted points`;
+    return `The official game expects ${Number(value).toFixed(1)} points`;
 }
 
 export function pointsWord(n) {

@@ -3,16 +3,16 @@ import assert from 'node:assert/strict';
 import { renderOptionRow, formBarPercents, renderFormStrip } from '../../FPL_site/static/scripts/lib/optionRow.js';
 
 const haaland = {
-    id: 351, name: 'Haaland', team_short: 'MCI', position: 'Forward', price: 145, predicted_points: 7.4,
+    id: 351, name: 'Haaland', team_short: 'MCI', position: 'Forward', price: 145, expected_points: 7.4,
     this_week: { opponent_short: 'BOU', is_home: true, difficulty: 'easier' }, recent_points: [2, 13, 6, 2, 9],
 };
 
-test('a row shows name, team, price, fixture, predicted points and a compare toggle', () => {
+test('a row shows name, team, price, fixture, expected points and a compare toggle', () => {
     const html = renderOptionRow(haaland);
     assert.match(html, /Haaland/);
     assert.match(html, /MCI · £14\.5m/);
     assert.match(html, /vs BOU \(home\) · easier/);
-    assert.match(html, /7\.4 predicted points/);
+    assert.match(html, /The official game expects 7\.4 points/);
     assert.match(html, /data-action="toggle-compare"[^>]*aria-pressed="false">Compare</);
     assert.match(html, /data-action="open-player" data-id="351"/);
 });
@@ -23,8 +23,8 @@ test('selected rows say so for screen readers and in words', () => {
 });
 
 test('missing data is said plainly and the rest still renders', () => {
-    const html = renderOptionRow({ id: 1, name: 'Nobody', predicted_points: null, this_week: null, recent_points: [] });
-    assert.match(html, /No prediction yet/);
+    const html = renderOptionRow({ id: 1, name: 'Nobody', expected_points: null, this_week: null, recent_points: [] });
+    assert.match(html, /No expected points yet/);
     assert.match(html, /No match this week/);
     assert.match(html, /form-strip--empty/);
 });

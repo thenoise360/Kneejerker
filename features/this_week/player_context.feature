@@ -1,31 +1,31 @@
 Feature: Supporting information for the Captain and vice choice
-  Each option carries its predicted points, this week's match and recent form.
+  Each option carries the official game's expected points, this week's match and recent form.
   A fuller player context says how the match looks, how the player has done
   and what happened in past meetings with this week's opponent.
 
-  Scenario: The captain lean follows predicted points
+  Scenario: The captain lean follows expected points
     Given my starters are "Saka", "Haaland" and "Salah"
-    And their predicted points are "Saka" 5.1, "Haaland" 7.4 and "Salah" 6.2
+    And their expected points are "Saka" 5.1, "Haaland" 7.4 and "Salah" 6.2
     When the captain choice is made
     Then the shortlist reads "Haaland", "Salah", "Saka"
     And the vice is "Salah"
 
-  Scenario: A starter with no stored prediction is ranked last, not dropped
+  Scenario: A starter with no stored expected points is ranked last, not dropped
     Given my starters are "Saka", "Haaland" and "Salah"
-    And their predicted points are "Saka" 5.1 and "Haaland" 7.4
+    And their expected points are "Saka" 5.1 and "Haaland" 7.4
     When the captain choice is made
     Then the shortlist reads "Haaland", "Saka", "Salah"
 
-  Scenario: Equal predicted points are split by name
+  Scenario: Equal expected points are split by name
     Given my starters are "Saka", "Haaland" and "Salah"
-    And their predicted points are "Saka" 6.0, "Haaland" 6.0 and "Salah" 6.0
+    And their expected points are "Saka" 6.0, "Haaland" 6.0 and "Salah" 6.0
     When the captain choice is made
     Then the shortlist reads "Haaland", "Saka", "Salah"
 
   Scenario: The rest of the squad is listed separately
     Given my starters are "Saka" and "Haaland"
     And "Salah" is on my bench
-    And their predicted points are "Saka" 5.1, "Haaland" 7.4 and "Salah" 9.0
+    And their expected points are "Saka" 5.1, "Haaland" 7.4 and "Salah" 9.0
     When the captain choice is made
     Then the shortlist reads "Haaland", "Saka"
     And the rest of the squad reads "Salah"

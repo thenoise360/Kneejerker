@@ -54,20 +54,25 @@ def test_recent_points_last_five_oldest_first_and_double_gameweeks_add_up():
     assert pc.recent_points(rows, before_gameweek=3) == {1: [2, 3]}
 
 
-def test_predicted_points_and_position_averages_skip_nulls():
-    rows = [{'player_id': 1, 'predicted_performance': 6.0, 'element_type': 3},
-            {'player_id': 2, 'predicted_performance': 2.0, 'element_type': 3},
-            {'player_id': 3, 'predicted_performance': None, 'element_type': 3}]
-    assert pc.predicted_points_map(rows) == {1: 6.0, 2: 2.0}
+def test_expected_points_and_position_averages_skip_nulls():
+    rows = [{'player_id': 1, 'expected_points': 6.0, 'element_type': 3},
+            {'player_id': 2, 'expected_points': 2.0, 'element_type': 3},
+            {'player_id': 3, 'expected_points': None, 'element_type': 3}]
+    assert pc.expected_points_map(rows) == {1: 6.0, 2: 2.0}
     assert pc.position_averages(rows) == {3: 4.0}
 
 
-def test_fetch_predicted_points_survives_a_missing_table():
+def test_expected_points_come_back_as_floats_even_when_stored_as_decimals():
+    from decimal import Decimal
+    rows = [{'player_id': 1, 'expected_points': Decimal('7.5'), 'element_type': 4}]
+    assert pc.expected_points_map(rows) == {1: 7.5}
+
+
+def test_fetch_expected_points_survives_a_failure():
     class Boom:
         def execute(self, *a):
             raise RuntimeError('no such table')
-    assert pc.fetch_predicted_points(Boom(), 6) == []
-    assert pc.fetch_latest_prediction_gameweek(Boom()) is None
+    assert pc.fetch_expected_points(Boom(), 2026) == []
 
 
 def test_games_against_dedupes_and_orders_across_seasons():
@@ -83,8 +88,8 @@ def player_data(**overrides):
     data = {
         'ids': [1, 99],
         'players': [{'id': 1, 'code': 500, 'web_name': 'Haaland', 'team': 10, 'element_type': 4, 'now_cost': 145}],
-        'predictions': [{'player_id': 1, 'predicted_performance': 7.44, 'element_type': 4},
-                        {'player_id': 2, 'predicted_performance': 2.0, 'element_type': 4}],
+        'expected_points': [{'player_id': 1, 'expected_points': 7.44, 'element_type': 4},
+                            {'player_id': 2, 'expected_points': 2.0, 'element_type': 4}],
         'upcoming': UPCOMING, 'baselines': BASELINES,
         'teams': [{'year_start': 2026, 'id': 10, 'code': 8, 'short_name': 'MCI'},
                   {'year_start': 2026, 'id': 20, 'code': 43, 'short_name': 'BOU'},
@@ -110,7 +115,7 @@ def test_build_player_context_matches_the_agreed_shape():
     assert len(result['players']) == 1   # unknown id 99 is omitted
     p = result['players'][0]
     assert (p['id'], p['name'], p['team_short'], p['position'], p['price']) == (1, 'Haaland', 'MCI', 'Forward', 145)
-    assert p['predicted_points'] == 7.4 and p['position_average_predicted_points'] == 4.7
+    assert p['expected_points'] == 7.4 and p['position_average_expected_points'] == 4.7
     assert p['recent_games'] == [{'gameweek': 1, 'opponent_short': 'WOL', 'is_home': False,
                                   'minutes': 90, 'goals': 2, 'assists': 0, 'points': 13}]
     assert p['momentum'] == {'label': 'Rising', 'reason': 'Rising: easier fixtures ahead', 'signals': [{'key': 'fixtures', 'direction': 'up'}]}
@@ -132,10 +137,10 @@ def test_no_past_meetings_gives_empty_games():
     assert pc.build_player_context(6, data)['players'][0]['vs_opponent']['games'] == []
 
 
-def test_missing_prediction_is_null():
-    data = player_data(predictions=[])
+def test_missing_expected_points_are_null():
+    data = player_data(expected_points=[])
     p = pc.build_player_context(6, data)['players'][0]
-    assert p['predicted_points'] is None and p['position_average_predicted_points'] is None
+    assert p['expected_points'] is None and p['position_average_expected_points'] is None
 
 
 def test_get_player_context_without_a_gameweek_or_database(monkeypatch):
@@ -164,7 +169,7 @@ def test_hub_options_carry_the_summary():
     captaincy = hub['decisions']['captaincy']
     assert captaincy['suggested'] == {
         'id': 1, 'name': 'Haaland', 'team_short': 'MCI', 'position': 'Forward', 'price': 145,
-        'predicted_points': 7.4,
+        'expected_points': 7.4,
         'this_week': {'opponent_short': 'BOU', 'is_home': True, 'difficulty': 'easier'},
         'recent_points': [2, 4, 6, 8, 10]}
     assert [o['name'] for o in captaincy['others']] == ['Bench']
@@ -172,48 +177,40 @@ def test_hub_options_carry_the_summary():
     json.dumps(hub)   # plain JSON, no sentences needed
 
 
-def test_guest_candidates_are_the_best_predicted():
+def test_guest_candidates_are_the_highest_expected_points():
     assert candidate_ids([], {i: float(i) for i in range(1, 30)}) == list(range(29, 19, -1))
     assert candidate_ids([5, 6], {1: 9.0}) == [5, 6]
 
 
-class RecordingCursor:
-    """Answers the 'which stored gameweek' lookup, then the rows; records what was asked."""
-    def __init__(self, stored):
-        self.stored, self.calls, self._next = stored, [], None
+class SnapshotCursor:
+    """Records the query; returns what the latest snapshot would hold."""
+    def __init__(self, rows):
+        self.rows, self.calls = rows, []
 
     def execute(self, sql, params=()):
         self.calls.append((sql, params))
-        if 'MAX(gameweek)' in sql:
-            below = [g for g in self.stored if 'gameweek < %s' not in sql or g < params[0]]
-            self._next = {'gameweek': max(below) if below else None}
-        else:
-            self._next = [{'player_id': 1, 'predicted_performance': 5.0, 'element_type': 3, 'gw': params[0]}]
-
-    def fetchone(self):
-        return self._next
 
     def fetchall(self):
-        return self._next
+        return self.rows
 
 
-def test_predictions_for_a_gameweek_come_from_the_run_stored_under_the_previous_one():
-    # The daily job stores its forecast for the next gameweek under the current one:
-    # the run made during gameweek 5 is the forecast for gameweek 6.
-    cursor = RecordingCursor(stored=[3, 4, 5])
-    rows = pc.fetch_predicted_points(cursor, 6)
-    assert rows[0]['gw'] == 5
+def test_expected_points_read_the_latest_snapshot_of_the_season():
+    stored = [{'player_id': 2, 'expected_points': 7.5, 'element_type': 4}]
+    cursor = SnapshotCursor(stored)
+    assert pc.fetch_expected_points(cursor, 2026) == stored
+    sql, params = cursor.calls[0]
+    assert 'ep_next' in sql and 'bootstrapstatic_elements' in sql
+    assert 'MAX(gameweek)' in sql and 'player_predictions' not in sql
+    assert params == (2026, 2026)   # both the row filter and the latest-snapshot lookup are for this season
 
 
-def test_predictions_fall_back_to_the_latest_run_when_none_is_older():
-    cursor = RecordingCursor(stored=[5])
-    rows = pc.fetch_predicted_points(cursor, 1)
-    assert rows[0]['gw'] == 5
+def test_the_default_gameweek_is_the_upcoming_one_from_the_week_page(monkeypatch):
+    monkeypatch.setattr(pc, 'get_week_view_state',
+                        lambda: {'this_week': {'mode': 'upcoming', 'gameweek': 6}})
+    assert pc.default_gameweek() == 6
 
 
-def test_no_stored_predictions_means_no_rows():
-    assert pc.fetch_predicted_points(RecordingCursor(stored=[]), 6) == []
-
-
-def test_the_default_gameweek_is_the_one_the_latest_run_forecasts():
-    assert pc.fetch_latest_prediction_gameweek(RecordingCursor(stored=[4, 5])) == 6
+def test_there_is_no_default_gameweek_when_the_week_is_not_upcoming(monkeypatch):
+    monkeypatch.setattr(pc, 'get_week_view_state',
+                        lambda: {'this_week': {'mode': 'live', 'gameweek': 5}})
+    assert pc.default_gameweek() is None
