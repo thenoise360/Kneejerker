@@ -1938,7 +1938,7 @@ Run: `vs-env/Scripts/python.exe -m FPL_site.expectedPointsBacktest` (reads MySQL
 
 ---
 
-### Task 7 (blocked until `this-week-player-info` is merged): the source switch
+### Follow-up (blocked until `this-week-player-info` is merged): the source switch
 
 Not executed in this branch. When `this-week-player-info` is on main and the backtest report says
 `Passes: yes`, a follow-up adds `EXPECTED_POINTS_SOURCE` (`official` default, `own`) to
