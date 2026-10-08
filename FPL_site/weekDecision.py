@@ -22,7 +22,7 @@ DOUBT_BELOW = 75   # chance of playing under this % makes a starter a doubt
 def fetch_availability_rows(cursor, year_start):
     cursor.execute("""
         SELECT id, web_name, team, chance_of_playing_next_round, news,
-               element_type, status, expected_goals, expected_assists
+               element_type, status, expected_goals, expected_assists, now_cost
         FROM bootstrapstatic_elements
         WHERE year_start = %s
           AND gameweek = (SELECT MAX(gameweek) FROM bootstrapstatic_elements WHERE year_start = %s)

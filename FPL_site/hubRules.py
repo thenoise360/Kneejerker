@@ -58,31 +58,61 @@ def _is_worry(pid, availability, risks):
             or (risk.get('tier') in WORTH_A_LOOK and _availability_reason(risk) is not None))
 
 
-def _ranked_options(player_ids, availability, predictions, fixtures, risks):
+def _rank_key(pid, availability, predictions):
+    # Highest predicted points first; no stored prediction goes after everyone who has one.
+    predicted = predictions.get(pid)
+    return (predicted is None, -(predicted or 0.0), availability[pid]['name'])
+
+
+def _option(pid, availability, predictions, info):
+    facts = (info or {}).get(pid, {})
+    predicted = predictions.get(pid)
+    return {'id': pid, 'name': availability[pid]['name'],
+            'team_short': facts.get('team_short'), 'position': facts.get('position'),
+            'price': facts.get('price'),
+            'predicted_points': round(predicted, 1) if predicted is not None else None,
+            'this_week': facts.get('this_week'),
+            'recent_points': facts.get('recent_points', [])}
+
+
+def _ranked_options(player_ids, availability, predictions, fixtures, risks, info=None):
     options = [pid for pid in player_ids
-               if pid in predictions and pid in availability
-               and availability[pid]['team'] in fixtures and not _is_worry(pid, availability, risks)]
-    options.sort(key=lambda pid: (-predictions[pid], availability[pid]['name']))
-    return [{'id': pid, 'name': availability[pid]['name'],
-             'expected_involvement': round(predictions[pid], 1),
-             'fixture': fixtures[availability[pid]['team']]} for pid in options]
+               if pid in availability and availability[pid]['team'] in fixtures
+               and not _is_worry(pid, availability, risks)]
+    options.sort(key=lambda pid: _rank_key(pid, availability, predictions))
+    return [_option(pid, availability, predictions, info) for pid in options]
 
 
-def resolve_captaincy(squad, availability, predictions, fixtures, risks):
+def _leaning(option):
+    # We only lean on someone we have a number for.
+    return option if option and option['predicted_points'] is not None else None
+
+
+def resolve_captaincy(squad, availability, predictions, fixtures, risks, info=None):
     """Captaincy applies every week, so it always needs a look.
 
-    With a team: their fit starters with a match. As a guest: the top three across everyone.
+    predictions: {player_id: stored predicted points}. info: optional per-player summary
+    facts (team_short, position, price, this_week, recent_points) from playerContext.
+
+    With a team: their fit starters with a match, plus the rest of the squad as `others`.
+    As a guest: the top three across everyone with a prediction, and no others.
     """
+    others = []
     if squad:
-        shortlist = _ranked_options([p['id'] for p in squad if p['starter']],
-                                    availability, predictions, fixtures, risks)
+        starters = [p['id'] for p in squad if p['starter']]
+        shortlist = _ranked_options(starters, availability, predictions, fixtures, risks, info)
+        listed = {o['id'] for o in shortlist}
+        rest = [p['id'] for p in squad if p['id'] not in listed]
+        rest.sort(key=lambda pid: _rank_key(pid, availability, predictions) if pid in availability else (True, 0, ''))
+        others = [_option(pid, availability, predictions, info) for pid in rest if pid in availability]
     else:
         shortlist = _ranked_options(list(predictions), availability, predictions,
-                                    fixtures, risks)[:GUEST_SHORTLIST]
+                                    fixtures, risks, info)[:GUEST_SHORTLIST]
     return {'state': NEEDS_LOOK,
-            'suggested': shortlist[0] if shortlist else None,
-            'vice': shortlist[1] if len(shortlist) > 1 else None,
-            'shortlist': shortlist}
+            'suggested': _leaning(shortlist[0] if shortlist else None),
+            'vice': _leaning(shortlist[1] if len(shortlist) > 1 else None),
+            'shortlist': shortlist,
+            'others': others}
 
 
 #################################################

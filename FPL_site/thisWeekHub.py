@@ -7,9 +7,13 @@ import logging
 
 from FPL_site.dataModels import connect_db, season_start
 from FPL_site.weekDecision import (
-    fetch_availability_rows, fetch_team_expected_goals_rows, fetch_fixture_rows,
-    involvement_predictions, fixtures_by_team,
+    fetch_availability_rows, fetch_fixture_rows, fixtures_by_team,
 )
+from FPL_site.playerContext import (
+    fetch_predicted_points, predicted_points_map, fetch_team_rows, fetch_recent_point_rows,
+    recent_points, option_facts,
+)
+from FPL_site.playerMomentum import fetch_upcoming_predictions, fetch_team_baselines
 from FPL_site.squadContext import get_squad_context
 from FPL_site.hubSignals import fetch_squad_history_rows, player_signals, assess_risk
 from FPL_site.hubRules import (
@@ -27,14 +31,41 @@ def hub_availability(rows):
             for r in rows}
 
 
-def build_hub(gameweek, squad_context, availability_rows, predictions, fixtures, history_rows):
+GUEST_CANDIDATES = 10   # guests see the top three; a few extra keep the list steady if one is a worry
+
+
+def candidate_ids(squad_ids, predictions):
+    """Whose summary facts the hub needs: the squad, or for a guest the best predicted."""
+    if squad_ids:
+        return list(squad_ids)
+    ranked = sorted(predictions, key=lambda pid: (-predictions[pid], pid))
+    return ranked[:GUEST_CANDIDATES]
+
+
+def _option_info(gameweek, ids, availability_rows, availability, facts):
+    element_types = {r['id']: r['element_type'] for r in availability_rows}
+    prices = {r['id']: r.get('now_cost') for r in availability_rows}
+    recent = recent_points(facts['recent_rows'], gameweek)
+    return {pid: option_facts(pid, availability, element_types, prices, gameweek, facts['upcoming'],
+                              facts['baselines'], facts['team_shorts'], recent)
+            for pid in ids if pid in availability}
+
+
+def build_hub(gameweek, squad_context, availability_rows, predictions, fixtures, history_rows,
+              facts=None):
+    """predictions: {player_id: stored predicted points}. facts: rows for the option summaries
+    (team_shorts, upcoming, baselines, recent_rows); without them options carry no summary."""
     squad = squad_context.get('squad', []) if squad_context['status'] == 'ok' else []
     availability = hub_availability(availability_rows)
     signals = player_signals(history_rows)
     risks = {p['id']: assess_risk(availability[p['id']], signals.get(p['id']), gameweek)
              for p in squad if p['id'] in availability}
     injuries = resolve_injuries(squad, availability, risks)
-    captaincy = resolve_captaincy(squad, availability, predictions, fixtures, risks)
+    info = None
+    if facts:
+        ids = candidate_ids([p['id'] for p in squad], predictions)
+        info = _option_info(gameweek, ids, availability_rows, availability, facts)
+    captaincy = resolve_captaincy(squad, availability, predictions, fixtures, risks, info)
     headline = select_headline({'squad': squad, 'availability': availability, 'fixtures': fixtures,
                                 'injuries': injuries, 'captaincy': captaincy})
     return {
@@ -59,13 +90,19 @@ def _load_week_data(gameweek, squad_ids):
     try:
         cursor = conn.cursor(dictionary=True)
         availability_rows = fetch_availability_rows(cursor, season_start)
-        predictions = involvement_predictions(availability_rows,
-                                              fetch_team_expected_goals_rows(cursor, gameweek))
+        predictions = predicted_points_map(fetch_predicted_points(cursor, gameweek))
         fixtures = fixtures_by_team(fetch_fixture_rows(cursor, season_start, gameweek))
         history_rows = fetch_squad_history_rows(cursor, season_start, squad_ids, gameweek)
+        facts = {
+            'team_shorts': {t['id']: t['short_name'] for t in fetch_team_rows(cursor, [season_start])},
+            'upcoming': fetch_upcoming_predictions(cursor, gameweek, gameweek),
+            'baselines': fetch_team_baselines(cursor),
+            'recent_rows': fetch_recent_point_rows(cursor, season_start,
+                                                   candidate_ids(squad_ids, predictions), gameweek),
+        }
     finally:
         conn.close()
-    return availability_rows, predictions, fixtures, history_rows
+    return availability_rows, predictions, fixtures, history_rows, facts
 
 
 def get_this_week_hub(gameweek, last_gameweek, team_id=None):
