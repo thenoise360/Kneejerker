@@ -22,12 +22,12 @@ FIRST_TARGET_GAMEWEEK = 6   # leave the first five gameweeks of the earliest bac
 REPORT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'superpowers', 'reports')
 
 
-def walk_forward(rows, official, targets):
+def walk_forward(rows, official, targets, require_official=True):
     out = []
     for year, gw in targets:
         past = [r for r in rows if (r['year_start'], r['gameweek']) < (year, gw)]
         now = [r for r in rows if (r['year_start'], r['gameweek']) == (year, gw)
-               and official.get((year, gw, r['player_id'])) is not None]
+               and (not require_official or official.get((year, gw, r['player_id'])) is not None)]
         if not past or not now:
             continue
         values = predict(train(past), now)
@@ -35,8 +35,8 @@ def walk_forward(rows, official, targets):
             if v != v:   # nan: no model for that position yet
                 continue
             out.append({'year_start': year, 'gameweek': gw, 'player_id': r['player_id'],
-                        'position': r['position'], 'ours': v,
-                        'official': official[(year, gw, r['player_id'])], 'actual': r['target']})
+                        'code': r.get('code'), 'position': r['position'], 'ours': v,
+                        'official': official.get((year, gw, r['player_id'])), 'actual': r['target']})
     return out
 
 
@@ -94,6 +94,26 @@ def render_report(summary, run_date):
     return '\n'.join(lines) + '\n'
 
 
+def load_replay_data(conn, cursor, years):
+    """Everything a replay needs, as it would have been known before each gameweek."""
+    history = fetch_history_rows(cursor, years)
+    snapshots = fetch_snapshot_rows(cursor, years)
+    fill_missing(conn, cursor, sorted({(h['year_start'], h['gameweek']) for h in history}))
+    rows = training_rows(history, snapshots, load_fixture_xg(cursor))
+    ids = {(s['code'], s['year_start']): s['player_id'] for s in snapshots}
+    for r in rows:
+        r['player_id'] = ids.get((r['code'], r['year_start']))
+    rows = [r for r in rows if r['player_id'] is not None]
+    official = {(s['year_start'], s['gameweek'] + 1, s['player_id']): s['ep_next']
+                for s in snapshots if s['ep_next'] is not None}
+    by_snapshot = {}
+    for s in snapshots:
+        by_snapshot.setdefault((s['year_start'], s['gameweek']), []).append(
+            {'player_id': s['player_id'], 'position': s['element_type'], 'selected': s['selected']})
+    squads = {(y, gw + 1): template_squad(group) for (y, gw), group in by_snapshot.items()}
+    return {'rows': rows, 'official': official, 'squads': squads}
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     refresh_season_start()
@@ -102,21 +122,8 @@ def main():
     try:
         cursor = conn.cursor(dictionary=True)
         years = [year - 2, year - 1, year]
-        history = fetch_history_rows(cursor, years)
-        snapshots = fetch_snapshot_rows(cursor, years)
-        fill_missing(conn, cursor, sorted({(h['year_start'], h['gameweek']) for h in history}))
-        rows = training_rows(history, snapshots, load_fixture_xg(cursor))
-        ids = {(s['code'], s['year_start']): s['player_id'] for s in snapshots}
-        for r in rows:
-            r['player_id'] = ids.get((r['code'], r['year_start']))
-        rows = [r for r in rows if r['player_id'] is not None]
-        official = {(s['year_start'], s['gameweek'] + 1, s['player_id']): s['ep_next']
-                    for s in snapshots if s['ep_next'] is not None}
-        squads = {}
-        for (y, gw) in {(s['year_start'], s['gameweek']) for s in snapshots}:
-            before = [s for s in snapshots if s['year_start'] == y and s['gameweek'] == gw]
-            squads[(y, gw + 1)] = template_squad([{'player_id': s['player_id'], 'position': s['element_type'],
-                                                   'selected': s['selected']} for s in before])
+        data = load_replay_data(conn, cursor, years)
+        rows, official, squads = data['rows'], data['official'], data['squads']
         targets = sorted({(r['year_start'], r['gameweek']) for r in rows
                           if r['year_start'] >= year - 1
                           and (r['year_start'], r['gameweek']) >= (year - 1, FIRST_TARGET_GAMEWEEK)})
