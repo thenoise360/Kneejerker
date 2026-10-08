@@ -146,3 +146,16 @@ def test_current_forecasts_and_accuracy_are_keyed_by_season():
                          datetime(2026, 10, 12), source=rec.BACKFILL)
     assert 'PRIMARY KEY (year_start, gameweek, model_version, source)' in conn.cur.calls[0][0]
     assert rec.BACKFILL in conn.cur.calls[1][1]
+
+
+def test_only_a_backfill_is_exempt_from_the_deadline():
+    late = datetime(2026, 10, 11)
+    row = [{'player_id': 1, 'code': 101, 'expected_points': 3.0, 'official_expected_points': None}]
+    assert rec.log_forecasts(FakeConn(), row, 2025, 6, datetime(2026, 10, 10), late, source='replay') == 0
+    assert rec.log_forecasts(FakeConn(), row, 2025, 6, None, late, source='replay') == 0
+
+
+def test_forecasts_with_no_value_are_never_written():
+    rows = [{'player_id': 1, 'code': 101, 'expected_points': None, 'official_expected_points': 2.0},
+            {'player_id': 2, 'code': 102, 'expected_points': 4.0, 'official_expected_points': 2.0}]
+    assert rec.log_forecasts(FakeConn(), rows, 2026, 6, datetime(2026, 10, 10), datetime(2026, 10, 8)) == 1

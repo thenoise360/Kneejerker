@@ -45,11 +45,11 @@ def is_settled(events, gameweek):
 
 
 def log_forecasts(conn, rows, year_start, gameweek, deadline, now, source=LIVE):
-    """Append forecasts to the log. LIVE ones only count if made before the deadline; a BACKFILL
+    """Append forecasts to the log. Anything but a BACKFILL only counts if made before the deadline; a BACKFILL
     replays a past season, so its deadline is ignored (pass None)."""
-    if source == LIVE and (deadline is None or now >= deadline):
+    if source != BACKFILL and (deadline is None or now >= deadline):
         return 0
-    rows = [r for r in rows if not math.isnan(r['expected_points'])]
+    rows = [r for r in rows if r['expected_points'] is not None and not math.isnan(r['expected_points'])]
     if not rows:
         return 0
     cursor = conn.cursor()
