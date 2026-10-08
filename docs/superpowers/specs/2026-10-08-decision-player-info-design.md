@@ -124,3 +124,23 @@ pytest-bdd: ranking by predicted points (including missing predictions); difficu
 exactly ±20%; `games_against` across seasons where team ids changed but codes match; route 400 on
 0 or 3 ids; route never 500. Node: row/sheet/compare renderers, escaping of names, missing-data copy,
 `statBlock` output identical for Discovery's existing inputs.
+
+## Status (2026-10-08)
+
+Built and merged on `this-week-player-info` (branched from `this-week-hub-r1`, not yet merged to
+main): backend summaries and `/api/week/player-context`, the read-only Captain and vice view, the
+player sheet and two-player compare in the Discovery style, and the switch to the official game's
+expected points (`ep_next`). pytest 552 and Node 136 passing; routes checked against the live
+database with a real team.
+
+Still to do before this ships:
+1. Look at `/this-week` (captain view, sheet, compare) and `/discovery` in a browser at 375px —
+   the compare layout, the sticky compare bar and Discovery after the CSS move are unchecked.
+2. Decide the single-match difficulty line: ±20% leaves about 13 of 20 teams "average"; ±10% is
+   the proposed alternative.
+3. Release 1's open Important (a saved team number overrides a just-typed one in `weekV2.js`).
+4. Saving the captain choice (Release 2 plan storage) and the transfers screen (Release 4) reuse
+   `optionRow.js`, `playerSheet.js` and `captainView.js`; fold this spec into the roadmap's tasks
+   2.3 and 4.5 when they are planned.
+5. Swap `fetch_expected_points` to our own model once it passes its backtest
+   (`2026-10-08-expected-points-model-design.md`).
