@@ -14,7 +14,7 @@ from FPL_site import expectedPointsBacktest
 from FPL_site.dataModels import connect_db, current_season_start, refresh_season_start
 from FPL_site.expectedPointsFeatures import MODEL_VERSION
 from FPL_site.expectedPointsModel import fetch_events
-from FPL_site.expectedPointsRecord import (BACKFILL, LOG_TABLE, accuracy_for_gameweek, forecast_of_record,
+from FPL_site.expectedPointsRecord import (BACKFILL, ACCURACY_TABLE, accuracy_for_gameweek, forecast_of_record,
                                            is_settled, log_forecasts, persist_accuracy)
 
 logger = logging.getLogger(__name__)
@@ -30,12 +30,16 @@ def replay_targets(rows, from_season, from_gameweek, settled):
 
 
 def fetch_backfilled(cursor):
+    """Gameweeks with a backfill accuracy row. The accuracy row is written last, so a gameweek whose
+    write failed part-way is retried (the log rows are INSERT IGNORE, so a retry is safe)."""
     try:
-        cursor.execute(f"SELECT DISTINCT year_start, gameweek FROM {LOG_TABLE} "
+        cursor.execute(f"SELECT DISTINCT year_start, gameweek FROM {ACCURACY_TABLE} "
                        f"WHERE source = %s AND model_version = %s", (BACKFILL, MODEL_VERSION))
         return {(r['year_start'], r['gameweek']) for r in cursor.fetchall()}
-    except Exception:
-        return set()   # the log table is created on the first write
+    except Exception as e:
+        logger.warning("expected points backfill: could not read the accuracy table (%s); "
+                       "treating nothing as backfilled.", type(e).__name__)
+        return set()   # the accuracy table is created on the first write
 
 
 def backfill(conn, data, targets, done, now):
