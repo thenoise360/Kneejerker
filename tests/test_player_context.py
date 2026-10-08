@@ -98,7 +98,7 @@ def player_data(**overrides):
              'opponent_team': 14, 'was_home': 0, 'minutes': 90, 'goals_scored': 0, 'assists': 1, 'total_points': 8},
             {'year_start': 2025, 'element': 78, 'fixture': 51, 'round': 12, 'kickoff_time': '2025-11-20',
              'opponent_team': 14, 'was_home': 0, 'minutes': 90, 'goals_scored': 0, 'assists': 1, 'total_points': 99}],
-        'momentum': {1: {'label': 'Rising', 'signals_json': json.dumps([{'key': 'fixtures', 'direction': 'up'}])}},
+        'momentum': {1: {'label': 'Rising', 'reason': 'Rising: easier fixtures ahead', 'signals_json': json.dumps([{'key': 'fixtures', 'direction': 'up'}])}},
     }
     data.update(overrides)
     return data
@@ -113,7 +113,7 @@ def test_build_player_context_matches_the_agreed_shape():
     assert p['predicted_points'] == 7.4 and p['position_average_predicted_points'] == 4.7
     assert p['recent_games'] == [{'gameweek': 1, 'opponent_short': 'WOL', 'is_home': False,
                                   'minutes': 90, 'goals': 2, 'assists': 0, 'points': 13}]
-    assert p['momentum'] == {'label': 'Rising', 'signals': [{'key': 'fixtures', 'direction': 'up'}]}
+    assert p['momentum'] == {'label': 'Rising', 'reason': 'Rising: easier fixtures ahead', 'signals': [{'key': 'fixtures', 'direction': 'up'}]}
     assert [f['gameweek'] for f in p['next_fixtures']] == [6, 7, 8]
     assert p['next_fixtures'][0] == {'gameweek': 6, 'opponent_short': 'BOU', 'is_home': True, 'difficulty': 'easier'}
     # Last season's club had a different id but the same code; only this player's games count.

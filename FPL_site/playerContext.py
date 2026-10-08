@@ -119,7 +119,7 @@ def fetch_recent_point_rows(cursor, year_start, element_ids, before_gameweek):
 def fetch_momentum_row(cursor, player_id):
     """The stored momentum for one player, or None (also when the table doesn't exist yet)."""
     try:
-        cursor.execute("SELECT label, signals_json FROM player_momentum WHERE player_id = %s",
+        cursor.execute("SELECT label, reason, signals_json FROM player_momentum WHERE player_id = %s",
                        (player_id,))
         return cursor.fetchone()
     except Exception as e:
@@ -272,7 +272,8 @@ def games_against(history_rows, team_rows, opponent_code):
 def momentum_view(row):
     if not row:
         return None
-    return {'label': row['label'], 'signals': json.loads(row.get('signals_json') or '[]')}
+    return {'label': row['label'], 'reason': row.get('reason'),
+            'signals': json.loads(row.get('signals_json') or '[]')}
 
 
 def build_player_context(gameweek, data):
