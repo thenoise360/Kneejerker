@@ -1956,3 +1956,426 @@ picks are not available from the official game, so both the backtest and the wee
 **most-selected template squad** each gameweek (2 goalkeepers, 5 defenders, 5 midfielders,
 3 forwards, by ownership in the snapshot before the gameweek). It is the same for both numbers, so
 the comparison stays fair, and it needs no live API calls.
+
+---
+
+## Amendment (2026-10-08): seasons on every row, and backfilling past seasons
+
+Spec section "Amendment 2026-10-08". Two tasks, run after Task 6. Nothing has been written to
+MySQL by this branch yet, so the table definitions change in place (no migration).
+
+### Task 7: Season and source on every stored forecast
+
+**Files:**
+- Modify: `FPL_site/expectedPointsRecord.py`
+- Modify: `FPL_site/expectedPointsModel.py` (`fetch_log_rows`, `fetch_recorded_gameweeks`, `record_settled_gameweeks`, `run_daily_expected_points`)
+- Modify tests: `tests/test_expected_points_record_rules.py`, `tests/step_defs/test_expected_points_record.py`, `features/expected_points/weekly_record.feature`, `tests/test_expected_points_daily.py`
+
+**Interfaces (new signatures; update every caller and test):**
+- `LIVE = 'live'`, `BACKFILL = 'backfill'` (module constants in `expectedPointsRecord`)
+- `log_forecasts(conn, rows, year_start, gameweek, deadline, now, source=LIVE) -> int` — for `LIVE`, returns 0 when `deadline is None or now >= deadline`; for `BACKFILL` the deadline is ignored (pass `None`). Rows whose `expected_points` is nan are dropped first; empty `rows` → 0. Table:
+  ```sql
+  CREATE TABLE IF NOT EXISTS expected_points_log (
+      year_start INT NOT NULL,
+      player_id INT NOT NULL,
+      code INT NOT NULL,
+      gameweek INT NOT NULL,
+      expected_points FLOAT,
+      official_expected_points FLOAT,
+      model_version VARCHAR(40) NOT NULL,
+      source VARCHAR(10) NOT NULL,
+      logged_at DATETIME NOT NULL,
+      log_date DATE NOT NULL,
+      PRIMARY KEY (year_start, player_id, gameweek, model_version, source, log_date)
+  )
+  ```
+  Insert tuple order: `(year_start, player_id, code, gameweek, expected_points, official_expected_points, model_version, source, logged_at, log_date)`.
+- `forecast_of_record(log_rows, deadline, source=LIVE) -> {player_id: row}` — `LIVE`: latest row with `logged_at < deadline` (as now). `BACKFILL`: latest row regardless of deadline (`deadline` may be `None`).
+- `persist_accuracy(conn, gameweek, year_start, result, now, source=LIVE)` — table gains `source VARCHAR(10) NOT NULL` after `model_version`; primary key `(year_start, gameweek, model_version, source)`; `REPLACE INTO` includes `source` right after `model_version`.
+- `persist_current(conn, rows, year_start, now)` — table gains `year_start INT NOT NULL` as its first column; primary key `(year_start, player_id, gameweek)`; insert tuple starts with `year_start`.
+- `expectedPointsModel.fetch_log_rows(cursor, year_start, gameweek, source=LIVE)` — `WHERE year_start = %s AND gameweek = %s AND model_version = %s AND source = %s`, params `(year_start, gameweek, MODEL_VERSION, source)`.
+- `expectedPointsModel.fetch_recorded_gameweeks(cursor, year_start, source=LIVE)` — adds `AND source = %s`.
+- `record_settled_gameweeks(conn, cursor, events, year_start, now)` — unchanged signature; passes `year_start` and `LIVE` to the readers and writers.
+- `run_daily_expected_points` — `persist_current(conn, forecasts, year, now)`; `log_forecasts(conn, forecasts, year, gameweek, deadline_for(events, gameweek), now)`.
+
+- [ ] **Step 1: Write the failing tests** (add to `tests/test_expected_points_record_rules.py`):
+
+```python
+def test_every_logged_row_carries_its_season_and_source():
+    conn = FakeConn()
+    rec.log_forecasts(conn, [{'player_id': 1, 'code': 101, 'expected_points': 3.0,
+                              'official_expected_points': 2.5}], 2026, 6,
+                      datetime(2026, 10, 10, 10), datetime(2026, 10, 8, 6))
+    create_sql = conn.cur.calls[0][0]
+    insert_sql, records = conn.cur.calls[1]
+    assert 'PRIMARY KEY (year_start, player_id, gameweek, model_version, source, log_date)' in create_sql
+    assert records[0][0] == 2026
+    assert records[0][7] == rec.LIVE
+
+
+def test_a_backfill_is_logged_after_the_deadline_but_a_live_forecast_is_not():
+    late = datetime(2026, 10, 11)
+    row = [{'player_id': 1, 'code': 101, 'expected_points': 3.0, 'official_expected_points': None}]
+    assert rec.log_forecasts(FakeConn(), row, 2025, 6, datetime(2026, 10, 10), late) == 0
+    conn = FakeConn()
+    assert rec.log_forecasts(conn, row, 2025, 6, None, late, source=rec.BACKFILL) == 1
+    assert conn.cur.calls[1][1][0][7] == rec.BACKFILL
+
+
+def test_nan_forecasts_are_never_written():
+    conn = FakeConn()
+    rows = [{'player_id': 1, 'code': 101, 'expected_points': float('nan'), 'official_expected_points': 2.0},
+            {'player_id': 2, 'code': 102, 'expected_points': 4.0, 'official_expected_points': 2.0}]
+    assert rec.log_forecasts(conn, rows, 2026, 6, datetime(2026, 10, 10), datetime(2026, 10, 8)) == 1
+
+
+def test_the_backfill_record_ignores_the_deadline():
+    rows = [{'player_id': 1, 'expected_points': 4.0, 'logged_at': datetime(2026, 10, 9)}]
+    assert rec.forecast_of_record(rows, None, source=rec.BACKFILL)[1]['expected_points'] == 4.0
+
+
+def test_current_forecasts_and_accuracy_are_keyed_by_season():
+    conn = FakeConn()
+    rec.persist_current(conn, [{'player_id': 1, 'code': 101, 'gameweek': 6, 'expected_points': 3.0}],
+                        2026, datetime(2026, 10, 8))
+    assert 'PRIMARY KEY (year_start, player_id, gameweek)' in conn.cur.calls[0][0]
+    assert conn.cur.calls[1][1][0][0] == 2026
+    conn = FakeConn()
+    rec.persist_accuracy(conn, 6, 2025, {'players': 1, 'mae_ours': 1.0, 'mae_official': 2.0,
+                                         'mae_by_position': {}, 'captain_ours': 1, 'captain_official': 2,
+                                         'captain_ours_points': 5, 'captain_official_points': 3},
+                         datetime(2026, 10, 12), source=rec.BACKFILL)
+    assert 'PRIMARY KEY (year_start, gameweek, model_version, source)' in conn.cur.calls[0][0]
+    assert rec.BACKFILL in conn.cur.calls[1][1]
+```
+
+and to `tests/test_expected_points_daily.py`:
+
+```python
+def test_reading_the_log_filters_by_season_and_source():
+    seen = []
+
+    class Cur:
+        def execute(self, sql, params=None):
+            seen.append((sql, params))
+
+        def fetchall(self):
+            return []
+
+    em.fetch_log_rows(Cur(), 2026, 6)
+    sql, params = seen[0]
+    assert 'year_start = %s' in sql and 'source = %s' in sql
+    assert params == (2026, 6, em.MODEL_VERSION, 'live')
+```
+
+- [ ] **Step 2: Run to see them fail.** `vs-env/Scripts/python.exe -m pytest -q tests/test_expected_points_record_rules.py tests/test_expected_points_daily.py` — expected: FAIL (`AttributeError: ... 'LIVE'` or a signature error).
+
+- [ ] **Step 3: Implement** the signatures above in `expectedPointsRecord.py` and `expectedPointsModel.py`. Update the existing tests and step definitions to the new signatures (pass `2026` as `year_start`; the monkeypatched `persist_current` / `log_forecasts` lambdas in `tests/test_expected_points_daily.py` take the new parameters). In `features/expected_points/weekly_record.feature` add:
+
+```gherkin
+  Scenario: Every forecast is stored with its season
+    Given the gameweek 6 deadline is tomorrow
+    When the daily job logs 3 forecasts for the 2026 season
+    Then every logged row is for the 2026 season
+```
+with step definitions in `tests/step_defs/test_expected_points_record.py` that keep the `FakeConn`, call `rec.log_forecasts(conn, rows, 2026, 6, ctx['deadline'], NOW)` and assert `record[0] == 2026` for every inserted record.
+
+- [ ] **Step 4: Run the whole suite.** `vs-env/Scripts/python.exe -m pytest -q` — expected: all PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git checkout -- FPL_site/__pycache__ 2>/dev/null; git add FPL_site/expectedPointsRecord.py FPL_site/expectedPointsModel.py features/expected_points/weekly_record.feature tests/step_defs/test_expected_points_record.py tests/test_expected_points_record_rules.py tests/test_expected_points_daily.py && git commit -m "Store every forecast with its season and whether it was live or replayed
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 8: Backfill past seasons with the data available at the time
+
+**Files:**
+- Modify: `FPL_site/expectedPointsBacktest.py` (extract `load_replay_data`; `walk_forward` gains `require_official` and returns `code`)
+- Create: `FPL_site/expectedPointsBackfill.py`
+- Create: `features/expected_points/backfill.feature`, `tests/step_defs/test_expected_points_backfill_steps.py`
+- Test: `tests/test_expected_points_backfill.py`
+
+**Interfaces:**
+- Consumes (Task 7): `log_forecasts(..., source=BACKFILL)`, `forecast_of_record(..., source=BACKFILL)`, `persist_accuracy(..., source=BACKFILL)`, `LOG_TABLE`, `BACKFILL`; Task 6: `walk_forward`; Task 4: `template_squad`, `accuracy_for_gameweek`, `is_settled`; Task 5: `fetch_events`.
+- Produces:
+  - `expectedPointsBacktest.walk_forward(rows, official, targets, require_official=True) -> list` — every output row gains `'code'`; with `require_official=False`, rows without an official number are kept with `'official': None`.
+  - `expectedPointsBacktest.load_replay_data(conn, cursor, years) -> dict` with `rows` (training rows with `player_id`), `official` (`{(year, gw, player_id): ep_next}` from snapshot gw − 1), `squads` (`{(year, gw): [player_id]}` from snapshot gw − 1). `main()` uses it.
+  - `expectedPointsBackfill.replay_targets(rows, from_season, from_gameweek, settled) -> list[(year, gw)]`.
+  - `expectedPointsBackfill.fetch_backfilled(cursor) -> set[(year, gw)]` (empty when the log table doesn't exist yet).
+  - `expectedPointsBackfill.backfill(conn, data, targets, done, now) -> int` — gameweeks written.
+  - `expectedPointsBackfill.main(argv=None)` — `--from-season` (default current season − 2), `--from-gameweek` (default 6). Past seasons count as settled; a current-season gameweek only if `is_settled(fetch_events(), gw)` (official API down → current season skipped, past seasons still run).
+
+- [ ] **Step 1: Write the behaviour scenarios** — `features/expected_points/backfill.feature`:
+
+```gherkin
+Feature: Past seasons can be replayed with only the data available at the time
+
+  Scenario: A replayed gameweek is forecast by a model trained only on earlier gameweeks
+    Given stored history for 2025 gameweeks 1 to 8
+    When I backfill from 2025 gameweek 6
+    Then gameweek 6 was forecast by a model trained on gameweeks 1 to 5
+    And gameweek 8 was forecast by a model trained on gameweeks 1 to 7
+
+  Scenario: Replayed forecasts are stored as backfill with their season
+    Given stored history for 2025 gameweeks 1 to 8
+    When I backfill from 2025 gameweek 6
+    Then the log holds 2025 forecasts for gameweeks 6, 7 and 8 marked as backfill
+    And an accuracy row marked as backfill exists for each of those gameweeks
+
+  Scenario: Running the backfill again adds nothing new
+    Given stored history for 2025 gameweeks 1 to 8
+    And gameweeks 6 and 7 of 2025 were already backfilled
+    When I backfill from 2025 gameweek 6
+    Then only gameweek 8 is written
+```
+
+- [ ] **Step 2: Write the step definitions** — `tests/step_defs/test_expected_points_backfill_steps.py`:
+
+```python
+import os
+os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
+from datetime import datetime
+
+import pytest
+from pytest_bdd import given, parsers, scenarios, then, when
+
+from FPL_site import expectedPointsBackfill as bf
+from FPL_site import expectedPointsBacktest as bt
+
+scenarios('expected_points/backfill.feature')
+
+
+@pytest.fixture
+def ctx(monkeypatch):
+    c = {'trained_on': [], 'logged': [], 'accuracy': [], 'done': set()}
+    monkeypatch.setattr(bt, 'train', lambda rows: c['trained_on'].append(
+        sorted({r['gameweek'] for r in rows})) or {})
+    monkeypatch.setattr(bt, 'predict', lambda models, rows: [3.0] * len(rows))
+    monkeypatch.setattr(bf, 'log_forecasts', lambda conn, rows, year, gw, deadline, now, source:
+                        c['logged'].append((year, gw, source, len(rows))) or len(rows))
+    monkeypatch.setattr(bf, 'persist_accuracy', lambda conn, gw, year, result, now, source:
+                        c['accuracy'].append((year, gw, source)))
+    return c
+
+
+@given(parsers.parse('stored history for {year:d} gameweeks 1 to {last:d}'))
+def _history(ctx, year, last):
+    rows = [{'year_start': year, 'gameweek': gw, 'player_id': pid, 'code': 100 + pid, 'position': 3,
+             'target': 2} for gw in range(1, last + 1) for pid in (1, 2)]
+    ctx['data'] = {'rows': rows,
+                   'official': {(year, gw, pid): 2.5 for gw in range(1, last + 1) for pid in (1, 2)},
+                   'squads': {(year, gw): [1, 2] for gw in range(1, last + 1)}}
+
+
+@given(parsers.parse('gameweeks 6 and 7 of {year:d} were already backfilled'))
+def _done(ctx, year):
+    ctx['done'] = {(year, 6), (year, 7)}
+
+
+@when(parsers.parse('I backfill from {year:d} gameweek {gw:d}'))
+def _backfill(ctx, year, gw):
+    targets = bf.replay_targets(ctx['data']['rows'], year, gw, lambda y, g: True)
+    ctx['written'] = bf.backfill(object(), ctx['data'], targets, ctx['done'], datetime(2026, 10, 9))
+
+
+@then(parsers.parse('gameweek {gw:d} was forecast by a model trained on gameweeks 1 to {last:d}'))
+def _trained(ctx, gw, last):
+    assert list(range(1, last + 1)) in ctx['trained_on']
+
+
+@then(parsers.parse('the log holds {year:d} forecasts for gameweeks 6, 7 and 8 marked as backfill'))
+def _logged(ctx, year):
+    assert [(y, g, s) for y, g, s, _ in ctx['logged']] == [(year, 6, 'backfill'), (year, 7, 'backfill'),
+                                                           (year, 8, 'backfill')]
+
+
+@then('an accuracy row marked as backfill exists for each of those gameweeks')
+def _accuracy(ctx):
+    assert [g for _, g, s in ctx['accuracy'] if s == 'backfill'] == [6, 7, 8]
+
+
+@then(parsers.parse('only gameweek {gw:d} is written'))
+def _only(ctx, gw):
+    assert ctx['written'] == 1
+    assert [g for _, g, _, _ in ctx['logged']] == [gw]
+```
+
+Note: `expectedPointsBackfill` must call `walk_forward` through the `expectedPointsBacktest` module (which looks up `train`/`predict` as its own module globals), so the monkeypatches on `bt.train` / `bt.predict` take effect. `bf.log_forecasts` and `bf.persist_accuracy` are patched on the backfill module, so import them there by name and call them by that name.
+
+- [ ] **Step 3: Unit tests** — `tests/test_expected_points_backfill.py`:
+
+```python
+import os
+os.environ.setdefault('KJ_SKIP_DB_INIT', '1')
+
+from FPL_site import expectedPointsBackfill as bf
+from FPL_site import expectedPointsBacktest as bt
+
+
+def test_targets_start_at_the_chosen_gameweek_and_skip_unsettled_ones():
+    rows = [{'year_start': y, 'gameweek': g} for y in (2024, 2025) for g in (1, 5, 6, 38)]
+    settled = lambda y, g: not (y == 2025 and g == 38)
+    assert bf.replay_targets(rows, 2024, 6, settled) == [(2024, 6), (2024, 38), (2025, 1), (2025, 5), (2025, 6)]
+
+
+def test_walk_forward_can_keep_players_without_an_official_number(monkeypatch):
+    monkeypatch.setattr(bt, 'train', lambda rows: {})
+    monkeypatch.setattr(bt, 'predict', lambda models, rows: [1.0] * len(rows))
+    rows = [{'year_start': 2025, 'gameweek': g, 'player_id': 1, 'code': 9, 'position': 3, 'target': 2}
+            for g in (1, 2)]
+    kept = bt.walk_forward(rows, {}, [(2025, 2)], require_official=False)
+    assert kept == [{'year_start': 2025, 'gameweek': 2, 'player_id': 1, 'code': 9, 'position': 3,
+                     'ours': 1.0, 'official': None, 'actual': 2}]
+    assert bt.walk_forward(rows, {}, [(2025, 2)]) == []
+
+
+class Missing:
+    def execute(self, sql, params=None):
+        raise RuntimeError("Table 'expected_points_log' doesn't exist")
+
+
+def test_nothing_backfilled_yet_when_the_log_table_is_missing():
+    assert bf.fetch_backfilled(Missing()) == set()
+```
+
+- [ ] **Step 4: Run to see them fail.** `vs-env/Scripts/python.exe -m pytest -q tests/step_defs/test_expected_points_backfill_steps.py tests/test_expected_points_backfill.py` — expected: FAIL (`ModuleNotFoundError: ... expectedPointsBackfill`).
+
+- [ ] **Step 5: Implement.** In `expectedPointsBacktest.py`: add `require_official=True` to `walk_forward` (filter on the official number only when it is true; each output row gets `'code': r['code']` and `'official': official.get((year, gw, r['player_id']))`), and move the data loading out of `main()` into:
+
+```python
+def load_replay_data(conn, cursor, years):
+    """Everything a replay needs, as it would have been known before each gameweek."""
+    history = fetch_history_rows(cursor, years)
+    snapshots = fetch_snapshot_rows(cursor, years)
+    fill_missing(conn, cursor, sorted({(h['year_start'], h['gameweek']) for h in history}))
+    rows = training_rows(history, snapshots, load_fixture_xg(cursor))
+    ids = {(s['code'], s['year_start']): s['player_id'] for s in snapshots}
+    for r in rows:
+        r['player_id'] = ids.get((r['code'], r['year_start']))
+    rows = [r for r in rows if r['player_id'] is not None]
+    official = {(s['year_start'], s['gameweek'] + 1, s['player_id']): s['ep_next']
+                for s in snapshots if s['ep_next'] is not None}
+    by_snapshot = {}
+    for s in snapshots:
+        by_snapshot.setdefault((s['year_start'], s['gameweek']), []).append(
+            {'player_id': s['player_id'], 'position': s['element_type'], 'selected': s['selected']})
+    squads = {(y, gw + 1): template_squad(group) for (y, gw), group in by_snapshot.items()}
+    return {'rows': rows, 'official': official, 'squads': squads}
+```
+`main()` then calls `data = load_replay_data(conn, cursor, years)` and uses `data['rows']`, `data['official']`, `data['squads']`.
+
+Create `FPL_site/expectedPointsBackfill.py`:
+
+```python
+"""Replay past gameweeks into the weekly record, with only the data available at the time.
+
+Run by hand: python -m FPL_site.expectedPointsBackfill [--from-season 2024] [--from-gameweek 6]
+Each gameweek is forecast by a model trained only on earlier gameweeks, from the snapshot taken
+after the gameweek before and the match engine fitted as of then (expectedPointsBacktest.walk_forward).
+Rows are stored with source 'backfill' so they never mix with the live, pre-deadline record.
+Re-running adds nothing for gameweeks already backfilled by this model version.
+"""
+import argparse
+import logging
+from datetime import datetime
+
+from FPL_site import expectedPointsBacktest
+from FPL_site.dataModels import connect_db, current_season_start, refresh_season_start
+from FPL_site.expectedPointsFeatures import MODEL_VERSION
+from FPL_site.expectedPointsModel import fetch_events
+from FPL_site.expectedPointsRecord import (BACKFILL, LOG_TABLE, accuracy_for_gameweek, forecast_of_record,
+                                           is_settled, log_forecasts, persist_accuracy)
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_FROM_GAMEWEEK = 6
+SEASONS_BACK = 2
+
+
+def replay_targets(rows, from_season, from_gameweek, settled):
+    return sorted({(r['year_start'], r['gameweek']) for r in rows
+                   if (r['year_start'], r['gameweek']) >= (from_season, from_gameweek)
+                   and settled(r['year_start'], r['gameweek'])})
+
+
+def fetch_backfilled(cursor):
+    try:
+        cursor.execute(f"SELECT DISTINCT year_start, gameweek FROM {LOG_TABLE} "
+                       f"WHERE source = %s AND model_version = %s", (BACKFILL, MODEL_VERSION))
+        return {(r['year_start'], r['gameweek']) for r in cursor.fetchall()}
+    except Exception:
+        return set()   # the log table is created on the first write
+
+
+def backfill(conn, data, targets, done, now):
+    written = 0
+    for year, gw in targets:
+        if (year, gw) in done:
+            continue
+        results = expectedPointsBacktest.walk_forward(data['rows'], data['official'], [(year, gw)],
+                                                      require_official=False)
+        if not results:
+            continue
+        forecasts = [{'player_id': r['player_id'], 'code': r['code'], 'expected_points': r['ours'],
+                      'official_expected_points': r['official']} for r in results]
+        log_forecasts(conn, forecasts, year, gw, None, now, source=BACKFILL)
+        record = forecast_of_record([dict(f, logged_at=now) for f in forecasts], None, source=BACKFILL)
+        position = {r['player_id']: r['position'] for r in results}
+        for pid, row in record.items():
+            row['position'] = position.get(pid)
+        actual = {r['player_id']: r['actual'] for r in results}
+        result = accuracy_for_gameweek(record, actual, data['squads'].get((year, gw), []), set(actual))
+        persist_accuracy(conn, gw, year, result, now, source=BACKFILL)
+        written += 1
+        logger.info("Backfilled %s gameweek %s: ours %s, official %s.",
+                    year, gw, result['mae_ours'], result['mae_official'])
+    return written
+
+
+def main(argv=None):
+    logging.basicConfig(level=logging.INFO)
+    refresh_season_start()
+    year = current_season_start()
+    parser = argparse.ArgumentParser(description='Replay past gameweeks into the expected points record.')
+    parser.add_argument('--from-season', type=int, default=year - SEASONS_BACK)
+    parser.add_argument('--from-gameweek', type=int, default=DEFAULT_FROM_GAMEWEEK)
+    args = parser.parse_args(argv)
+    events = fetch_events()
+
+    def settled(y, gw):
+        if y < year:
+            return True
+        return events is not None and is_settled(events, gw)
+
+    conn = connect_db()
+    try:
+        cursor = conn.cursor(dictionary=True)
+        data = expectedPointsBacktest.load_replay_data(
+            conn, cursor, [year - i for i in range(SEASONS_BACK, -1, -1)])
+        targets = replay_targets(data['rows'], args.from_season, args.from_gameweek, settled)
+        written = backfill(conn, data, targets, fetch_backfilled(cursor), datetime.utcnow())
+    finally:
+        conn.close()
+    print(f'Backfilled {written} gameweeks with model {MODEL_VERSION}.')
+
+
+if __name__ == '__main__':
+    main()
+```
+
+- [ ] **Step 6: Run to see them pass, then the whole suite.** `vs-env/Scripts/python.exe -m pytest -q` — expected: all PASS (the Task 6 backtest tests still pass: `walk_forward`'s default keeps its old filtering; output rows only gain keys).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git checkout -- FPL_site/__pycache__ 2>/dev/null; git add FPL_site/expectedPointsBacktest.py FPL_site/expectedPointsBackfill.py features/expected_points/backfill.feature tests/step_defs/test_expected_points_backfill_steps.py tests/test_expected_points_backfill.py && git commit -m "Replay past seasons into the record with only the data available at the time
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 8 (controller): run it for real** after the backtest: `vs-env/Scripts/python.exe -m FPL_site.expectedPointsBackfill` (writes `expected_points_log` and `expected_points_accuracy` rows with `source = 'backfill'`; reads the official events API once).
