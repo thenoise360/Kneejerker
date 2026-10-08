@@ -89,10 +89,39 @@ backtest, not searched per run.
 - New table `player_expected_points` (`player_id`, `code`, `gameweek`, `expected_points`,
   `model_version`, `computed_at`; primary key `player_id, gameweek`), keyed by the gameweek the
   forecast is **for** (not the one it was made in).
+- No fitting in any request path.
+
+## Weekly record: how accurate were we? (user requirement 2026-10-08)
+
+Every gameweek's forecasts are kept forever so we can look back and say how accurate we were.
+Same honesty rule as the match engine's `fixture_prediction_log`: only forecasts made **before
+the gameweek's deadline** count.
+
+- **`expected_points_log`** (append-only, never updated or deleted): `player_id`, `code`,
+  `gameweek` (the gameweek forecast), `expected_points` (ours), `official_expected_points`
+  (`ep_next` from the same day's snapshot, so the comparison is like for like), `model_version`,
+  `logged_at`, `log_date`. Primary key `player_id, gameweek, model_version, log_date`, written with
+  `INSERT IGNORE`, so re-running the job on the same day changes nothing. The daily job only logs
+  when `now` is before that gameweek's deadline (`deadline_time` from the official `bootstrap-static` events, read the same way as `dataModels.get_gameweek_state`; the daily job already calls that API).
+- **The forecast of record** for a gameweek is each player's latest log row before the deadline
+  (pure `forecast_of_record(log_rows, deadline)`).
+- **`expected_points_accuracy`**: one row per gameweek per model version, written by the daily job
+  once every fixture in that gameweek is finished and bonus is confirmed. Holds the number of
+  players, our mean absolute error, the official number's mean absolute error over the same
+  players, both per position too (as JSON), and the captain test for that week (the fixed sample
+  squads: how often our top pick outscored the official one, and the reverse). Pure
+  `accuracy_for_gameweek(record, actual_points, squads)`. Recomputed rows replace the previous
+  row for that gameweek and version (actual points can be corrected after the fact).
+- The log starts recording from the first daily run, while the app still shows the official
+  number, so the real season builds up its own track record alongside the backtest.
+- Showing this record to managers (for example in Last week or the prediction-log area) is a later
+  piece of work; this spec only stores and computes it.
+
+## Daily job wiring
+
 - `run_update.py` calls `run_daily_expected_points()` and stops calling `run_daily_predictions()`.
   `futurePerformanceModel.py` and `player_predictions` are left in place, unused, and removed in a
   later clean-up once nothing references them.
-- No fitting in any request path.
 
 ## Switch-over
 
@@ -118,3 +147,6 @@ pytest-bdd `features/expected_points/`, never touching MySQL or the live API:
 
 Multi-gameweek forecasts, transfer recommendations from this model, removing
 `futurePerformanceModel.py`, any user-facing change before the backtest passes.
+- weekly record: a log row written after the deadline is refused; same-day reruns add nothing;
+  the forecast of record is the latest pre-deadline row; accuracy is only computed for finished
+  gameweeks and is replaced (not duplicated) on recompute.
