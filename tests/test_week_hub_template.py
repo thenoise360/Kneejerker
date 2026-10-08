@@ -11,8 +11,10 @@ import FPL_site.views as views
 STATE = {'this_week': {'mode': 'upcoming', 'gameweek': 6, 'deadline': '2026-10-10T10:00:00Z'},
          'last_week': {'status': 'final', 'gameweek': 5, 'deadline': '2026-10-03T10:00:00Z'}}
 
-OPTION = {'id': 2, 'name': 'Haaland', 'expected_involvement': 1.4,
-          'fixture': {'opponent': 'Burnley', 'is_home': False, 'difficulty': 2}}
+OPTION = {'id': 2, 'name': 'Haaland', 'team_short': 'MCI', 'position': 'Forward', 'price': 145,
+          'expected_points': 7.4,
+          'this_week': {'opponent_short': 'BOU', 'is_home': False, 'difficulty': 'easier'},
+          'recent_points': [2, 13, 6, 2, 9]}
 VICE = dict(OPTION, id=3, name='Salah')
 
 
@@ -27,7 +29,7 @@ def hub(**overrides):
                      'reasons': [{'key': 'official_doubt', 'chance': 25, 'news': 'Knock'}]}]},
                 'transfers': {'state': 'not_ready'}, 'chips': {'state': 'not_ready'},
                 'captaincy': {'state': 'needs_look', 'suggested': OPTION, 'vice': VICE,
-                              'shortlist': [OPTION, VICE]}}}
+                              'shortlist': [OPTION, VICE], 'others': []}}}
     base.update(overrides)
     return base
 

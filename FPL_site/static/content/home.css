@@ -779,3 +779,51 @@
 .hub-badge--decided { background: #1d7a70; color: #fff; }
 .hub-badge--needs_team { background: var(--offwhite); color: var(--plum); border: 1.5px solid var(--plum); }
 .hub-row[data-state="nothing_to_do"] { background: var(--offwhite); box-shadow: none; }
+
+/* Captain and vice view, player sheet and compare (shown in the global bottom sheet). */
+.hub-row--tappable { cursor: pointer; }
+.hub-row--tappable:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.hub-row-more { display: inline-block; margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--plum); }
+
+.captain-view, .player-sheet { min-width: 0; overflow-wrap: anywhere; }
+.player-sheet-name { margin: 0 0 4px; font-size: 20px; color: var(--charcoal); }
+.player-sheet-predicted { margin: 4px 0 8px; font-weight: 700; }
+.sheet-topbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.sheet-topbar:has(.sheet-close[data-action="back"]) { justify-content: flex-start; }
+.sheet-close { background: none; border: none; padding: 8px 4px; min-height: 44px; font-weight: 700; font-size: 14px; color: var(--plum); cursor: pointer; }
+.sheet-section { margin-top: 16px; }
+.sheet-section-title { margin: 16px 0 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--black-60); }
+.sheet-section > .sheet-section-title { margin-top: 0; }
+.sheet-list { list-style: none; margin: 0; padding: 0; }
+.sheet-list li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--black-10); font-size: 14px; }
+.sheet-list li:last-child { border-bottom: none; }
+.sheet-list-detail { display: block; font-size: 12px; }
+.sheet-list strong { white-space: nowrap; }
+
+.option-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.option-row { display: flex; justify-content: space-between; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--black-10); }
+.option-row--selected { background: var(--offwhite); box-shadow: inset 3px 0 0 var(--teal); padding-left: 10px; }
+.option-main { min-width: 0; flex: 1; }
+.option-name { background: none; border: none; padding: 0; min-height: 28px; font-weight: 700; font-size: 16px; color: var(--charcoal); text-decoration: underline; text-underline-offset: 3px; text-align: left; cursor: pointer; }
+.option-badge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 100px; background: var(--plum); color: #fff; font-size: 11px; font-weight: 700; vertical-align: middle; }
+.option-meta, .option-fixture, .option-note { font-size: 13px; color: var(--black-70); }
+.option-points { font-size: 14px; font-weight: 700; color: var(--charcoal); margin-top: 2px; }
+.option-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+.option-compare { min-height: 44px; min-width: 88px; padding: 6px 12px; border-radius: 100px; border: 1.5px solid var(--plum); background: #fff; color: var(--plum); font-weight: 700; font-size: 13px; cursor: pointer; }
+.option-compare[aria-pressed="true"] { background: var(--plum); color: #fff; }
+
+/* Five bars, one per recent game, drawn with CSS only. */
+.form-strip { display: flex; align-items: flex-end; gap: 3px; height: 28px; width: 44px; }
+.form-bar { flex: 1; background: var(--teal); border-radius: 2px 2px 0 0; min-height: 2px; }
+.form-strip--empty { background: var(--black-10); height: 2px; align-self: center; }
+
+.compare-bar { position: sticky; bottom: -20px; background: #fff; padding: 12px 0 4px; margin-top: 8px; border-top: 1px solid var(--black-10); text-align: center; }
+.compare-bar .sub { margin: 0; }
+.compare-bar .btn-pill { width: 100%; }
+.compare-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.compare-col { min-width: 0; }
+.compare-col-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.compare-col-name .chart-legend-dot { margin-right: 6px; }
+.compare-fixtures { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.compare-fixtures li { padding: 6px 0; border-bottom: 1px solid var(--black-10); }
+.player-compare .mp-stat-list { margin-top: 8px; }

@@ -25,11 +25,16 @@ function badge(state) {
     return `<span class="hub-badge hub-badge--${escapeHtml(state)}"><span aria-hidden="true">${icon}</span> ${label}</span>`;
 }
 
+// The captain row opens the options view when there is a lean to look into.
+// The page script listens for clicks on rows marked data-opens.
 function row(key, decision) {
+    const opens = key === 'captaincy' && decision.suggested;
+    const attrs = opens ? ' data-opens="captain" role="button" tabindex="0"' : '';
+    const more = opens ? '<span class="hub-row-more">See the options</span>' : '';
     return `
-        <li class="card hub-row" data-key="${key}" data-state="${escapeHtml(decision.state)}">
+        <li class="card hub-row${opens ? ' hub-row--tappable' : ''}" data-key="${key}" data-state="${escapeHtml(decision.state)}"${attrs}>
             <div class="hub-row-head"><span class="hub-row-title">${TITLES[key]}</span>${badge(decision.state)}</div>
-            <p class="sub">${escapeHtml(rowSentence(key, decision))}</p>
+            <p class="sub">${escapeHtml(rowSentence(key, decision))}</p>${more}
         </li>`;
 }
 

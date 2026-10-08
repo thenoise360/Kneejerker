@@ -49,14 +49,45 @@ def test_guest_captaincy_is_top_three_across_everyone():
     assert result['vice']['name'] == 'P4'
 
 
-def test_expected_involvement_is_rounded_for_display():
-    result = resolve_captaincy([_p(1)], {1: _a('A')}, {1: 1.234}, {10: FIX}, {})
-    assert result['suggested']['expected_involvement'] == 1.2
+def test_expected_points_are_rounded_for_display():
+    result = resolve_captaincy([_p(1)], {1: _a('A')}, {1: 7.46}, {10: FIX}, {})
+    assert result['suggested']['expected_points'] == 7.5
+
+
+def test_option_has_the_agreed_summary_shape():
+    info = {1: {'team_short': 'MCI', 'position': 'Forward', 'price': 145,
+                'this_week': {'opponent_short': 'BOU', 'is_home': True, 'difficulty': 'easier'},
+                'recent_points': [2, 13, 6, 2, 9]}}
+    option = resolve_captaincy([_p(1)], {1: _a('A')}, {1: 7.4}, {10: FIX}, {}, info)['suggested']
+    assert option == {'id': 1, 'name': 'A', 'team_short': 'MCI', 'position': 'Forward', 'price': 145,
+                      'expected_points': 7.4,
+                      'this_week': {'opponent_short': 'BOU', 'is_home': True, 'difficulty': 'easier'},
+                      'recent_points': [2, 13, 6, 2, 9]}
+
+
+def test_others_are_the_rest_of_the_squad_and_guests_get_none():
+    squad = [_p(1), _p(2, starter=False), _p(3, starter=False), _p(4)]
+    availability = {1: _a('A'), 2: _a('Bench'), 3: _a('Unpredicted'), 4: _a('Doubt', chance=25)}
+    result = resolve_captaincy(squad, availability, {1: 5.0, 2: 6.0, 4: 9.0}, {10: FIX}, {4: _risk(75, 'high')})
+    assert [o['name'] for o in result['others']] == ['Doubt', 'Bench', 'Unpredicted']
+    guest = resolve_captaincy([], availability, {1: 5.0}, {10: FIX}, {})
+    assert guest['others'] == []
+
+
+def test_a_player_without_a_prediction_is_ranked_last_not_dropped():
+    availability = {1: _a('Zed'), 2: _a('Abe')}
+    result = resolve_captaincy([_p(1), _p(2)], availability, {1: 3.0}, {10: FIX}, {})
+    assert [o['name'] for o in result['shortlist']] == ['Zed', 'Abe']
+    assert result['shortlist'][1]['expected_points'] is None
+    assert result['suggested']['name'] == 'Zed' and result['vice'] is None
 
 
 def test_no_predictions_still_needs_a_look_with_no_suggestion():
     result = resolve_captaincy([_p(1)], {1: _a('A')}, {}, {10: FIX}, {})
-    assert result == {'state': NEEDS_LOOK, 'suggested': None, 'vice': None, 'shortlist': []}
+    # Still listed (ranked by name) but we don't lean on anyone we have no number for.
+    assert result['state'] == NEEDS_LOOK and result['suggested'] is None and result['vice'] is None
+    assert [o['name'] for o in result['shortlist']] == ['A']
+    assert select_headline(_ctx([_p(1)], {1: _a('A')}, {}))['reason_key'] == 'captain_no_prediction'
 
 
 def _ctx(squad, availability, risks, predictions=None):

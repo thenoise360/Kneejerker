@@ -50,7 +50,7 @@ def test_database_down_is_unavailable(monkeypatch):
 
 def test_api_down_still_gives_a_guest_hub(monkeypatch):
     monkeypatch.setattr(hub, 'get_squad_context', lambda t, g: {'status': 'unavailable'})
-    monkeypatch.setattr(hub, '_load_week_data', lambda gw, ids: (ROWS, {2: 1.4}, FIXTURES, []))
+    monkeypatch.setattr(hub, '_load_week_data', lambda gw, ids: (ROWS, {2: 1.4}, FIXTURES, [], None))
     result = hub.get_this_week_hub(6, 5, team_id=1)
     assert result['based_on'] == 'everyone' and result['team_status'] == 'unavailable'
 
@@ -59,7 +59,7 @@ def test_invalid_and_missing_team_skip_the_api(monkeypatch):
     def boom(*a):
         raise AssertionError('should not call the official API')
     monkeypatch.setattr(hub, 'get_squad_context', boom)
-    monkeypatch.setattr(hub, '_load_week_data', lambda gw, ids: (ROWS, {}, FIXTURES, []))
+    monkeypatch.setattr(hub, '_load_week_data', lambda gw, ids: (ROWS, {}, FIXTURES, [], None))
     assert hub.get_this_week_hub(6, 5, team_id='invalid')['team_status'] == 'invalid'
     assert hub.get_this_week_hub(6, 5, team_id=None)['team_status'] == 'none'
 

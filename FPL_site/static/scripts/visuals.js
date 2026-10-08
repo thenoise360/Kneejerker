@@ -75,19 +75,8 @@ export function buildMultiLineChart({ series, avgSeries, w, h, padTop, padBottom
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="max-width:100%; overflow:visible;">${parts.join('')}</svg>`;
 }
 
-/**
- * Small colour-key legend for the comparison charts: one dot + label per
- * player, plus an optional dashed-line entry for the average series.
- * entries: [{ label, color, dashed? }]
- */
-export function buildChartLegend(entries) {
-    return `<div class="chart-legend">${entries.map(e => `
-        <div class="chart-legend-item">
-            <span class="chart-legend-dot${e.dashed ? ' dashed' : ''}"${e.dashed ? '' : ` style="background:${e.color};"`}></span>
-            <span>${escapeHtml(e.label)}</span>
-        </div>
-    `).join('')}</div>`;
-}
+// buildChartLegend now lives in lib/statBlock.js (shared with the Week page).
+export { buildChartLegend } from './lib/statBlock.js';
 
 export function buildSparkline(last5, avg5) {
     if (!last5 || last5.length === 0) return '<p class="sub">No form data</p>';

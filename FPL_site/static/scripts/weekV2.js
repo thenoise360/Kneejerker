@@ -11,6 +11,10 @@ import { welcomeBackMessage, readLastVisit, recordVisit } from './lib/returningU
 import { createLatestGuard } from './lib/latestOnly.js';
 import { renderDecision, renderDecisionSkeleton } from './lib/decisionView.js';
 import { describeDeadline } from './lib/deadlineCopy.js';
+import { renderCaptainView } from './lib/captainView.js';
+import { renderPlayerSheet, renderPlayerSheetSkeleton, renderPlayerSheetMessage } from './lib/playerSheet.js';
+import { toggleSelection, initialSelection, playerContextUrl, contextKey } from './lib/compareSelection.js';
+import { COPY } from './lib/playerInfoCopy.js';
 
 // How often the deadline wording is refreshed while the page stays open.
 const DEADLINE_REFRESH_MS = 60 * 1000;
@@ -24,6 +28,11 @@ const hubGuard = createLatestGuard();
 // storage we can't remember a number, but we must still use it for the page the
 // person is looking at, or the hub would swap their team for the guest view.
 let sessionTeamId = null;
+// The captain choice from the latest hub answer, and what the open sheet is doing.
+let lastCaptaincy = null;
+let compareSelected = [];
+const sheetGuard = createLatestGuard();
+const contextCache = new Map();  // "1,2" -> players, so reopening a sheet doesn't refetch
 
 export function initializeWeekV2() {
     const lastWeekView = document.getElementById('last-week-view');
@@ -36,6 +45,7 @@ export function initializeWeekV2() {
     showDeadline();
     loadDecision();
     bindHubTeamForm(lastWeekView);
+    bindCaptainRow();
     loadHub();
 }
 
@@ -262,6 +272,7 @@ async function loadHub() {
         if (!hubGuard.isLatest(token)) return null;
         if (data.status === 'ready') {
             body.innerHTML = renderHubBody(data);
+            lastCaptaincy = (data.decisions && data.decisions.captaincy) || null;
             hub.dataset.basedOn = data.based_on;
             // A known team doesn't need the "your team number" form any more.
             if (teamSlot) teamSlot.hidden = data.based_on === 'your_team';
@@ -288,5 +299,115 @@ function settleTeamNumber(teamId, teamStatus) {
     } else if (teamStatus === 'not_found') {
         clearTeamId(safeLocalStorage(window));
         if (sessionTeamId === teamId) sessionTeamId = null;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Captain and vice view (read-only), shown in the global bottom sheet.
+// What to show comes from lib/captainView.js and lib/playerSheet.js; this part
+// only opens the sheet, fetches player details, and reacts to taps.
+// ---------------------------------------------------------------------------
+
+// One listener on the hub, because #hub-body is redrawn and its rows are replaced.
+function bindCaptainRow() {
+    const hub = document.getElementById('this-week-hub');
+    if (!hub || hub.dataset.captainBound === 'true') return;
+    hub.dataset.captainBound = 'true';
+    const open = (event) => {
+        const row = event.target.closest('[data-opens="captain"]');
+        if (!row) return;
+        event.preventDefault();
+        openCaptainView();
+    };
+    hub.addEventListener('click', open);
+    hub.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') open(event);
+    });
+}
+
+function sheetElements() {
+    const backdrop = document.getElementById('sheet-backdrop');
+    const content = document.getElementById('sheet-content');
+    return backdrop && content ? { backdrop, content } : null;
+}
+
+function closeSheet() {
+    const els = sheetElements();
+    if (els) els.backdrop.classList.remove('active');
+    sheetGuard.start();  // anything still loading is now stale
+}
+
+function openCaptainView() {
+    const els = sheetElements();
+    if (!els || !lastCaptaincy) return;
+    compareSelected = initialSelection(lastCaptaincy);
+    els.backdrop.classList.add('active');
+    // Assigned (not added) so reopening never stacks a second listener.
+    els.backdrop.onclick = (event) => {
+        if (event.target === els.backdrop || event.target.id === 'sheet-handle') closeSheet();
+    };
+    els.content.onclick = onSheetClick;
+    showCaptainView();
+}
+
+function showCaptainView() {
+    const els = sheetElements();
+    if (!els) return;
+    sheetGuard.start();
+    const scroll = els.backdrop.querySelector('.sheet');
+    const keep = scroll ? scroll.scrollTop : 0;
+    els.content.innerHTML = renderCaptainView(lastCaptaincy, compareSelected);
+    if (scroll) scroll.scrollTop = keep;
+}
+
+function onSheetClick(event) {
+    const target = event.target.closest('[data-action]');
+    if (!target) return;
+    const { action, id } = target.dataset;
+    if (action === 'close') closeSheet();
+    else if (action === 'back') showCaptainView();
+    else if (action === 'toggle-compare') {
+        compareSelected = toggleSelection(compareSelected, id);
+        showCaptainView();
+    } else if (action === 'open-player') showPlayers([id]);
+    else if (action === 'open-compare' && compareSelected.length === 2) showPlayers(compareSelected);
+}
+
+function backBar() {
+    return `<div class="sheet-topbar"><button type="button" class="sheet-close" data-action="back">${COPY.back}</button></div>`;
+}
+
+async function fetchPlayers(ids) {
+    const key = contextKey(ids);
+    if (contextCache.has(key)) return contextCache.get(key);
+    const hub = document.getElementById('this-week-hub');
+    const res = await fetch(playerContextUrl(ids, hub ? hub.dataset.gameweek : null));
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const data = await res.json();
+    if (data.status !== 'ready' || !Array.isArray(data.players)) return null;
+    // Keep the order the person ticked them in, so colours match across views.
+    const order = ids.map(String);
+    const players = [...data.players].sort((a, b) => order.indexOf(String(a.id)) - order.indexOf(String(b.id)));
+    contextCache.set(key, players);
+    return players;
+}
+
+async function showPlayers(ids) {
+    const els = sheetElements();
+    if (!els) return;
+    const token = sheetGuard.start();  // a newer tap makes this answer stale
+    els.content.innerHTML = backBar() + renderPlayerSheetSkeleton();
+    const scroller = els.backdrop.querySelector('.sheet');
+    if (scroller) scroller.scrollTop = 0;
+    try {
+        const players = await fetchPlayers(ids);
+        if (!sheetGuard.isLatest(token)) return;
+        els.content.innerHTML = backBar() + (players && players.length
+            ? renderPlayerSheet(players)
+            : renderPlayerSheetMessage(COPY.loadFailed));
+    } catch (err) {
+        console.error('Failed to load player details', err);
+        if (!sheetGuard.isLatest(token)) return;
+        els.content.innerHTML = backBar() + renderPlayerSheetMessage(COPY.loadFailed);
     }
 }

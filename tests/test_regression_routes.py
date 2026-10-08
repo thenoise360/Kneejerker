@@ -30,6 +30,12 @@ DATA_ROUTE_STUBS = {
     '/get_next_5_gameweeks?id=1': ('next_5_gameweeks', [{'gameweek': 6, 'teamName': 'BHA', 'teamFullName': 'Brighton', 'homeOrAway': 'Home', 'difficulty': 3, 'lastTime': {'kind': 'played', 'points': 6, 'minutes': 90, 'result': 'won 3–1', 'is_home': True, 'club': None}}]),
 }
 
+# Behind the This Week hub flag, so they are exercised with it on (see the tests below).
+HUB_DATA_ROUTE_STUBS = {
+    '/api/week/player-context?ids=1,2&gameweek=6': ('get_player_context', {
+        'status': 'ready', 'gameweek': 6, 'players': []}),
+}
+
 
 @pytest.fixture
 def calls():
@@ -56,6 +62,26 @@ def test_page_routes_render(client, path):
 def test_data_routes_respond(client):
     for path in DATA_ROUTE_STUBS:
         assert client.get(path).status_code == 200, path
+
+
+def test_player_context_route_is_flagged_and_validated(client, monkeypatch):
+    path, (name, value) = next(iter(HUB_DATA_ROUTE_STUBS.items()))
+    monkeypatch.setattr(views.current_config, 'THIS_WEEK_HUB', False, raising=False)
+    assert client.get(path).status_code == 404
+    monkeypatch.setattr(views.current_config, 'THIS_WEEK_HUB', True, raising=False)
+    monkeypatch.setattr(views, name, lambda *a, **k: value)
+    assert client.get(path).status_code == 200
+    assert client.get('/api/week/player-context?ids=1,2,3').status_code == 400
+    assert client.get('/api/week/player-context?ids=1&gameweek=99').status_code == 400
+
+
+def test_player_context_route_never_500s(client, monkeypatch):
+    monkeypatch.setattr(views.current_config, 'THIS_WEEK_HUB', True, raising=False)
+    def boom(*a, **k):
+        raise RuntimeError('db')
+    monkeypatch.setattr(views, 'get_player_context', boom)
+    response = client.get('/api/week/player-context?ids=1')
+    assert response.status_code == 200 and response.get_json() == {'status': 'unavailable'}
 
 
 def test_hub_route_responds_with_flag_on(client, monkeypatch):

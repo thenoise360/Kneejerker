@@ -1,0 +1,26 @@
+[
+ {
+  "name": "two players basic",
+  "html": "<div class=\"mp-stat-block\">\n        <div class=\"mp-stat-label\">Points</div>\n        <div class=\"mp-stat-bar-wrap\">\n            <div class=\"mp-stat-bar-track\"><div class=\"mp-stat-dot-value\" style=\"left:66.66666666666666%; color:var(--teal);\">6</div>\n            <div class=\"mp-stat-dot\" style=\"left:66.66666666666666%; background:var(--teal);\" title=\"Haaland: 6\"></div><div class=\"mp-stat-dot-value edge-end\" style=\"left:100%; color:var(--pink);\">9</div>\n            <div class=\"mp-stat-dot\" style=\"left:100%; background:var(--pink);\" title=\"Salah: 9\"></div></div>\n        </div>\n        <div class=\"mp-stat-axis-labels\">\n            <span>0</span>\n            <span>9</span>\n        </div>\n        \n    </div>"
+ },
+ {
+  "name": "shared avg and options",
+  "html": "<div class=\"mp-stat-block\">\n        <div class=\"mp-stat-label\">Season points</div>\n        <div class=\"mp-stat-bar-wrap\">\n            <div class=\"mp-stat-bar-track\"><div class=\"mp-stat-avg-marker\" style=\"left:50%;\"></div><div class=\"mp-stat-dot-value\" style=\"left:66.66666666666666%; color:var(--teal);\">40</div>\n            <div class=\"mp-stat-dot\" style=\"left:66.66666666666666%; background:var(--teal);\" title=\"Haaland: 40\"></div><div class=\"mp-stat-dot-value below\" style=\"left:70%; color:var(--pink);\">42</div>\n            <div class=\"mp-stat-dot\" style=\"left:70%; background:var(--pink);\" title=\"Salah: 42\"></div></div>\n        </div>\n        <div class=\"mp-stat-axis-labels\">\n            <span>Easier</span>\n            <span>Tougher</span>\n        </div>\n        <div class=\"mp-stat-compare\">Lower is easier</div>\n    </div>"
+ },
+ {
+  "name": "per-player avg three close",
+  "html": "<div class=\"mp-stat-block\">\n        <div class=\"mp-stat-label\">Goals</div>\n        <div class=\"mp-stat-bar-wrap\">\n            <div class=\"mp-stat-bar-track\"><div class=\"mp-stat-avg-tick\" style=\"left:50%; border-color:var(--teal);\" title=\"Haaland's average: 3\"></div><div class=\"mp-stat-avg-tick\" style=\"left:66.66666666666666%; border-color:var(--pink);\" title=\"Salah's average: 4\"></div><div class=\"mp-stat-avg-tick\" style=\"left:50%; border-color:var(--plum-tint);\" title=\"Palmer's average: 3\"></div><div class=\"mp-stat-dot-value\" style=\"left:83.33333333333334%; color:var(--teal);\">5</div>\n            <div class=\"mp-stat-dot\" style=\"left:83.33333333333334%; background:var(--teal);\" title=\"Haaland: 5\"></div><div class=\"mp-stat-dot-value edge-end\" style=\"left:100%; color:var(--pink);\">6</div>\n            <div class=\"mp-stat-dot\" style=\"left:100%; background:var(--pink);\" title=\"Salah: 6\"></div><div class=\"mp-stat-dot-value below edge-end\" style=\"left:91.66666666666666%; color:var(--plum-tint);\">5.5</div>\n            <div class=\"mp-stat-dot\" style=\"left:91.66666666666666%; background:var(--plum-tint);\" title=\"Palmer: 5.5\"></div></div>\n        </div>\n        <div class=\"mp-stat-axis-labels\">\n            <span>0</span>\n            <span>6</span>\n        </div>\n        \n    </div>"
+ },
+ {
+  "name": "null value",
+  "html": "<div class=\"mp-stat-block\">\n        <div class=\"mp-stat-label\">Assists</div>\n        <div class=\"mp-stat-bar-wrap\">\n            <div class=\"mp-stat-bar-track\"><div class=\"mp-stat-dot-value edge-end\" style=\"left:100%; color:var(--teal);\">2</div>\n            <div class=\"mp-stat-dot\" style=\"left:100%; background:var(--teal);\" title=\"Haaland: 2\"></div></div>\n        </div>\n        <div class=\"mp-stat-axis-labels\">\n            <span>0</span>\n            <span>2</span>\n        </div>\n        \n    </div>"
+ },
+ {
+  "name": "no result",
+  "html": "<div class=\"mp-stat-block\">\n        <div class=\"mp-stat-label\">X</div>\n        <div class=\"mp-stat-bar-wrap\">\n            <div class=\"mp-stat-bar-track\"></div>\n        </div>\n        <div class=\"mp-stat-axis-labels\">\n            <span>0</span>\n            <span>1</span>\n        </div>\n        \n    </div>"
+ },
+ {
+  "name": "legend",
+  "html": "<div class=\"chart-legend\">\n        <div class=\"chart-legend-item\">\n            <span class=\"chart-legend-dot\" style=\"background:var(--teal);\"></span>\n            <span>Haaland</span>\n        </div>\n    \n        <div class=\"chart-legend-item\">\n            <span class=\"chart-legend-dot dashed\"></span>\n            <span>Average</span>\n        </div>\n    </div>"
+ }
+]

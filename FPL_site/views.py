@@ -22,6 +22,7 @@ from .weekCopy import this_week_empty_copy, last_week_empty_copy
 from .lastWeekRecap import get_last_week_recap
 from .weekDecision import get_this_week_decision
 from .thisWeekHub import get_this_week_hub
+from .playerContext import get_player_context
 from .weekResolver import DEADLINE_FORMAT
 
 from .matchPredictionEngine import load_team_fixture_outlook, list_current_teams
@@ -170,6 +171,38 @@ def week_this_week_hub():
     except Exception as e:
         logger.exception("Error building the This Week hub")
         return jsonify({'error': 'server_error'}), 500
+
+MAX_CONTEXT_PLAYERS = 2
+
+
+def _parse_player_ids(raw):
+    """Up to two distinct player ids from '1,2', or None if the list is empty, too long or malformed."""
+    parts = [part for part in (raw or '').split(',')]
+    if not parts or any(not (p.isascii() and p.isdigit() and len(p) <= MAX_TEAM_ID_DIGITS) for p in parts):
+        return None
+    ids = list(dict.fromkeys(int(p) for p in parts))
+    return ids if 1 <= len(ids) <= MAX_CONTEXT_PLAYERS else None
+
+
+@app.route('/api/week/player-context')
+def week_player_context():
+    # Same flag as the hub it supports.
+    if not getattr(current_config, 'THIS_WEEK_HUB', False):
+        abort(404)
+    logger.info("Request for player context")
+    ids = _parse_player_ids(request.args.get('ids', ''))
+    if ids is None:
+        return jsonify({'error': 'invalid_ids'}), 400
+    raw_gameweek = request.args.get('gameweek')
+    gameweek = _parse_gameweek(raw_gameweek) if raw_gameweek else None
+    if raw_gameweek and gameweek is None:
+        return jsonify({'error': 'invalid_gameweek'}), 400
+    try:
+        return jsonify(get_player_context(ids, gameweek))
+    except Exception:
+        logger.exception("Error building player context")
+        return jsonify({'status': 'unavailable'})
+
 
 @app.route('/radar')
 def radar():
